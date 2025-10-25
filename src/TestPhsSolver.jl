@@ -1,5 +1,9 @@
+
 module TestPhsSolver
 
-greet() = print("Hello World!")
+include("SystemModelling.jl")
 
-end # module TestPhsSolver
+using .SystemModellingModule
+export SystemModellingModule
+
+end  # TestPhsSolver
