@@ -38,7 +38,8 @@ module SimulatorModule
 export Simulator, simulate
 export DescriptorSimulator, simulate
 # Export the enum type and all values
-export SolverMethod, EulerMethod, MidpointMethod, Gauss1Method, Gauss2Method, BackwardEulerMethod
+export SolverMethod,
+    EulerMethod, MidpointMethod, Gauss1Method, Gauss2Method, BackwardEulerMethod
 
 using LinearAlgebra
 # Parent module (needed for Simulator struct)
@@ -72,11 +73,11 @@ Simulator(
     error("E is singular; use DescriptorSimulator(sys, dt, :Midpoint or :Gauss2).")
 
 # rank check for E (pHDAE)
-@inline function _E_full_rank(E; atol=1e-10)
+@inline function _E_full_rank(E; atol = 1e-10)
     if E isa Diagonal
         return all(abs.(diag(E)) .> atol)
     else
-        U, S, V = svd(E; full=false)
+        U, S, V = svd(E; full = false)
         tol = max(atol, Base.eps(eltype(S))^(2 / 3) * opnorm(E, Inf))
         return minimum(S) > tol
     end
@@ -166,13 +167,13 @@ struct DescriptorSimulator{T<:AbstractFloat,SYS}
 end
 
 # Convenience constructor
-DescriptorSimulator(sys, dt, method::SolverMethod, project_ic::Bool=true; eps_reg=0.0) =
+DescriptorSimulator(sys, dt, method::SolverMethod, project_ic::Bool = true; eps_reg = 0.0) =
     DescriptorSimulator(sys, float(dt), method, project_ic, float(eps_reg))
 
 # Regularization helper
 function _regularize_M(sys, M::AbstractMatrix, eps_reg::Real)
     # projector onto Null(E'): Nnull * Nnull' (via thin SVD)
-    U, S, V = svd(sys.E; full=false)
+    U, S, V = svd(sys.E; full = false)
     tol = max(1e-10, Base.eps(eltype(S))^(2 / 3) * opnorm(sys.E, Inf))
     r = count(>(tol), S)
     if r == size(sys.E, 1)
@@ -224,7 +225,7 @@ end
 # Regularization for stage matrix (similar to _regularize_M)
 # Adds eps_reg * (I_S ⊗ P_null) with P_null projector onto Null(E')
 function _regularize_stage(sys::pHDescriptorSystem, Ms, s, eps_reg::Real)
-    U, S, V = svd(sys.E; full=false)
+    U, S, V = svd(sys.E; full = false)
     tol = max(1e-10, Base.eps(eltype(S))^(2 / 3) * opnorm(sys.E, Inf))
     r = count(>(tol), S)
     if r == size(sys.E, 1)
@@ -308,11 +309,11 @@ function _project_ic!(
     x::AbstractVector,
     sys::pHDescriptorSystem,
     u::AbstractVector;
-    atol::Real=1e-10,
+    atol::Real = 1e-10,
 )
     E = sys.E
     # Null space of E' via thin SVD (cheap for moderate n)
-    U, S, V = svd(E; full=false)
+    U, S, V = svd(E; full = false)
     r = sum(S .> max(atol, eps(eltype(S))^(2 / 3) * opnorm(E, Inf)))
     if r == size(E, 1) || r == size(E, 2)
         return x  # full rank -> no algebraic constraints
@@ -340,11 +341,14 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
     Y = fill(zero(eltype(x0)), m, nt)
 
     method = sim.method
-    is_gauss = method === Gauss1Method || method === Gauss2Method || method === MidpointMethod
+    is_gauss =
+        method === Gauss1Method || method === Gauss2Method || method === MidpointMethod
 
     # Precompute/factorize
     F_mid = nothing
-    if method === BackwardEulerMethod || method === MidpointMethod || method === Gauss1Method
+    if method === BackwardEulerMethod ||
+       method === MidpointMethod ||
+       method === Gauss1Method
         # Midpoint/Gauss1 (same stage matrix), BE keep your previous code path if you like
         if method === BackwardEulerMethod
             M = sys.E - dt * A

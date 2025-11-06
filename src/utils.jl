@@ -38,12 +38,12 @@ using TestPhsSolver: pHSystem, pHDescriptorSystem
 # -------------------------------------------------
 # Main functions
 # -------------------------------------------------
-function is_skewSymmetric(M::AbstractMatrix; atol::Real=1e-12)
+function is_skewSymmetric(M::AbstractMatrix; atol::Real = 1e-12)
     # Scale tolerance with matrix size/scale
     return opnorm(M + M', Inf) <= max(atol, eps(eltype(M))^(2 / 3) * opnorm(M, Inf))
 end
 
-function is_positiveSemiDefinite(M::AbstractMatrix, atol::Real=1e-10)
+function is_positiveSemiDefinite(M::AbstractMatrix, atol::Real = 1e-10)
     @assert size(M, 1) == size(M, 2)  #PSD requires square Matrix
     lambda_min = eigmin(Hermitian(M))
     return lambda_min >= -max(atol, eps(eltype(M))^(2 / 3) * opnorm(M, Inf))
@@ -86,19 +86,19 @@ function plot_states(t, X)
     p = plot(
         tt,
         vec(@view X[1, :]),
-        label="x(1)",
-        xlabel=L"Time $t$",
-        ylabel=L"States $x$",
-        title="Simulation results",
+        label = "x(1)",
+        xlabel = L"Time $t$",
+        ylabel = L"States $x$",
+        title = "Simulation results",
     )
     if n > 7
         for i = 2:7
-            plot!(p, tt, vec(@view X[i, :]), label="x$(i)")
+            plot!(p, tt, vec(@view X[i, :]), label = "x$(i)")
         end
     else
         # Less or equal to 7 states to plot
         for i = 2:n
-            plot!(p, tt, vec(@view X[i, :]), label="x$(i)")
+            plot!(p, tt, vec(@view X[i, :]), label = "x$(i)")
         end
     end
     return p
@@ -120,18 +120,18 @@ function plot_energy(t, X, sys)
         xi .= @view X[:, k]
         H[k] = 0.5 * dot(xi, Q * xi)
     end
-    p = plot(tt, H, label="H", xlabel="t", ylabel="energy", title="Hamiltonian")
+    p = plot(tt, H, label = "H", xlabel = "t", ylabel = "energy", title = "Hamiltonian")
     return p
 end
 
 function plot_results(
     t,
     X;
-    sys=nothing,
-    H=nothing,
-    separate::Bool=false,
-    state_labels=nothing,
-    energy_label::AbstractString=L"$\mathcal{H}$",
+    sys = nothing,
+    H = nothing,
+    separate::Bool = false,
+    state_labels = nothing,
+    energy_label::AbstractString = L"$\mathcal{H}$",
 )
     @assert size(X, 2) == length(t) "States X must be n x nt with nt == length(t)"
     n, nt = size(X)
@@ -140,9 +140,9 @@ function plot_results(
     if H === nothing && sys !== nothing
         # Case 1: pHDescriptorSystem + QH exists
         if hasproperty(sys, :QH) && sys.QH != nothing
-            H = vec(0.5 .* sum(X .* (sys.QH * X), dims=1))
+            H = vec(0.5 .* sum(X .* (sys.QH * X), dims = 1))
         elseif sys isa pHSystem
-            H = vec(0.5 .* sum(X .* (sys.Qe * X), dims=1))
+            H = vec(0.5 .* sum(X .* (sys.Qe * X), dims = 1))
         else
             @warn "No QH/Qe found on sys; skipping Hamiltonian computation."
         end
@@ -153,9 +153,9 @@ function plot_results(
     @assert length(state_labels) == n "state_labels must have length $n"
 
     if separate
-        p_states = plot(xlabel=L"Time $t$", title="States")
+        p_states = plot(xlabel = L"Time $t$", title = "States")
         for i = 1:n
-            plot!(p_states, t, view(X, i, :), label=state_labels[i])
+            plot!(p_states, t, view(X, i, :), label = state_labels[i])
         end
 
         p_energy = plot()
@@ -164,22 +164,22 @@ function plot_results(
                 p_energy,
                 t,
                 H,
-                l=:dash,
-                label=energy_label,
-                xlabel=L"Time $t$",
-                title="Hamiltonian",
+                l = :dash,
+                label = energy_label,
+                xlabel = L"Time $t$",
+                title = "Hamiltonian",
             )
         else
             @warn "H is not available; only states will be shown."
         end
-        p = plot(p_states, p_energy; layout=(2, 1), link=:x)
+        p = plot(p_states, p_energy; layout = (2, 1), link = :x)
     else
-        p = plot(xlabel=L"Time $t$", title="Simulation results")
+        p = plot(xlabel = L"Time $t$", title = "Simulation results")
         for i = 1:n
-            plot!(p, t, view(X, i, :), label=state_labels[i])
+            plot!(p, t, view(X, i, :), label = state_labels[i])
         end
         if H !== nothing
-            plot!(p, t, H, l=:dash, label=energy_label)
+            plot!(p, t, H, l = :dash, label = energy_label)
         else
             @warn "H is not available; overlay will only show states."
         end

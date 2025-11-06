@@ -35,7 +35,8 @@ export pHDescriptorSystem,
     state_matrix, to_pHODE, is_index1_like, as_coenergy_state, check_coherence
 # simulators
 export Simulator, DescriptorSimulator, simulate
-export SolverMethod, EulerMethod, MidpointMethod, Gauss1Method, Gauss2Method, BackwardEulerMethod
+export SolverMethod,
+    EulerMethod, MidpointMethod, Gauss1Method, Gauss2Method, BackwardEulerMethod
 # interconnection.jl
 export PortPair, build_K, connect, connect_resistor
 # components.jl
