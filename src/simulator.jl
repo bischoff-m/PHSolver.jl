@@ -5,13 +5,13 @@ simulation specifications (i.e. implemented solvers). Currently there are two si
     - Simulator: For simulating corresponding pHSystem struct (for pHODEs). The properties include:
             -> SYS::pHSystem
             -> dt::AbstractFloat (time stepping)
-            -> method::Symbol
+            -> method::SolverMethod
                 -> Implemented: :Euler
 
     - DescriptorSimulator: For simulating corresponding pHDescriptorSystem struct (for pHDAEs)
             -> sys::pHDescriptorSystem
             -> dt::AbstractFloat (time stepping)
-            -> method::Symbol
+            -> method::SolverMethod
                 -> Implemented: :Midpoint/:Gauss1 [1], :Gauss2 [1]
             -> project_ic::Bool 
                 -> projects initial condition for index-1 consistency onto the constraint manifold of the DAE
@@ -37,11 +37,20 @@ module SimulatorModule
 
 export Simulator, simulate
 export DescriptorSimulator, simulate
+# Export the enum type and all values
+export SolverMethod, EulerMethod, MidpointMethod, Gauss1Method, Gauss2Method, BackwardEulerMethod
 
 using LinearAlgebra
 # Parent module (needed for Simulator struct)
 using ..pHModule
 
+@enum SolverMethod begin
+    EulerMethod
+    MidpointMethod
+    Gauss1Method
+    Gauss2Method
+    BackwardEulerMethod
+end
 
 # --------------------------------------------------
 # Everything for pH ODE system of form x' = (J-R)Qx + Gu
@@ -50,25 +59,25 @@ using ..pHModule
 struct Simulator{T<:AbstractFloat,SYS}
     sys::SYS
     dt::T
-    method::Symbol
+    method::SolverMethod
 end
 
 # Only Convert descriptor to ode system if E is invertible
 Simulator(
     sys::pHModule.pHDescriptorSystem,
     dt::T,
-    method::Symbol,
+    method::SolverMethod,
 ) where {T<:AbstractFloat} =
     _E_full_rank(sys.E) ? Simulator(pHModule.to_pHODE(sys), dt, method) :
     error("E is singular; use DescriptorSimulator(sys, dt, :Midpoint or :Gauss2).")
 
 # rank check for E (pHDAE)
-@inline function _E_full_rank(E; atol = 1e-10)
+@inline function _E_full_rank(E; atol=1e-10)
     if E isa Diagonal
         return all(abs.(diag(E)) .> atol)
     else
-        U, S, V = svd(E; full = false)
-        tol = max(atol, Base.eps(eltype(S))^(2/3) * opnorm(E, Inf))
+        U, S, V = svd(E; full=false)
+        tol = max(atol, Base.eps(eltype(S))^(2 / 3) * opnorm(E, Inf))
         return minimum(S) > tol
     end
 end
@@ -113,7 +122,7 @@ function simulate(sim::Simulator, x0::AbstractVector, u, tspan::AbstractVector)
     m = sim.sys.m
     nt = length(tspan)
 
-    X = similar(x0, n, nt);
+    X = similar(x0, n, nt)
     X[:, 1] = x0
     Y = fill(zero(eltype(x0)), m, nt)
 
@@ -132,7 +141,7 @@ function simulate(sim::Simulator, x0::AbstractVector, u, tspan::AbstractVector)
 
         # step
         if i < nt
-            if sim.method === :Euler
+            if sim.method === EulerMethod
                 pHModule.dynamics!(dx, sim.sys, x, ui, Qx)
                 @. x = x + sim.dt * dx
             else
@@ -151,20 +160,20 @@ end
 struct DescriptorSimulator{T<:AbstractFloat,SYS}
     sys::SYS
     dt::T
-    method::Symbol   # :Midpoint (recommended), or :BE (BackwardEuler)
+    method::SolverMethod   # :Midpoint (recommended), or :BE (BackwardEuler)
     project_ic::Bool # project initial condition for index-1 consistency
     eps_reg::T      # Regularization for solver to work with non-singular matrices
 end
 
 # Convenience constructor
-DescriptorSimulator(sys, dt, method::Symbol, project_ic::Bool = true; eps_reg = 0.0) =
+DescriptorSimulator(sys, dt, method::SolverMethod, project_ic::Bool=true; eps_reg=0.0) =
     DescriptorSimulator(sys, float(dt), method, project_ic, float(eps_reg))
 
 # Regularization helper
 function _regularize_M(sys, M::AbstractMatrix, eps_reg::Real)
     # projector onto Null(E'): Nnull * Nnull' (via thin SVD)
-    U, S, V = svd(sys.E; full = false)
-    tol = max(1e-10, Base.eps(eltype(S))^(2/3) * opnorm(sys.E, Inf))
+    U, S, V = svd(sys.E; full=false)
+    tol = max(1e-10, Base.eps(eltype(S))^(2 / 3) * opnorm(sys.E, Inf))
     r = count(>(tol), S)
     if r == size(sys.E, 1)
         return M  # full rank: nothing to do
@@ -179,7 +188,7 @@ function _u_half(u, i, t, dt, x, m::Int, nt::Int)
         return 0.5 .* (@view u[:, i]) .+ 0.5 .* (@view u[:, i+1])
     elseif u isa Function
         # use helpers to support u(t) and u(t,x), and coerce Number→Vector
-        return _as_vec(_call_u(u, t + dt/2, x), m)
+        return _as_vec(_call_u(u, t + dt / 2, x), m)
     else
         return _getu(u, i, t, x, m)  # constant vector/number
     end
@@ -192,13 +201,13 @@ function _gauss_tableau(s::Int)
         b = [1.0]
         c = [0.5]
     elseif s == 2
-        a11 = 1/4;
-        a22 = 1/4
-        a12 = 1/4 - sqrt(3)/6
-        a21 = 1/4 + sqrt(3)/6
+        a11 = 1 / 4
+        a22 = 1 / 4
+        a12 = 1 / 4 - sqrt(3) / 6
+        a21 = 1 / 4 + sqrt(3) / 6
         A = [a11 a12; a21 a22]
         b = [0.5, 0.5]
-        c = [0.5 - sqrt(3)/6, 0.5 + sqrt(3)/6]
+        c = [0.5 - sqrt(3) / 6, 0.5 + sqrt(3) / 6]
     else
         error("Gauss s must be 1 or 2 for this implementation.")
     end
@@ -215,8 +224,8 @@ end
 # Regularization for stage matrix (similar to _regularize_M)
 # Adds eps_reg * (I_S ⊗ P_null) with P_null projector onto Null(E')
 function _regularize_stage(sys::pHDescriptorSystem, Ms, s, eps_reg::Real)
-    U, S, V = svd(sys.E; full = false)
-    tol = max(1e-10, Base.eps(eltype(S))^(2/3) * opnorm(sys.E, Inf))
+    U, S, V = svd(sys.E; full=false)
+    tol = max(1e-10, Base.eps(eltype(S))^(2 / 3) * opnorm(sys.E, Inf))
     r = count(>(tol), S)
     if r == size(sys.E, 1)
         return Ms
@@ -240,7 +249,7 @@ function _u_gauss_nodes(
 )
     Us = Matrix{Float64}(undef, m, s)  # or Matrix{eltype(dt)} if you prefer
     for j = 1:s
-        tj = t_k + c[j]*dt
+        tj = t_k + c[j] * dt
         if u isa Function
             uj = _as_vec(_call_u(u, tj, x_k), m)
         elseif u isa AbstractMatrix
@@ -266,12 +275,12 @@ end
 
 # Core Gauss stepper (s=1 or 2). Returns updated x and (optionally) stage effort y_nodes if you want them.
 function _step_gauss!(x, sys, dt, A_rk, b, c, F, s, u_nodes)
-    n = sys.n;
+    n = sys.n
     m = sys.m
     A = state_matrix(sys)
 
     # RHS: vec( (1_s ⊗ A) x_k + (1_s ⊗ G) u_nodes )
-    rhs = zeros(eltype(x), s*n)
+    rhs = zeros(eltype(x), s * n)
     Ax = A * x
     for j = 1:s
         rhs[((j-1)*n+1):(j*n)] .= Ax .+ sys.G * @view(u_nodes[:, j])
@@ -299,19 +308,19 @@ function _project_ic!(
     x::AbstractVector,
     sys::pHDescriptorSystem,
     u::AbstractVector;
-    atol::Real = 1e-10,
+    atol::Real=1e-10,
 )
     E = sys.E
     # Null space of E' via thin SVD (cheap for moderate n)
-    U, S, V = svd(E; full = false)
-    r = sum(S .> max(atol, eps(eltype(S))^(2/3) * opnorm(E, Inf)))
+    U, S, V = svd(E; full=false)
+    r = sum(S .> max(atol, eps(eltype(S))^(2 / 3) * opnorm(E, Inf)))
     if r == size(E, 1) || r == size(E, 2)
         return x  # full rank -> no algebraic constraints
     end
     N = U[:, (r+1):end]              # columns span Null(E')
     A = state_matrix(sys)
     g = A * x + sys.G * u
-    rhs = - N' * g
+    rhs = -N' * g
     M = N' * A
     # least-norm Δx to satisfy N'*(A (x + Δx) + G u) = 0
     delta_x = M \ rhs
@@ -331,13 +340,13 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
     Y = fill(zero(eltype(x0)), m, nt)
 
     method = sim.method
-    is_gauss = method === :Gauss1 || method === :Gauss2 || method === :Midpoint
+    is_gauss = method === Gauss1Method || method === Gauss2Method || method === MidpointMethod
 
     # Precompute/factorize
     F_mid = nothing
-    if method === :BE || method === :Midpoint || method === :Gauss1
+    if method === BackwardEulerMethod || method === MidpointMethod || method === Gauss1Method
         # Midpoint/Gauss1 (same stage matrix), BE keep your previous code path if you like
-        if method === :BE
+        if method === BackwardEulerMethod
             M = sys.E - dt * A
             N = sys.E
             F_mid = try
@@ -352,7 +361,7 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
             end
         else
             # Gauss1 / Midpoint stage matrix
-            M = sys.E - (dt/2) * A
+            M = sys.E - (dt / 2) * A
             F_mid = try
                 lu(M)
             catch e
@@ -364,13 +373,13 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
                 end
             end
         end
-    elseif method === :Gauss2
+    elseif method === Gauss2Method
         A_rk, b, c = _gauss_tableau(2)
         Ms = _build_stage_matrix(sys, dt, A_rk)
         Ms = (sim.eps_reg > 0) ? _regularize_stage(sys, Ms, 2, sim.eps_reg) : Ms
         F_mid = lu(Ms)
     else
-        error("Unknown method $(sim.method). Allowed: :BE, :Midpoint, :Gauss1, :Gauss2")
+        error("Unknown method $(sim.method). Allowed: BE, Midpoint, Gauss1, Gauss2")
     end
 
     # IC
@@ -387,16 +396,16 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
         Y[:, i] = pHModule.output(sys, x)
 
         if i == nt
-            ;
-            break;
+
+            break
         end
 
-        if method === :BE
-            unext = _getu(u, i+1, t + dt, x, m)
+        if method === BackwardEulerMethod
+            unext = _getu(u, i + 1, t + dt, x, m)
             rhs = sys.E * x + dt * (sys.G * unext)
             x = F_mid \ rhs
 
-        elseif method === :Midpoint || method === :Gauss1
+        elseif method === MidpointMethod || method === Gauss1Method
             # 1-stage Gauss
             # K = (E - dt/2 A)^{-1} (A x + G u_{mid}), x_{k+1} = x + dt K
             uhalf = _u_half(u, i, t, dt, x, m, nt)
@@ -404,7 +413,7 @@ function simulate(sim::DescriptorSimulator, x0::AbstractVector, u, tspan::Abstra
             K = F_mid \ rhs
             @. x = x + dt * K
 
-        elseif method === :Gauss2
+        elseif method === Gauss2Method
             # 2-stage Gauss
             A_rk, b, c = _gauss_tableau(2)
             # u at Gauss nodes

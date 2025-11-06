@@ -57,7 +57,6 @@
             - as_coenergy_state: Transformation to co-energy representation
 
 """
-
 module pHModule
 
 # Exports for pH ODEs
