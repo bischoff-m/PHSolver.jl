@@ -12,8 +12,8 @@ makedocs(
     pages=[
         "Home" => "index.md",
         "Basics" => "basics.md",
-        "Preliminaries" => "preliminaries.md",
-        "Port-Hamiltonian Systems" => "port-hamiltonian-systems.md",
+        "Notation" => "notation.md",
+        "Port-Hamiltonian Systems" => "linear-phs.md",
         "Control of Port-Hamiltonian Systems" => "control-of-phs.md",
         "References" => "references.md",
     ],
