@@ -1,0 +1,230 @@
+# Control of Port-Hamiltonian Systems
+
+## Control of port-Hamiltonian systems
+
+Consider an input-state-output port-Hamiltonian system $\Sigma$ without
+feedthrough terms. The simplest situation in stabilization is when the set-point
+$x^\ast\in\mathcal{X}$ is a strict minimum of the Hamiltonian $H$. In this case,
+the pHS is passive, and thus we may directly apply the asymptotic stabilization
+theory of passive systems provided in [AvdS2000l2Gain; Chapter 4](@cite), by
+employing output feedback $u=-Dy$ with $D=D^T$ a positive definite matrix, and
+using the Hamiltonian $H$ as Lyapunov function.
+
+### Energy-Casimir method
+
+The situation becomes different when the set-point $x^\ast$ is not a strict minimum of the Hamiltonian $H$. A new twist is provided by the possible existence of Casimir functions. Assume one can find a Casimir function $C$ such that the modified Hamiltonian
+
+```math
+H_\text{mod}(x) := \Phi(H(x), C(x))
+```
+
+for some map $\Phi:\mathbb{R}^2 \to\mathbb{R}$ has a strict minimum at the set-point $x^\ast$. Then the system can be rewritten as the modified ISOPHS
+
+```math
+\begin{aligned}
+\dot{x} &= [J(x) - R(x)]\nabla H_\text{mod}(x) + g(x)u\\
+y_\text{mod} &= g^T(x) \nabla H_\text{mod}(x),
+\end{aligned}
+```
+
+which is passive w.r.t. the modified output $y_\text{mod}$. Hence, asymptotic stabilization of $x^\ast$ may be achieved by feedback $u=Dy_\text{mod}$, $D>0$, employing $H_\text{mod}$ as Lyapunov candidate function, provided a detectability condition is satisfied. The stability analysis method of finding Casimirs $C_1,\ldots, C_r$ such that a suitable function $\Phi(H,C_1,\ldots, C_r)$ of the energy $H$ and the Casimirs has a strict minimum at the equilibrium under consideration is called the **Energy-Casimir method**.
+
+### Dynamic controller systems
+
+Next, suppose that $H$ does not have a strict minimum at $x^\ast$, and that no useful Casimirs $C$ can be found for direct application of the Energy-Casimir method. In this case, we will take recourse to dynamical controller systems that are also in port-Hamiltonian form, in order to generate Casimirs for the closed-loop system. Any power-conserving interconnection of pHS is again pHS. In particular, the interconnection of the plant pHS $\Sigma$ with a controller pHS $\Sigma_c$
+
+```math
+\begin{aligned}
+\dot{\xi} &= [J_c(\xi) - R_c(\xi)]\nabla H_c(\xi) + g_c(\xi) u_c,\quad\xi\in\mathcal{X}_c, u_c\in\mathbb{R}^m\\
+y_c &= g_c^T(\xi)\nabla H_c(\xi)
+\end{aligned}
+```
+
+with $J_c(\xi) = -J_c^T(\xi)$, $R_c(\xi) = R_c^T(\xi)\geq 0$, via the standard negative feedback interconnection
+
+```math
+\begin{aligned}
+u &= -y_c + v\\
+u_c &= y + v_c
+\end{aligned}
+```
+
+where $v,v_c$ are external input signals, results in the closed-loop system
+
+```math
+\left[\begin{matrix}
+\dot{x}\\
+\dot{\xi}
+\end{matrix}\right] = \left(\underbrace{\left[\begin{matrix}
+J(x) & -g(x)g_c^T(\xi)\\
+g_c(\xi)g^T(x) & J_c(\xi)
+\end{matrix}\right]}_{J_{cl}(x,\xi)} - \underbrace{\left[\begin{matrix}
+R(x) & 0\\
+0 & R_c(\xi)
+\end{matrix}\right]}_{R_{cl}(x,\xi)}\right)\left[\begin{matrix}
+\frac{\partial H}{\partial x}(x) \\
+\frac{\partial H_c}{\partial\xi}(\xi)
+\end{matrix}\right] + \left[\begin{matrix}
+g(x) & 0\\
+0 & g_c(\xi)
+\end{matrix}\right]\left[\begin{matrix}
+v\\
+v_c
+\end{matrix}\right]
+```
+
+```math
+\left[\begin{matrix}
+y\\
+y_c
+\end{matrix}\right] = \left[\begin{matrix}
+g^T(x) & 0\\
+0 & g^T_c(\xi)
+\end{matrix}\right]\left[\begin{matrix}
+\frac{\partial H}{\partial x}(x) \\
+\frac{\partial H_c}{\partial\xi}(\xi)
+\end{matrix}\right]
+```
+
+This is again an ISOPHS, with state space $\mathcal{X}\times\mathcal{X}_c$, Hamiltonian $H(x) + H_c(x)$, interconnection structure matrix $J_{cl}(x, \xi)$, resistive structure matrix $R_{cl}(x,\xi)$, inputs $(v,v_c)$ and outputs $(y,y_c)$.
+
+### Example: PID controllers
+
+Consider the standard Proportional-Integral-Derivative (PID) controller
+
+```math
+y_c = k_Pu_c + k_I \int u_c dt + k_D\dot{u}_c
+```
+
+for certain positive constants $k_P, k_I, k_D$. Rewriting the above as
+
+```math
+k_D\dot{u}_c = -k_Pu_c - k_I\int u_cdt + y_c
+```
+
+and defining $\xi = \int u_cdt$ (or equivalently $\dot{\xi} = u_c$) and $\eta=k_Du_c$, the PID-controller can be formulated as the linear ISOPHS
+
+```math
+\begin{aligned}
+\left[\begin{matrix}
+\dot{\xi}\\
+\dot{\eta}
+\end{matrix}\right] &= \left[\begin{matrix}
+0 & 1\\
+-1 & -k_P
+\end{matrix}\right]\left[\begin{matrix}
+k_I\xi\\
+\frac{\eta}{k_D}
+\end{matrix}\right] + \left[\begin{matrix}
+0\\
+1
+\end{matrix}\right]y_c\\
+u_c &= \left[\begin{matrix}
+0 & 1
+\end{matrix}\right]\left[\begin{matrix}
+k_I\xi\\
+\frac{\eta}{k_D}
+\end{matrix}\right]
+\end{aligned}
+```
+
+with Hamiltonian $H_c(\xi,\eta) = \frac{1}{2}k_I\xi^2 + \frac{1}{2k_D}\eta^2$. Considering any plant ISOPHS $\Sigma$, the closed-loop system arising from standard feedback $u=-y_c$, $u_c = y$ with the PID controller is given by the pHDAE
+
+```math
+\begin{aligned}
+\dot{x} &= [J(x) - R(x)]\nabla H(x) + g(x)u\\
+\left[\begin{matrix}
+\dot{\xi}\\
+\dot{\eta}
+\end{matrix}\right] &= \left[\begin{matrix}
+0 & 1\\
+-1 & -k_P
+\end{matrix}\right]\left[\begin{matrix}
+k_I\xi\\
+\frac{\eta}{k_D}
+\end{matrix}\right] - \left[\begin{matrix}
+0\\
+1
+\end{matrix}\right]u\\
+0 &= g^T(x)\nabla H(x) - \left[\begin{matrix}
+0 & 1
+\end{matrix}\right]\left[\begin{matrix}
+k_I\xi\\
+\frac{\eta}{k_D}
+\end{matrix}\right]
+\end{aligned}
+```
+
+### Passivity-based Control
+
+There exists a lot of theory on passivity-based controls, see [AvdS2000l2Gain; Chapter 7.2](@cite). We will only consider a small but very important section from this chapter. When also allowing for shaping of the interconnection and damping matrices $J(x), R(x)$ in a pHS, the literature usually calls such energy-shaping controls the *Interconnection and damping assignment passivity-based control* (short: IDA-PBC). This type of control is employed in many engineering applications and its design objective is to obtain by state-feedback $u=\alpha(x)$ a closed-loop system of the shaped port-Hamiltonian form
+
+```math
+\dot{x} = [J_d(x) - R_d(x)]\frac{\partial H_d}{\partial x}(x),
+```
+
+where $J_d(x) = -J_d^T(x)$, and $R_d(x) = R_d^T(x)\geq 0$ are *desired* interconnection and resistive structure matrices, and $H_d$ is a desired (shaped) Hamiltonian having a minimum at $x^\ast$. Transforming the (classical) pHS into the one stated above by application of state feedback $u=\alpha(x)$ amounts to the equation
+
+```math
+[J(x) - R(x)]\frac{\partial H}{\partial x}(x) + g(x)\alpha(x) = [J_d(x) - R_d(x)]\frac{\partial H_d}{\partial x}(x).
+```
+
+The dependence on $\alpha(x)$ can be eliminated. Assume that $g(x)$ has maximal column rank for all $x\in\mathcal{X}$. Denoting by $g^\perp(x)$ a maximal rank annihilator of $g(x)$, premultiplication of both sides of the equation above by $g^\perp(x)$ results in
+
+```math
+g^\perp(x)[J(x) - R(x)] \frac{\partial H}{\partial x}(x) = g^\perp(x)[J_d(x) - R_d(x)]\frac{\partial H_d}{\partial x}(x).
+```
+
+This is called the **IDA-PBC matching equation**. IDA-PBC is concerned with finding $J_d,R_d$ and $H_d$ satisfying the equation above such that $H_d$ has its minimum at the desired equilibrium $x^\ast$. Once the matching equation has been solved, the required state feedback $u=\alpha(x)$ follows, and is uniquely given as
+
+```math
+\alpha(x) = \left(g^T(x)g(x)\right)^{-1}g^T(x)\times\left(\left[J_d(x) - R_d(x)\right]\frac{\partial H_d}{\partial x}(x) - \left[J(x) - R(x)\right]\frac{\partial H}{\partial x}(x)\right).
+```
+
+[AvdS2000l2Gain](@cite) mentions the main problem with IDA-PBC: Solving the IDA-PBC matching equation can be a tedious process; basically because there are many degrees of freedom $J_d$, $R_d$ in order to construct $H_d$ having its minimum at $x^\ast$.
+
+### Control by Energy-routing
+
+Consider the problem of energy-transfer. Consider two pHS $\Sigma_i$ (without internal dissipation) in input-state-output form
+
+```math
+\begin{aligned}
+\dot{x}_i &= J_i(x_i)\frac{\partial H_i}{\partial x_i}(x_i) + g_i(x_i)u_i,\quad u_i\in\mathbb{R}^m,\\
+y_i &= g_i^T(x_i) \frac{\partial H_i}{\partial x_i}(x_i),
+\end{aligned}
+```
+
+ $i=1,2$ both satisfying the power balance
+
+```math
+\dot{H}_i(x_i) = y_i^Tu_i.
+```
+
+Suppose now that we want to transfer energy from system $\Sigma_1$ to $\Sigma_2$, while keeping the total energy $H_1+H_2$ constant. This can be done by using the following output feedback
+
+```math
+\left[\begin{matrix}
+u_1\\
+u_2
+\end{matrix}\right] = \left[\begin{matrix}
+0 & -y_1y_2^T\\
+y_2y_1 & 0
+\end{matrix}\right]\left[\begin{matrix}
+y_1\\
+y_2
+\end{matrix}\right]
+```
+
+which due to its skew-symmetry property, is power preserving. Hence, the closed-loop system composed of $\Sigma_1$ and $\Sigma_2$ is energy preservingm that is $\dot{H}_1 + \dot{H}_2 = 0$. However, if we consider the individual energies then we notice that
+
+```math
+\dot{H}_1(x) = -y_1^Ty_1y_2^Ty_2 = -\|y_1\|^2\|y_2\|^2\geq 0,
+```
+
+implying that $H_1$ is decreasing as long as $\|y_1\|$ and $\|y_2\|$ are different from $0$. Conversely, as expected since the total energy is constant,
+
+```math
+\dot{H}_2(x) = y_2^Ty_2y_1^Ty_1 = \|y_2\|^2\|y_1\|^2\leq 0,
+```
+
+implying that $H_2$ is increasing at the same rate. In particular, if $H_1$ has a minimum at the zero equilibrium, and $\Sigma_1$ is zero-state detectable, then all the energy $H_1$ of $\Sigma_1$ will be transferred to $\Sigma_2$, as long as $\|y_2\|$ is not zero. If there is internal energy dissipation in $\Sigma_1$ and/or $\Sigma_2$, then this energy transfer mechanism still works. However, the fact that $H_2$ grows or not will depend on the balance between the energy delivered by $\Sigma_1$ to $\Sigma_2$ and the internal loss of energy in $\Sigma_2$ due to dissipation. We conclude that this particular scheme of power-conserving energy transfer is accomplished by a skew-symmetric output feedback, which is modulated by the values of the output vectors of both systems. A related scenario for energy-routing is the case where the interconnection matrix $J$ is depending on the control $u$. Such a case, for example, occurs in the control of power converters, where different switch positions lead to different circuit topologies, and where the duty ratio's may be taken as control variables, leading to $J(u)$. Especially in case external sources and sinks are present, this allows for a control of the power flow through the system in such a manner that certain crucial variables are kept close to their desired values.

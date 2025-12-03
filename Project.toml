@@ -20,3 +20,6 @@ LinearAlgebra = "1.12.0"
 OrdinaryDiffEq = "6.103.0"
 Plots = "1.41.1"
 Test = "1.11.0"
+
+[workspace]
+projects = ["docs"]
