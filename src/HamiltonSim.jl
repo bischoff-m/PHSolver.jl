@@ -22,4 +22,8 @@ export HamiltonSystem, HamiltonState
 export get_output, set_output!
 export evolve_step  # Legacy compatibility
 
+# Export DAE solver functions
+export solve_dae, create_dae_function
+export compute_hamiltonian, compute_output
+
 end
