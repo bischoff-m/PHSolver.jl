@@ -143,8 +143,8 @@ plot_combined = plot(p1, p2, p3, p4, layout=(2, 2), size=(1200, 800),
     plot_title="Mass-Spring-Damper System (DAE Solver)")
 
 # Save plot
-savefig(plot_combined, "mass_spring_damper_dae.png")
-println("Plot saved as 'mass_spring_damper_dae.png'")
+savefig(plot_combined, "examples/mass_spring_damper_dae.png")
+println("Plot saved as 'examples/mass_spring_damper_dae.png'")
 
 # Display plot (if in interactive environment)
 display(plot_combined)

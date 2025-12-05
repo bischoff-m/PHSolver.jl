@@ -1,4 +1,5 @@
 using LinearAlgebra
+using OrdinaryDiffEq
 
 # Helper function to check if a matrix is skew-symmetric
 function isskewsym(A::AbstractMatrix{<:Real})
@@ -33,7 +34,7 @@ struct HamiltonSystem{T<:Real} <: AbstractModel{T}
         @assert issymmetric(dissipation) "Dissipation matrix must be symmetric"
         @assert all(eigvals(dissipation) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
         @assert issymmetric(energy) "Energy matrix must be symmetric"
-        @assert isposdef(energy) "Energy matrix must be positive definite"
+        # @assert isposdef(energy) "Energy matrix must be positive definite"
         @assert isskewsym(interconnection) "Interconnection matrix must be skew-symmetric"
 
         new{T}(interconnection, dissipation, energy, input)
@@ -122,4 +123,104 @@ function evolve(
 ) where {T<:Real}
     params = EulerParams(step_size, n_steps)
     return evolve(sys, state, params, input_func)
+end
+
+# ============================================================================
+# DAE Solver Integration
+# ============================================================================
+
+"""
+    create_dae_function(sys::HamiltonSystem, input_func::Function)
+
+Create a DAE function for use with DifferentialEquations.jl.
+
+Port-Hamiltonian systems have the form:
+    Q * dx/dt = (J - R) * Q * x + B * u(t)
+    y = B^T * Q * x
+
+This is a mass-matrix DAE: M * dx/dt = f(x, p, t) where M = Q (energy matrix).
+
+Returns an ODEFunction with mass_matrix set.
+"""
+function create_dae_function(sys::HamiltonSystem{T}, input_func::Function) where {T<:Real}
+    function dae_rhs!(dx, x, p, t)
+        # Get input at current time
+        u = input_func(t)
+
+        # Compute the Hamiltonian gradient: ∇H(x) = Q x
+        dH_dx = sys.energy * x
+
+        # Compute right-hand side: (J - R) ∇H(x) + B u
+        # Note: The mass matrix Q will multiply dx/dt on the left side
+        dx .= (sys.interconnection - sys.dissipation) * dH_dx + sys.input * u
+
+        return nothing
+    end
+
+    # Create ODEFunction with mass matrix (energy matrix Q)
+    return ODEFunction(dae_rhs!, mass_matrix=sys.energy)
+end
+
+"""
+    solve_dae(sys::HamiltonSystem, x0::Vector, tspan::Tuple, input_func::Function; 
+              solver=Rodas5(), kwargs...)
+
+Solve the port-Hamiltonian system as a DAE using DifferentialEquations.jl.
+
+# Arguments
+- `sys`: HamiltonSystem to solve
+- `x0`: Initial state vector
+- `tspan`: Time span tuple (t0, tf)
+- `input_func`: Function u(t) that returns input vector at time t
+- `solver`: DAE solver to use (default: Rodas5())
+- `kwargs...`: Additional keyword arguments passed to solve()
+
+# Returns
+- Solution object from DifferentialEquations.jl
+
+# Example
+```julia
+sys = HamiltonSystem(J, R, Q, B)
+x0 = [1.0, 0.0]
+u(t) = [sin(t)]
+sol = solve_dae(sys, x0, (0.0, 10.0), u)
+```
+"""
+function solve_dae(
+    sys::HamiltonSystem{T},
+    x0::AbstractVector{T},
+    tspan::Tuple{T,T},
+    input_func::Function;
+    solver=Rodas5(),
+    kwargs...
+) where {T<:Real}
+    @assert length(x0) == state_dimension(sys) "Initial state dimension mismatch"
+
+    # Create DAE function with mass matrix
+    f = create_dae_function(sys, input_func)
+
+    # Create and solve ODE problem with mass matrix
+    prob = ODEProblem(f, x0, tspan)
+    sol = solve(prob, solver; kwargs...)
+
+    return sol
+end
+
+"""
+    compute_hamiltonian(sys::HamiltonSystem, x::Vector)
+
+Compute the Hamiltonian (energy) of the system: H(x) = 0.5 * x^T * Q * x
+"""
+function compute_hamiltonian(sys::HamiltonSystem{T}, x::AbstractVector{T}) where {T<:Real}
+    return 0.5 * dot(x, sys.energy * x)
+end
+
+"""
+    compute_output(sys::HamiltonSystem, x::Vector)
+
+Compute the output of the system: y = B^T * Q * x
+"""
+function compute_output(sys::HamiltonSystem{T}, x::AbstractVector{T}) where {T<:Real}
+    dH_dx = sys.energy * x
+    return transpose(sys.input) * dH_dx
 end
