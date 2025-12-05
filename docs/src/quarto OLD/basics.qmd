@@ -1,0 +1,52 @@
+---
+title: "Basics"
+author: "Marco Bischoff"
+date: "11/19/2025"
+engine: julia
+---
+
+## Port-Hamiltonian Systems
+Linear form:
+$$
+\dot{x} = Ax
+$$
+where $A$ is the state space matrix(?) and $x \in \mathbb{R}^{n}$ always depends on time. In port-Hamiltonian systems:
+$$
+\dot{x} = (J - R)Qx
+$$
+where $J \in \mathbb{R}^{n \times n}$ is the interconnection matrix, $R \in \mathbb{R}^{n \times n}$ the dissipation matrix and $Q \in \mathbb{R}^{n \times m}$ the linear part of the state. The more general non-linear description is
+$$
+\dot{x} = (J(x) - R(x)) \frac{dH(x)}{dx}
+$$
+where $\nabla H(x) = \frac{dH}{dx}(x)$. For now, we keep $J$ independent from $x$. For specific systems it holds that
+$$
+H(x) = \frac{1}{2} x^T Q x
+$$
+
+We are interested in description of dynamics, where we can influence the output.
+We then use the form
+$$
+\dot{x} = Ax + Bu
+$$
+where $B$ is the input matrix. In port-Hamiltonian systems this translates to
+$$
+\dot{x} = (J - R)Qx + Bu
+$$
+$$
+y = B^T Qx
+$$
+where $u$ is the input into and $y$ is the output of the system. For now we are only interested in the state $x$, but not the output. Later the output of one system will be the input of another system.
+
+## Passivity
+A passive system may consume and store energy, but is incapable of producing energy.
+
+Exact definition:
+Celledoni, E., & Høiseth, E. H. (2017). _Energy-Preserving and Passivity-Consistent Numerical Discretization of Port-Hamiltonian Systems_ (No. arXiv:1706.08621). arXiv. [https://doi.org/10.48550/arXiv.1706.08621](https://doi.org/10.48550/arXiv.1706.08621)
+
+
+
+## References
+- A Framework for Decentralized Stabilization in Networked Energy Systems: A Passivity-Based Approach
+    - Page 82 for an example
+    - Definition 3.5 (page 40) for a linear pH system
+    - Definition A.2 (page 176) for dimensions
