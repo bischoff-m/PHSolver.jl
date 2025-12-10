@@ -18,3 +18,6 @@ makedocs(
         "References" => "references.md",
     ],
 )
+deploydocs(
+    repo="github.com/bischoff-m/hamilton-sim.git",
+)
