@@ -33,8 +33,8 @@ struct HamiltonSystem{T<:Real} <: AbstractModel{T}
         # Check properties
         @assert issymmetric(dissipation) "Dissipation matrix must be symmetric"
         @assert all(eigvals(dissipation) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
-        @assert issymmetric(energy) "Energy matrix must be symmetric"
-        # @assert isposdef(energy) "Energy matrix must be positive definite"
+        @assert isdiag(energy) "Energy matrix must be diagonal"
+        @assert all(diag(energy) .>= -1e-10) "Energy matrix must be positive semi-definite"
         @assert isskewsym(interconnection) "Interconnection matrix must be skew-symmetric"
 
         new{T}(interconnection, dissipation, energy, input)
@@ -101,111 +101,6 @@ function dynamics!(
     return nothing
 end
 
-# ============================================================================
-# Legacy API (backward compatibility)
-# ============================================================================
-
-function evolve_step(
-    sys::HamiltonSystem{T},
-    state::HamiltonState{T},
-    duration::T,
-    input::AbstractVector{T},
-) where {T<:Real}
-    return evolve_step!(sys, state, duration, input)
-end
-
-function evolve(
-    sys::HamiltonSystem{T},
-    state::HamiltonState{T},
-    step_size::T,
-    n_steps::Int,
-    input_func::Function,
-) where {T<:Real}
-    params = EulerParams(step_size, n_steps)
-    return evolve(sys, state, params, input_func)
-end
-
-# ============================================================================
-# DAE Solver Integration
-# ============================================================================
-
-"""
-    create_dae_function(sys::HamiltonSystem, input_func::Function)
-
-Create a DAE function for use with DifferentialEquations.jl.
-
-Port-Hamiltonian systems have the form:
-    Q * dx/dt = (J - R) * Q * x + B * u(t)
-    y = B^T * Q * x
-
-This is a mass-matrix DAE: M * dx/dt = f(x, p, t) where M = Q (energy matrix).
-
-Returns an ODEFunction with mass_matrix set.
-"""
-function create_dae_function(sys::HamiltonSystem{T}, input_func::Function) where {T<:Real}
-    function dae_rhs!(dx, x, p, t)
-        # Get input at current time
-        u = input_func(t)
-
-        # Compute the Hamiltonian gradient: ∇H(x) = Q x
-        dH_dx = sys.energy * x
-
-        # Compute right-hand side: (J - R) ∇H(x) + B u
-        # Note: The mass matrix Q will multiply dx/dt on the left side
-        dx .= (sys.interconnection - sys.dissipation) * dH_dx + sys.input * u
-
-        return nothing
-    end
-
-    # Create ODEFunction with mass matrix (energy matrix Q)
-    return ODEFunction(dae_rhs!, mass_matrix=sys.energy)
-end
-
-"""
-    solve_dae(sys::HamiltonSystem, x0::Vector, tspan::Tuple, input_func::Function; 
-              solver=Rodas5(), kwargs...)
-
-Solve the port-Hamiltonian system as a DAE using DifferentialEquations.jl.
-
-# Arguments
-- `sys`: HamiltonSystem to solve
-- `x0`: Initial state vector
-- `tspan`: Time span tuple (t0, tf)
-- `input_func`: Function u(t) that returns input vector at time t
-- `solver`: DAE solver to use (default: Rodas5())
-- `kwargs...`: Additional keyword arguments passed to solve()
-
-# Returns
-- Solution object from DifferentialEquations.jl
-
-# Example
-```julia
-sys = HamiltonSystem(J, R, Q, B)
-x0 = [1.0, 0.0]
-u(t) = [sin(t)]
-sol = solve_dae(sys, x0, (0.0, 10.0), u)
-```
-"""
-function solve_dae(
-    sys::HamiltonSystem{T},
-    x0::AbstractVector{T},
-    tspan::Tuple{T,T},
-    input_func::Function;
-    solver=Rodas5(),
-    kwargs...
-) where {T<:Real}
-    @assert length(x0) == state_dimension(sys) "Initial state dimension mismatch"
-
-    # Create DAE function with mass matrix
-    f = create_dae_function(sys, input_func)
-
-    # Create and solve ODE problem with mass matrix
-    prob = ODEProblem(f, x0, tspan)
-    sol = solve(prob, solver; kwargs...)
-
-    return sol
-end
-
 """
     compute_hamiltonian(sys::HamiltonSystem, x::Vector)
 
@@ -223,4 +118,113 @@ Compute the output of the system: y = B^T * Q * x
 function compute_output(sys::HamiltonSystem{T}, x::AbstractVector{T}) where {T<:Real}
     dH_dx = sys.energy * x
     return transpose(sys.input) * dH_dx
+end
+
+"""
+    compute_consistent_initial_conditions(
+        sys::HamiltonSystem,
+        x0_differential::Vector,
+        input_func::Function,
+        t0::Real = 0.0
+    )
+
+Compute consistent initial conditions for a port-Hamiltonian DAE system.
+
+Given initial values for the differential variables, this function:
+1. Computes the algebraic variables from the algebraic constraints
+2. Computes the initial derivatives for the differential variables
+
+The DAE system is: E * dx = (J - R) * x + B * u(t)
+
+# Arguments
+- `sys`: The HamiltonSystem
+- `x0_differential`: Initial values for differential variables (where E[i,i] != 0)
+- `input_func`: Input function u(t)
+- `t0`: Initial time (default: 0.0)
+
+# Returns
+- `x0`: Complete initial state vector (differential + algebraic variables)
+- `dx0`: Initial derivative vector
+- `differential_vars`: Boolean vector indicating which variables are differential
+
+# Example
+```julia
+# For a system with differential variables [IL, V1, V2] and algebraic [IG, IR]
+x0_diff = [1.83, -5.66, -5.48]
+u(t) = 0.0
+x0, dx0, diff_vars = compute_consistent_initial_conditions(sys, x0_diff, u)
+```
+"""
+function derive_initial_conditions(
+    sys::HamiltonSystem{T},
+    x0_differential::AbstractVector{T},
+    input_func::Function,
+    t0::Real=0.0
+) where {T<:Real}
+    n = state_dimension(sys)
+    E = sys.energy
+    J = sys.interconnection
+    R = sys.dissipation
+    B = sys.input
+
+    # Identify differential and algebraic variables
+    differential_vars = [E[i, i] != 0.0 for i in 1:n]
+    n_differential = sum(differential_vars)
+
+    @assert length(x0_differential) == n_differential "Expected $n_differential differential variables, got $(length(x0_differential))"
+
+    # Build the complete state vector
+    x0 = zeros(T, n)
+    diff_idx = 1
+
+    # First pass: set differential variables
+    for i in 1:n
+        if differential_vars[i]
+            x0[i] = x0_differential[diff_idx]
+            diff_idx += 1
+        end
+    end
+
+    # Second pass: solve for algebraic variables
+    # For each algebraic variable i: 0 = [(J - R) * x + B * u]_i
+    # This is a linear system for the algebraic variables
+    JminusR = J - R
+    u0 = input_func(t0)
+
+    for i in 1:n
+        if differential_vars[i]
+            continue  # Skip differential variables
+        end
+        # Algebraic constraint for row i: 0 = sum_j (J-R)[i,j] * x[j] + (B*u)[i]
+        # x[i] appears in the sum, so: (J-R)[i,i] * x[i] = -sum_{j!=i} (J-R)[i,j] * x[j] - (B*u)[i]
+        rhs = -(B*u0)[i]
+        for j in 1:n
+            if j != i
+                rhs -= JminusR[i, j] * x0[j]
+            end
+        end
+
+        # Solve for x[i]
+        if abs(JminusR[i, i]) > 1e-12
+            x0[i] = rhs / JminusR[i, i]
+        else
+            # If diagonal is zero, we have a more complex constraint
+            # For now, set to zero (may need iterative solver for general case)
+            x0[i] = zero(T)
+            @warn "Algebraic constraint $i has zero diagonal coefficient. Setting x[$i] = 0."
+        end
+    end
+
+    # Compute initial derivatives for differential variables
+    # E * dx = (J - R) * x + B * u
+    rhs = JminusR * x0 + B * u0
+    dx0 = zeros(T, n)
+
+    for i in 1:n
+        if differential_vars[i]
+            dx0[i] = rhs[i] / E[i, i]
+        end
+    end
+
+    return x0, dx0, differential_vars
 end

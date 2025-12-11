@@ -25,5 +25,6 @@ export evolve_step  # Legacy compatibility
 # Export DAE solver functions
 export solve_dae, create_dae_function
 export compute_hamiltonian, compute_output
+export derive_initial_conditions
 
 end
