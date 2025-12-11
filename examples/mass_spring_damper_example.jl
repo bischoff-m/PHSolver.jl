@@ -58,7 +58,7 @@ B = reshape([0.0, 1.0], 2, 1)  # Force applied to momentum equation
 # Create Hamilton System
 # ============================================================================
 
-sys = HamiltonSystem(J, R, Q, B)
+sys = PortHamSystem(J, R, Q, B)
 
 println("Mass-Spring-Damper System Created")
 println("State dimension: ", state_dimension(sys))

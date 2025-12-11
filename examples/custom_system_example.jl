@@ -177,7 +177,7 @@ for i in 1:100:params.n_steps
 end
 
 println("\n" * "="^70)
-println("Comparison with HamiltonSystem")
+println("Comparison with PortHamSystem")
 println("="^70)
 
 # The same system as a Port-Hamiltonian system
@@ -189,7 +189,7 @@ J = [0.0 1.0; -1.0 0.0]  # Interconnection (skew-symmetric)
 R = [0.0 0.0; 0.0 c]  # Dissipation
 B_ham = reshape([0.0, 1.0], 2, 1)  # Input matrix
 
-ham_sys = HamiltonSystem(J, R, Q, B_ham)
+ham_sys = PortHamSystem(J, R, Q, B_ham)
 ham_state = HamiltonState([1.0, 0.0], zeros(2), zeros(1))
 
 println("\nRunning Hamilton system simulation...")

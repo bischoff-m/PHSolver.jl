@@ -7,7 +7,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 end
 
 using Test
-using HamiltonSim: HamiltonSystem, HamiltonState, evolve_step
+using HamiltonSim: PortHamSystem, HamiltonState, evolve_step
 
 @testset "evolve single step" begin
     # small valid PH system (n=2, m=1)
@@ -16,7 +16,7 @@ using HamiltonSim: HamiltonSystem, HamiltonState, evolve_step
     energy = [1.0 0.0; 0.0 1.0]
     input = reshape([1.0, 0.0], 2, 1)
 
-    sys = HamiltonSystem(interconnection, dissipation, energy, input)
+    sys = PortHamSystem(interconnection, dissipation, energy, input)
 
     # initial evolvable
     x0 = [1.0, 0.0]

@@ -35,12 +35,12 @@ J = [
 
 R = Diagonal([RL, 0.0, 0.0, RG, RR])
 
-sys = HamiltonSystem(J, R, E, B)
+sys = PortHamSystem(J, R, E, B)
 
 u(t) = 0.0
 
 # Initial values for differential variables: [IL, V1, V2]
-x0_differential = [1.83, -5.66, -5.48]
+x0_differential = sqrt(10 / 3) .* [1.0; -3.1; -3.0]
 x0, dx0, differential_vars = derive_initial_conditions(sys, x0_differential, u)
 
 tspan = (0.0, 1.0)

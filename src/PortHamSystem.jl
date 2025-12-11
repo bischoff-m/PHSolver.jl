@@ -6,13 +6,13 @@ function isskewsym(A::AbstractMatrix{<:Real})
     return A ≈ -transpose(A)
 end
 
-struct HamiltonSystem{T<:Real} <: AbstractModel{T}
+struct PortHamSystem{T<:Real} <: AbstractModel{T}
     interconnection::AbstractMatrix{T}
     dissipation::AbstractMatrix{T}
     energy::AbstractMatrix{T}
     input::AbstractMatrix{T}
 
-    function HamiltonSystem(
+    function PortHamSystem(
         interconnection::AbstractMatrix{T},
         dissipation::AbstractMatrix{T},
         energy::AbstractMatrix{T},
@@ -41,8 +41,8 @@ struct HamiltonSystem{T<:Real} <: AbstractModel{T}
     end
 end
 
-state_dimension(sys::HamiltonSystem) = size(sys.energy, 1)
-input_dimension(sys::HamiltonSystem) = size(sys.input, 2)
+state_dimension(sys::PortHamSystem) = size(sys.energy, 1)
+input_dimension(sys::PortHamSystem) = size(sys.input, 2)
 
 mutable struct HamiltonState{T<:Real} <: AbstractState{T}
     state::Vector{T}
@@ -81,7 +81,7 @@ set_output!(state::HamiltonState{T}, y::AbstractVector{T}) where {T<:Real} =
     (state.output .= y)
 
 function dynamics!(
-    sys::HamiltonSystem{T},
+    sys::PortHamSystem{T},
     state::HamiltonState{T},
     input::AbstractVector{T},
 ) where {T<:Real}
@@ -102,27 +102,27 @@ function dynamics!(
 end
 
 """
-    compute_hamiltonian(sys::HamiltonSystem, x::Vector)
+    compute_hamiltonian(sys::PortHamSystem, x::Vector)
 
 Compute the Hamiltonian (energy) of the system: H(x) = 0.5 * x^T * Q * x
 """
-function compute_hamiltonian(sys::HamiltonSystem{T}, x::AbstractVector{T}) where {T<:Real}
+function compute_hamiltonian(sys::PortHamSystem{T}, x::AbstractVector{T}) where {T<:Real}
     return 0.5 * dot(x, sys.energy * x)
 end
 
 """
-    compute_output(sys::HamiltonSystem, x::Vector)
+    compute_output(sys::PortHamSystem, x::Vector)
 
 Compute the output of the system: y = B^T * Q * x
 """
-function compute_output(sys::HamiltonSystem{T}, x::AbstractVector{T}) where {T<:Real}
+function compute_output(sys::PortHamSystem{T}, x::AbstractVector{T}) where {T<:Real}
     dH_dx = sys.energy * x
     return transpose(sys.input) * dH_dx
 end
 
 """
     compute_consistent_initial_conditions(
-        sys::HamiltonSystem,
+        sys::PortHamSystem,
         x0_differential::Vector,
         input_func::Function,
         t0::Real = 0.0
@@ -137,7 +137,7 @@ Given initial values for the differential variables, this function:
 The DAE system is: E * dx = (J - R) * x + B * u(t)
 
 # Arguments
-- `sys`: The HamiltonSystem
+- `sys`: The PortHamSystem
 - `x0_differential`: Initial values for differential variables (where E[i,i] != 0)
 - `input_func`: Input function u(t)
 - `t0`: Initial time (default: 0.0)
@@ -156,7 +156,7 @@ x0, dx0, diff_vars = compute_consistent_initial_conditions(sys, x0_diff, u)
 ```
 """
 function derive_initial_conditions(
-    sys::HamiltonSystem{T},
+    sys::PortHamSystem{T},
     x0_differential::AbstractVector{T},
     input_func::Function,
     t0::Real=0.0

@@ -14,7 +14,7 @@ using OrdinaryDiffEq
     Q = Diagonal([k, 1.0 / m])
     B = reshape([0.0, 1.0], 2, 1)
 
-    sys = HamiltonSystem(J, R, Q, B)
+    sys = PortHamSystem(J, R, Q, B)
 
     @testset "solve_dae basic functionality" begin
         x0 = [1.0, 0.0]
@@ -32,7 +32,7 @@ using OrdinaryDiffEq
     @testset "Energy conservation (no damping, no input)" begin
         # System without damping - just check it runs and energy doesn't blow up
         R_nodamp = zeros(2, 2)
-        sys_nodamp = HamiltonSystem(J, R_nodamp, Q, B)
+        sys_nodamp = PortHamSystem(J, R_nodamp, Q, B)
 
         x0 = [1.0, 0.0]
         u(t) = [0.0]
@@ -158,16 +158,16 @@ using OrdinaryDiffEq
     end
 end
 
-@testset "HamiltonSystem backward compatibility" begin
+@testset "PortHamSystem backward compatibility" begin
     # Ensure old API still works
     interconnection = [0.0 -1.0; 1.0 0.0]
     dissipation = [0.1 0.0; 0.0 0.1]
     energy = [1.0 0.0; 0.0 1.0]
     input = reshape([1.0, 0.0], 2, 1)
 
-    sys = HamiltonSystem(interconnection, dissipation, energy, input)
+    sys = PortHamSystem(interconnection, dissipation, energy, input)
 
-    @test sys isa HamiltonSystem
+    @test sys isa PortHamSystem
     @test state_dimension(sys) == 2
     @test input_dimension(sys) == 1
 

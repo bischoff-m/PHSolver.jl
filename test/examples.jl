@@ -30,7 +30,7 @@ Qe = Diagonal([k, 1 / m])  # k=2, m=1
 G = reshape([0.0, 1.0], 2, 1)
 
 # Create the system
-sys = HamiltonSystem(J, R, Qe, G)
+sys = PortHamSystem(J, R, Qe, G)
 
 # Initial state from original config
 x0 = [1.0, -4.0]
