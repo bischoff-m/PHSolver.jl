@@ -24,11 +24,11 @@ where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 - `x0::Vector`: Initial conditions for the network
 - `differential_vars::Vector{Bool}`: Which variables are differential (vs algebraic)
 """
-function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
+function assemble_network(graph::NetworkGraph{T}; verbose::Bool=true) where {T<:Real}
     n = graph.total_state_dim
 
     # Step 1: Create block diagonal matrices from individual systems
-    println("Assembling block diagonal matrices...")
+    verbose && println("Assembling block diagonal matrices...")
 
     J_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.interconnection)
     R_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.dissipation)
@@ -38,7 +38,7 @@ function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
     # Step 2: Start with block diagonal J, then apply interconnections
     J_global = copy(J_block)
 
-    println("Applying $(length(graph.edges)) interconnections...")
+    verbose && println("Applying $(length(graph.edges)) interconnections...")
     for edge in graph.edges
         apply_connection!(J_global, graph.nodes, edge)
     end
@@ -49,13 +49,13 @@ function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
     B_global = B_block
 
     # Step 4: Assemble initial conditions for the network
-    println("Computing consistent initial conditions...")
+    verbose && println("Computing consistent initial conditions...")
     x0, differential_vars = assemble_initial_conditions(graph, Q_global)
 
-    println("Network assembly complete!")
-    println("  Total state dimension: $(graph.total_state_dim)")
-    println("  Number of systems: $(length(graph.nodes))")
-    println("  Number of interconnections: $(length(graph.edges))")
+    verbose && println("Network assembly complete!")
+    verbose && println("  Total state dimension: $(graph.total_state_dim)")
+    verbose && println("  Number of systems: $(length(graph.nodes))")
+    verbose && println("  Number of interconnections: $(length(graph.edges))")
 
     # Create the assembled PortHamSystem (without validation checks since it's assembled)
     # We bypass the constructor validation since assembled networks may have special structure

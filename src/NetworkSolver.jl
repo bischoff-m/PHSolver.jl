@@ -1,5 +1,7 @@
 using OrdinaryDiffEq
 using Sundials
+using Term
+using Term.Progress
 
 """
     solve_phs(
@@ -183,54 +185,90 @@ function simulate_network_from_yaml(
     validate::Bool=true,
 )
     T = Float64
-    verbose && println("="^60)
-    verbose && println("Port-Hamiltonian Network Simulation")
-    verbose && println("="^60)
 
-    # Load network graph from YAML
-    verbose && println("\n1. Loading network from YAML...")
-    graph = load_network_from_yaml(yaml_path, T)
-    verbose && println("   Loaded network: '$(graph.name)'")
+    if !verbose
+        # Silent mode - run without progress bars
+        graph = load_network_from_yaml(yaml_path, T)
+        sim_config = get_simulation_config(yaml_path)
+        system, x0, differential_vars = assemble_network(graph)
+        u_func = create_external_input_function(graph, system.input)
 
-    # Load simulation configuration
-    sim_config = get_simulation_config(yaml_path)
-    verbose && println("   Time span: $(sim_config["time_span"])")
-    verbose && println("   Solver: $(sim_config["solver"])")
-
-    # Assemble network into a PortHamSystem
-    verbose && println("\n2. Assembling network...")
-    system, x0, differential_vars = assemble_network(graph)
-
-    # Create external input function
-    u_func = create_external_input_function(graph, system.input)
-
-    # Validate system
-    if validate
-        verbose && println("\n3. Validating network...")
-
-        if !validate_phs(system, "Assembled Network"; verbose=verbose)
-            error("Network validation failed!")
+        if validate
+            if !validate_phs(system, "Assembled Network"; verbose=false)
+                error("Network validation failed!")
+            end
         end
+
+        sol = solve_phs(
+            system,
+            x0,
+            differential_vars,
+            sim_config["time_span"],
+            u_func;
+            solver_name=sim_config["solver"],
+            timestep=sim_config["timestep"],
+        )
+
+        return (system=system, solution=sol, graph=graph, config=sim_config)
     end
 
-    # Solve system
-    verbose && println("\n4. Solving network DAE...")
-    sol = solve_phs(
-        system,
-        x0,
-        differential_vars,
-        sim_config["time_span"],
-        u_func;
-        solver_name=sim_config["solver"],
-        timestep=sim_config["timestep"],
+    # Verbose mode with progress tracking
+    # Create progress bar
+    total_steps = validate ? 4 : 3
+    pbar = ProgressBar(;
+        columns=:default,
+        width=80,
+        transient=false,
+        colors="cyan"
     )
 
-    verbose && println("\nSimulation completed successfully!")
-    verbose && println("   Solution points: $(length(sol.t))")
-    verbose && println("   Final time: $(sol.t[end])")
-    verbose && println("="^60)
+    result = with(pbar) do
+        job = addjob!(pbar; N=total_steps, description="Building and solving network")
 
-    return (system=system, solution=sol, graph=graph, config=sim_config)
+        # Step 1: Load network
+        graph = load_network_from_yaml(yaml_path, T)
+        Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
+        update!(job)
+
+        # Step 2: Load configuration
+        sim_config = get_simulation_config(yaml_path)
+        Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config["time_span"]), solver={cyan}$(sim_config["solver"]){/cyan}")
+        update!(job)
+
+        # Step 3: Assemble network
+        system, x0, differential_vars = assemble_network(graph; verbose=false)
+        u_func = create_external_input_function(graph, system.input)
+        n_nodes = length(graph.nodes)
+        n_states = length(x0)
+        Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
+        update!(job)
+
+        # Step 4: Validate (if enabled)
+        if validate
+            if !validate_phs(system, "Assembled Network"; verbose=false)
+                Term.tprintln("  {bold red}✗{/bold red} Validation failed!")
+                error("Network validation failed!")
+            end
+            Term.tprintln("  {bold green}✓{/bold green} System validation passed")
+            update!(job)
+        end
+
+        # Step 5: Solve
+        sol = solve_phs(
+            system,
+            x0,
+            differential_vars,
+            sim_config["time_span"],
+            u_func;
+            solver_name=sim_config["solver"],
+            timestep=sim_config["timestep"],
+        )
+        Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
+
+        (system=system, solution=sol, graph=graph, config=sim_config)
+    end
+
+    return result
 end
 
 """
