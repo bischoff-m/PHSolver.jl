@@ -135,7 +135,7 @@ end
 Extract simulation configuration from YAML file.
 
 # Returns
-- `Dict`: Simulation configuration containing time_span, solver, etc.
+- `Dict`: Simulation configuration containing time_span, solver, timestep, etc.
 """
 function get_simulation_config(filepath::String)
     config = YAML.load_file(filepath)
@@ -152,10 +152,12 @@ function get_simulation_config(filepath::String)
     # Set defaults
     time_span = get(sim_config, "time_span", [0.0, 1.0])
     solver = get(sim_config, "solver", "IDA")
+    timestep = get(sim_config, "timestep", nothing)
 
     return Dict(
         "time_span" => Tuple(time_span),
         "solver" => solver,
+        "timestep" => timestep,
     )
 end
 

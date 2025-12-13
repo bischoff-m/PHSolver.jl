@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "d5a7ffd5409f3a3bb5cea4987337bdc165019a1f"
+project_hash = "08d037fc3ba441b81ac3ce48a743a367035b9e59"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "8b2b045b22740e4be20654175cc38291d48539db"
@@ -789,7 +789,7 @@ uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 version = "1.10.19"
 
 [[deps.HamiltonSim]]
-deps = ["IJulia", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "Test"]
+deps = ["IJulia", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "Sundials", "Test", "YAML"]
 path = "."
 uuid = "403392ac-400e-4968-aac6-7f11f909412e"
 version = "0.1.0"

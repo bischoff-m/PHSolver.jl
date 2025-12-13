@@ -34,6 +34,7 @@ function solve_phs(
     time_span::Tuple{Real,Real},
     u_func::Function;
     solver_name::String="IDA",
+    timestep::Union{Real,Nothing}=nothing,
 ) where {T<:Real}
     # Get matrices
     Q = system.mass
@@ -67,7 +68,12 @@ function solve_phs(
     solver = get_dae_solver(solver_name)
 
     # Solve with automatic initialization
-    sol = solve(prob, solver; initializealg=OrdinaryDiffEq.BrownFullBasicInit())
+    # If timestep is specified, use saveat to control output times
+    if isnothing(timestep)
+        sol = solve(prob, solver; initializealg=OrdinaryDiffEq.BrownFullBasicInit())
+    else
+        sol = solve(prob, solver; initializealg=OrdinaryDiffEq.BrownFullBasicInit(), saveat=timestep)
+    end
 
     return sol
 end
@@ -216,6 +222,7 @@ function simulate_network_from_yaml(
         sim_config["time_span"],
         u_func;
         solver_name=sim_config["solver"],
+        timestep=sim_config["timestep"],
     )
 
     verbose && println("\nSimulation completed successfully!")

@@ -3,7 +3,7 @@
 
 include("../src/HamiltonSim.jl")
 
-using .HamiltonSim
+import .HamiltonSim
 using Plots
 
 println("="^70)
@@ -14,9 +14,11 @@ println("="^70)
 example = "dc_power_network"  # or "coupled_masses"
 
 config_file = joinpath(@__DIR__, "configs", "$(example).yaml")
+output_dir = joinpath(@__DIR__, "output")
+isdir(output_dir) || mkdir(output_dir)
 
 # Run complete simulation workflow
-result = simulate_network_from_yaml(config_file; verbose=true, validate=true)
+result = HamiltonSim.simulate_network_from_yaml(config_file; verbose=true, validate=true)
 
 system = result.system
 sol = result.solution
@@ -27,7 +29,7 @@ config = result.config
 println("\nGenerating plots...")
 
 # Plot all state variables
-n = state_dimension(system)
+n = HamiltonSim.state_dimension(system)
 plt = plot(
     sol.t,
     sol[1, :],
@@ -42,11 +44,11 @@ for i in 2:n
     plot!(plt, sol.t, sol[i, :], label="x$i", lw=2)
 end
 
-savefig(plt, "$(example)_states.png")
-println("Saved state plot to $(example)_states.png")
+savefig(plt, output_dir * "/$(example)_states.png")
+println("Saved state plot to $(output_dir)/$(example)_states.png")
 
 # Plot network energy
-energy = compute_energy(sol, system)
+energy = HamiltonSim.compute_energy(sol, system)
 plt_energy = plot(
     sol.t,
     energy,
@@ -57,15 +59,15 @@ plt_energy = plot(
     title="$(graph.name) - Energy",
 )
 
-savefig(plt_energy, "$(example)_energy.png")
-println("Saved energy plot to $(example)_energy.png")
+savefig(plt_energy, output_dir * "/$(example)_energy.png")
+println("Saved energy plot to $(output_dir)/$(example)_energy.png")
 
 # Display network information
 println("\n" * "="^70)
 println("Network Information")
 println("="^70)
 
-state_info = get_network_state_info(graph)
+state_info = HamiltonSim.get_network_state_info(graph)
 
 for (node_id, info) in sort(collect(state_info); by=x -> x[1])
     println("\nNode: $node_id")
@@ -85,3 +87,4 @@ end
 println("\n" * "="^70)
 println("Simulation completed successfully!")
 println("="^70)
+
