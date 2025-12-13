@@ -135,8 +135,8 @@ function apply_connection!(
     edge::ConnectionEdge{T},
 ) where {T<:Real}
     # Get nodes
-    source_node = nodes[edge.source_node]
-    target_node = nodes[edge.target_node]
+    source_node = nodes[edge.from_node]
+    target_node = nodes[edge.to_node]
 
     # Apply based on connection type
     if edge.type == :direct

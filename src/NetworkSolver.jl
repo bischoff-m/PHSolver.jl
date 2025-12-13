@@ -158,6 +158,13 @@ function get_dae_solver(solver_name::String)
     end
 end
 
+struct SimulationResult{T}
+    system::PortHamSystem{T}
+    solution::Any
+    graph::NetworkGraph{T}
+    config::Dict
+end
+
 """
     simulate_network_from_yaml(
         yaml_path::String;
@@ -173,44 +180,13 @@ Complete workflow: load network from YAML, assemble, validate, and solve.
 - `validate::Bool`: Validate network before solving
 
 # Returns
-- Named tuple with:
-    - `system`: Assembled PortHamSystem
-    - `solution`: Solution from DAE solver
-    - `graph`: NetworkGraph metadata
-    - `config`: Simulation configuration
+- `SimulationResult`: Struct containing system, solution, graph, and config
 """
-function simulate_network_from_yaml(
+function simulate_file(
     yaml_path::String;
-    verbose::Bool=true,
     validate::Bool=true,
 )
     T = Float64
-
-    if !verbose
-        # Silent mode - run without progress bars
-        graph = load_network_from_yaml(yaml_path, T)
-        sim_config = get_simulation_config(yaml_path)
-        system, x0, differential_vars = assemble_network(graph)
-        u_func = create_external_input_function(graph, system.input)
-
-        if validate
-            if !validate_phs(system, "Assembled Network"; verbose=false)
-                error("Network validation failed!")
-            end
-        end
-
-        sol = solve_phs(
-            system,
-            x0,
-            differential_vars,
-            sim_config["time_span"],
-            u_func;
-            solver_name=sim_config["solver"],
-            timestep=sim_config["timestep"],
-        )
-
-        return (system=system, solution=sol, graph=graph, config=sim_config)
-    end
 
     # Verbose mode with progress tracking
     # Create progress bar
@@ -223,7 +199,7 @@ function simulate_network_from_yaml(
     )
 
     result = with(pbar) do
-        job = addjob!(pbar; N=total_steps, description="Building and solving network")
+        job = addjob!(pbar; N=total_steps)
 
         # Step 1: Load network
         graph = load_network_from_yaml(yaml_path, T)
@@ -265,7 +241,7 @@ function simulate_network_from_yaml(
         )
         Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
-        (system=system, solution=sol, graph=graph, config=sim_config)
+        return SimulationResult(system, sol, graph, sim_config)
     end
 
     return result

@@ -48,27 +48,27 @@ Represents an interconnection between two port-Hamiltonian systems.
 - `:skew_symmetric`: Power-conserving skew-symmetric coupling
 
 # Fields
-- `source_node::String`: ID of source system
-- `source_indices::Union{Nothing, Vector{Int}}`: Output indices (nothing = all)
-- `target_node::String`: ID of target system
-- `target_indices::Union{Nothing, Vector{Int}}`: Input indices (nothing = all)
+- `from_node::String`: ID of source system
+- `from_indices::Union{Nothing, Vector{Int}}`: Output indices (nothing = all)
+- `to_node::String`: ID of target system
+- `to_indices::Union{Nothing, Vector{Int}}`: Input indices (nothing = all)
 - `type::Symbol`: Connection type
 - `coupling_matrix::Union{Nothing, Matrix{Float64}}`: Coupling matrix K for skew-symmetric
 """
 struct ConnectionEdge{T<:Real}
-    source_node::String
-    source_indices::Union{Nothing,Vector{Int}}
-    target_node::String
-    target_indices::Union{Nothing,Vector{Int}}
+    from_node::String
+    from_indices::Union{Nothing,Vector{Int}}
+    to_node::String
+    to_indices::Union{Nothing,Vector{Int}}
     type::Symbol
     coupling_matrix::Union{Nothing,Matrix{T}}
 
     function ConnectionEdge{T}(
-        source_node::String,
-        target_node::String,
+        from_node::String,
+        to_node::String,
         type::Symbol;
-        source_indices::Union{Nothing,Vector{Int}}=nothing,
-        target_indices::Union{Nothing,Vector{Int}}=nothing,
+        from_indices::Union{Nothing,Vector{Int}}=nothing,
+        to_indices::Union{Nothing,Vector{Int}}=nothing,
         coupling_matrix::Union{Nothing,Matrix{T}}=nothing,
     ) where {T<:Real}
         @assert type in [:direct, :negative_feedback, :skew_symmetric] "Invalid connection type: $type"
@@ -77,26 +77,26 @@ struct ConnectionEdge{T<:Real}
             @assert !isnothing(coupling_matrix) "Skew-symmetric connections require a coupling matrix"
         end
 
-        new{T}(source_node, source_indices, target_node, target_indices, type, coupling_matrix)
+        new{T}(from_node, from_indices, to_node, to_indices, type, coupling_matrix)
     end
 end
 
 # Convenience constructor with default Float64
 function ConnectionEdge(
-    source_node::String,
-    target_node::String,
+    from_node::String,
+    to_node::String,
     type::Symbol;
-    source_indices::Union{Nothing,Vector{Int}}=nothing,
-    target_indices::Union{Nothing,Vector{Int}}=nothing,
+    from_indices::Union{Nothing,Vector{Int}}=nothing,
+    to_indices::Union{Nothing,Vector{Int}}=nothing,
     coupling_matrix::Union{Nothing,Matrix{<:Real}}=nothing,
 )
     T = isnothing(coupling_matrix) ? Float64 : eltype(coupling_matrix)
     ConnectionEdge{T}(
-        source_node,
-        target_node,
+        from_node,
+        to_node,
         type;
-        source_indices=source_indices,
-        target_indices=target_indices,
+        from_indices=from_indices,
+        to_indices=to_indices,
         coupling_matrix=coupling_matrix,
     )
 end

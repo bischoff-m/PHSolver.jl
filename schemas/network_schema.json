@@ -121,12 +121,12 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "source",
-                            "target",
+                            "from",
+                            "to",
                             "type"
                         ],
                         "properties": {
-                            "source": {
+                            "from": {
                                 "type": "object",
                                 "required": [
                                     "system",
@@ -154,7 +154,7 @@
                                     }
                                 }
                             },
-                            "target": {
+                            "to": {
                                 "type": "object",
                                 "required": [
                                     "system",

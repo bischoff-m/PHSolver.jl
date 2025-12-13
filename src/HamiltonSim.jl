@@ -37,7 +37,7 @@ export load_network_from_yaml, get_simulation_config
 export parse_input_function
 
 # Export solver functions
-export solve_phs, simulate_network_from_yaml
+export solve_phs, simulate_file
 export extract_node_solution, compute_energy
 export get_dae_solver
 

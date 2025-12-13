@@ -79,12 +79,12 @@ function load_network_from_yaml(filepath::String, ::Type{T}=Float64) where {T<:R
     edges = ConnectionEdge{T}[]
     if haskey(network_config, "connections")
         for conn_config in network_config["connections"]
-            source_node = conn_config["source"]["system"]
-            target_node = conn_config["target"]["system"]
+            from_node = conn_config["from"]["system"]
+            to_node = conn_config["to"]["system"]
 
             # Get optional indices
-            source_indices = get(conn_config["source"], "indices", nothing)
-            target_indices = get(conn_config["target"], "indices", nothing)
+            from_indices = get(conn_config["from"], "indices", nothing)
+            to_indices = get(conn_config["to"], "indices", nothing)
 
             # Parse connection type
             type_str = conn_config["type"]
@@ -98,11 +98,11 @@ function load_network_from_yaml(filepath::String, ::Type{T}=Float64) where {T<:R
             end
 
             edge = ConnectionEdge(
-                source_node,
-                target_node,
+                from_node,
+                to_node,
                 type;
-                source_indices=source_indices,
-                target_indices=target_indices,
+                from_indices=from_indices,
+                to_indices=to_indices,
                 coupling_matrix=coupling_matrix,
             )
 
