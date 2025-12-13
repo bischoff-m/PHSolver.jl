@@ -9,39 +9,39 @@ end
 struct PortHamSystem{T<:Real} <: AbstractModel{T}
     interconnection::AbstractMatrix{T}
     dissipation::AbstractMatrix{T}
-    energy::AbstractMatrix{T}
+    mass::AbstractMatrix{T}
     input::AbstractMatrix{T}
 
     function PortHamSystem(
         interconnection::AbstractMatrix{T},
         dissipation::AbstractMatrix{T},
-        energy::AbstractMatrix{T},
+        mass::AbstractMatrix{T},
         input::AbstractMatrix{T},
     ) where {T<:Real}
         # State dimension
-        n = size(energy, 1)
+        n = size(mass, 1)
 
         # Check dimensions
         @assert size(interconnection, 1) == n "Interconnection matrix must have size (n, n)"
         @assert size(interconnection, 2) == n "Interconnection matrix must have size (n, n)"
         @assert size(dissipation, 1) == n "Dissipation matrix must have size (n, n)"
         @assert size(dissipation, 2) == n "Dissipation matrix must have size (n, n)"
-        @assert size(energy, 1) == n "Energy matrix must have size (n, n)"
-        @assert size(energy, 2) == n "Energy matrix must have size (n, n)"
+        @assert size(mass, 1) == n "Mass matrix must have size (n, n)"
+        @assert size(mass, 2) == n "Mass matrix must have size (n, n)"
         @assert size(input, 1) == n "Input matrix must have size (n, m)"
 
         # Check properties
         @assert issymmetric(dissipation) "Dissipation matrix must be symmetric"
         @assert all(eigvals(dissipation) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
-        @assert isdiag(energy) "Energy matrix must be diagonal"
-        @assert all(diag(energy) .>= -1e-10) "Energy matrix must be positive semi-definite"
+        @assert isdiag(mass) "Mass matrix must be diagonal"
+        @assert all(diag(mass) .>= -1e-10) "Mass matrix must be positive semi-definite"
         @assert isskewsym(interconnection) "Interconnection matrix must be skew-symmetric"
 
-        new{T}(interconnection, dissipation, energy, input)
+        new{T}(interconnection, dissipation, mass, input)
     end
 end
 
-state_dimension(sys::PortHamSystem) = size(sys.energy, 1)
+state_dimension(sys::PortHamSystem) = size(sys.mass, 1)
 input_dimension(sys::PortHamSystem) = size(sys.input, 2)
 
 mutable struct HamiltonState{T<:Real} <: AbstractState{T}
@@ -89,7 +89,7 @@ function dynamics!(
     @assert length(input) == input_dimension(sys) "Input dimension mismatch"
 
     # Compute the Hamiltonian gradient: ∇H(x) = Q x
-    dH_dx = sys.energy * state.state
+    dH_dx = sys.mass * state.state
 
     # Compute state derivative: ẋ = (J - R) ∇H(x) + B u
     state.state_derivative .=
@@ -104,10 +104,10 @@ end
 """
     compute_hamiltonian(sys::PortHamSystem, x::Vector)
 
-Compute the Hamiltonian (energy) of the system: H(x) = 0.5 * x^T * Q * x
+Compute the Hamiltonian of the system: H(x) = 0.5 * x^T * Q * x
 """
 function compute_hamiltonian(sys::PortHamSystem{T}, x::AbstractVector{T}) where {T<:Real}
-    return 0.5 * dot(x, sys.energy * x)
+    return 0.5 * dot(x, sys.mass * x)
 end
 
 """
@@ -116,7 +116,7 @@ end
 Compute the output of the system: y = B^T * Q * x
 """
 function compute_output(sys::PortHamSystem{T}, x::AbstractVector{T}) where {T<:Real}
-    dH_dx = sys.energy * x
+    dH_dx = sys.mass * x
     return transpose(sys.input) * dH_dx
 end
 
@@ -134,11 +134,11 @@ Given initial values for the differential variables, this function:
 1. Computes the algebraic variables from the algebraic constraints
 2. Computes the initial derivatives for the differential variables
 
-The DAE system is: E * dx = (J - R) * x + B * u(t)
+The DAE system is: Q * dx = (J - R) * x + B * u(t)
 
 # Arguments
 - `sys`: The PortHamSystem
-- `x0_differential`: Initial values for differential variables (where E[i,i] != 0)
+- `x0_differential`: Initial values for differential variables (where Q[i,i] != 0)
 - `input_func`: Input function u(t)
 - `t0`: Initial time (default: 0.0)
 
@@ -162,13 +162,13 @@ function derive_initial_conditions(
     t0::Real=0.0
 ) where {T<:Real}
     n = state_dimension(sys)
-    E = sys.energy
+    Q = sys.mass
     J = sys.interconnection
     R = sys.dissipation
     B = sys.input
 
     # Identify differential and algebraic variables
-    differential_vars = [E[i, i] != 0.0 for i in 1:n]
+    differential_vars = [Q[i, i] != 0.0 for i in 1:n]
     n_differential = sum(differential_vars)
 
     @assert length(x0_differential) == n_differential "Expected $n_differential differential variables, got $(length(x0_differential))"
@@ -216,13 +216,13 @@ function derive_initial_conditions(
     end
 
     # Compute initial derivatives for differential variables
-    # E * dx = (J - R) * x + B * u
+    # Q * dx = (J - R) * x + B * u
     rhs = JminusR * x0 + B * u0
     dx0 = zeros(T, n)
 
     for i in 1:n
         if differential_vars[i]
-            dx0[i] = rhs[i] / E[i, i]
+            dx0[i] = rhs[i] / Q[i, i]
         end
     end
 

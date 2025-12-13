@@ -1,0 +1,271 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Port-Hamiltonian System Network",
+    "description": "Schema for defining interconnected port-Hamiltonian systems",
+    "type": "object",
+    "required": [
+        "network"
+    ],
+    "properties": {
+        "network": {
+            "type": "object",
+            "required": [
+                "name",
+                "systems"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the network"
+                },
+                "systems": {
+                    "type": "array",
+                    "description": "List of port-Hamiltonian systems",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "id",
+                            "type",
+                            "matrices"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier for the system"
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "phs",
+                                    "controller_phs"
+                                ],
+                                "description": "Type of system"
+                            },
+                            "matrices": {
+                                "type": "object",
+                                "required": [
+                                    "J",
+                                    "R",
+                                    "Q",
+                                    "B"
+                                ],
+                                "properties": {
+                                    "J": {
+                                        "type": "array",
+                                        "description": "Interconnection matrix (skew-symmetric)",
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    },
+                                    "R": {
+                                        "type": "array",
+                                        "description": "Dissipation matrix (symmetric, PSD)",
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    },
+                                    "Q": {
+                                        "type": "array",
+                                        "description": "Mass matrix (diagonal, PSD)",
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    },
+                                    "B": {
+                                        "type": "array",
+                                        "description": "Input matrix",
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "initial_conditions": {
+                                "type": "object",
+                                "properties": {
+                                    "differential": {
+                                        "type": "array",
+                                        "description": "Initial values for differential variables",
+                                        "items": {
+                                            "type": "number"
+                                        }
+                                    }
+                                }
+                            },
+                            "parameters": {
+                                "type": "object",
+                                "description": "Named parameters for the system",
+                                "additionalProperties": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                },
+                "connections": {
+                    "type": "array",
+                    "description": "Interconnections between systems",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "source",
+                            "target",
+                            "type"
+                        ],
+                        "properties": {
+                            "source": {
+                                "type": "object",
+                                "required": [
+                                    "system",
+                                    "port"
+                                ],
+                                "properties": {
+                                    "system": {
+                                        "type": "string",
+                                        "description": "Source system ID"
+                                    },
+                                    "port": {
+                                        "type": "string",
+                                        "enum": [
+                                            "output"
+                                        ],
+                                        "description": "Source port (must be output)"
+                                    },
+                                    "indices": {
+                                        "type": "array",
+                                        "description": "Optional: specific output indices to connect",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        }
+                                    }
+                                }
+                            },
+                            "target": {
+                                "type": "object",
+                                "required": [
+                                    "system",
+                                    "port"
+                                ],
+                                "properties": {
+                                    "system": {
+                                        "type": "string",
+                                        "description": "Target system ID"
+                                    },
+                                    "port": {
+                                        "type": "string",
+                                        "enum": [
+                                            "input"
+                                        ],
+                                        "description": "Target port (must be input)"
+                                    },
+                                    "indices": {
+                                        "type": "array",
+                                        "description": "Optional: specific input indices to connect",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        }
+                                    }
+                                }
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "direct",
+                                    "negative_feedback",
+                                    "skew_symmetric"
+                                ],
+                                "description": "Type of interconnection"
+                            },
+                            "coupling_matrix": {
+                                "type": "array",
+                                "description": "Optional coupling matrix K for skew_symmetric connections",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "external_inputs": {
+                    "type": "array",
+                    "description": "External inputs to the network",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "system",
+                            "port",
+                            "function"
+                        ],
+                        "properties": {
+                            "system": {
+                                "type": "string",
+                                "description": "System ID receiving the input"
+                            },
+                            "port": {
+                                "type": "string",
+                                "enum": [
+                                    "input"
+                                ],
+                                "description": "Input port"
+                            },
+                            "indices": {
+                                "type": "array",
+                                "description": "Optional: specific input indices",
+                                "items": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "function": {
+                                "type": "string",
+                                "description": "Input function expression (e.g., 'constant(0.0)', 'sin(2*pi*t)')"
+                            }
+                        }
+                    }
+                },
+                "simulation": {
+                    "type": "object",
+                    "description": "Simulation configuration",
+                    "properties": {
+                        "time_span": {
+                            "type": "array",
+                            "description": "Simulation time range [t_start, t_end]",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": {
+                                "type": "number"
+                            }
+                        },
+                        "solver": {
+                            "type": "string",
+                            "enum": [
+                                "IDA",
+                                "DFBDF",
+                                "Rodas5"
+                            ],
+                            "description": "DAE solver to use"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
