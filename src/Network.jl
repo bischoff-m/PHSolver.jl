@@ -223,39 +223,3 @@ Get the range of indices for a node's state in the global state vector.
 function get_node_state_range(node::PHSNode)
     return (node.state_offset+1):(node.state_offset+node.state_dim)
 end
-
-"""
-    get_global_state(graph::NetworkGraph, node_states::Dict{String, Vector})
-
-Assemble global state vector from individual node states.
-"""
-function get_global_state(
-    graph::NetworkGraph{T},
-    node_states::Dict{String,Vector{T}},
-) where {T<:Real}
-    x_global = zeros(T, graph.total_state_dim)
-
-    for (id, node) in graph.nodes
-        if haskey(node_states, id)
-            range = get_node_state_range(node)
-            x_global[range] = node_states[id]
-        end
-    end
-
-    return x_global
-end
-
-"""
-    extract_node_state(graph::NetworkGraph, x_global::Vector, node_id::String)
-
-Extract a node's state from the global state vector.
-"""
-function extract_node_state(
-    graph::NetworkGraph{T},
-    x_global::Vector{T},
-    node_id::String,
-) where {T<:Real}
-    node = get_node(graph, node_id)
-    range = get_node_state_range(node)
-    return x_global[range]
-end
