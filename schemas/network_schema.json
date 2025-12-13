@@ -93,16 +93,11 @@
                                     }
                                 }
                             },
-                            "initial_conditions": {
-                                "type": "object",
-                                "properties": {
-                                    "differential": {
-                                        "type": "array",
-                                        "description": "Initial values for differential variables",
-                                        "items": {
-                                            "type": "number"
-                                        }
-                                    }
+                            "initial_state": {
+                                "type": "array",
+                                "description": "Initial state vector",
+                                "items": {
+                                    "type": "number"
                                 }
                             },
                             "parameters": {

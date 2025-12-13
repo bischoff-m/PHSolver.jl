@@ -24,12 +24,10 @@ where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 - `x0::Vector`: Initial conditions for the network
 - `differential_vars::Vector{Bool}`: Which variables are differential (vs algebraic)
 """
-function assemble_network(graph::NetworkGraph{T}; verbose::Bool=true) where {T<:Real}
+function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
     n = graph.total_state_dim
 
     # Step 1: Create block diagonal matrices from individual systems
-    verbose && println("Assembling block diagonal matrices...")
-
     J_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.interconnection)
     R_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.dissipation)
     Q_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.mass)
@@ -37,8 +35,6 @@ function assemble_network(graph::NetworkGraph{T}; verbose::Bool=true) where {T<:
 
     # Step 2: Start with block diagonal J, then apply interconnections
     J_global = copy(J_block)
-
-    verbose && println("Applying $(length(graph.edges)) interconnections...")
     for edge in graph.edges
         apply_connection!(J_global, graph.nodes, edge)
     end
@@ -48,14 +44,8 @@ function assemble_network(graph::NetworkGraph{T}; verbose::Bool=true) where {T<:
     Q_global = Q_block
     B_global = B_block
 
-    # Step 4: Assemble initial conditions for the network
-    verbose && println("Computing consistent initial conditions...")
-    x0, differential_vars = assemble_initial_conditions(graph, Q_global)
-
-    verbose && println("Network assembly complete!")
-    verbose && println("  Total state dimension: $(graph.total_state_dim)")
-    verbose && println("  Number of systems: $(length(graph.nodes))")
-    verbose && println("  Number of interconnections: $(length(graph.edges))")
+    # Step 4: Assemble initial state for the network
+    x0, differential_vars = assemble_initial_state(graph, Q_global)
 
     # Create the assembled PortHamSystem (without validation checks since it's assembled)
     # We bypass the constructor validation since assembled networks may have special structure
@@ -65,9 +55,9 @@ function assemble_network(graph::NetworkGraph{T}; verbose::Bool=true) where {T<:
 end
 
 """
-    assemble_initial_conditions(graph::NetworkGraph, Q::Matrix)
+    assemble_initial_state(graph::NetworkGraph, Q::Matrix)
 
-Compute consistent initial conditions for the entire network.
+Compute consistent initial state for the entire network.
 
 This function:
 1. Collects initial differential variable values from each node
@@ -82,7 +72,7 @@ This function:
 - `x0::Vector`: Initial state vector
 - `differential_vars::Vector{Bool}`: Indicators for differential variables
 """
-function assemble_initial_conditions(
+function assemble_initial_state(
     graph::NetworkGraph{T},
     Q::Matrix{T},
 ) where {T<:Real}
@@ -105,8 +95,8 @@ function assemble_initial_conditions(
         for (i, is_diff) in enumerate(node_diff_vars)
             if is_diff
                 global_idx = node.state_offset + i
-                if diff_idx <= length(node.initial_conditions)
-                    x0[global_idx] = node.initial_conditions[diff_idx]
+                if diff_idx <= length(node.initial_state)
+                    x0[global_idx] = node.initial_state[diff_idx]
                 end
                 diff_idx += 1
             end

@@ -8,8 +8,7 @@ using Plots
 
 # Specify which example to run
 # example = "dc_power_network"
-example = "dc_power_modular"
-# example = "coupled_masses"
+example = "coupled_masses"
 
 config_file = joinpath(@__DIR__, "configs", "$(example).yaml")
 output_dir = joinpath(@__DIR__, "output")

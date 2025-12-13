@@ -22,7 +22,6 @@ network:
     # In this example, we define it as a single system
     # (Could be split into multiple interconnected subsystems)
     - id: "dc_network"
-      type: "phs"
       matrices:
         # Interconnection matrix J (5x5, skew-symmetric)
         J:
@@ -58,19 +57,9 @@ network:
           - [1.0]  # Input affects IG equation
           - [0.0]
       
-      initial_conditions:
-        # Initial values for differential variables: [IL, V1, V2]
-        # From original example: sqrt(10/3) * [1.0, -3.1, -3.0]
-        differential: [1.8257418583505536, -5.659799465085671, -5.477225575051661]
-  
-  # No connections needed for single-system network
-  connections: []
-  
-  # External inputs to the network
-  external_inputs:
-    - system: "dc_network"
-      port: "input"
-      function: "constant(0.0)"  # Zero input (autonomous system)
+      # Initial values for differential variables: [IL, V1, V2]
+      # From original example: sqrt(10/3) * [1.0, -3.1, -3.0]
+      initial_state: [1.8257418583505536, -5.659799465085671, -5.477225575051661]
   
   # Simulation configuration
   simulation:

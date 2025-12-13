@@ -212,7 +212,7 @@ function simulate_file(
         update!(job)
 
         # Step 3: Assemble network
-        system, x0, differential_vars = assemble_network(graph; verbose=false)
+        system, x0, differential_vars = assemble_network(graph)
         u_func = create_external_input_function(graph, system.input)
         n_nodes = length(graph.nodes)
         n_states = length(x0)

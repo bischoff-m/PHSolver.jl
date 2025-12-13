@@ -8,7 +8,7 @@ Represents a single port-Hamiltonian system within a network.
 # Fields
 - `id::String`: Unique identifier for the system
 - `system::PortHamSystem`: The underlying PHS
-- `initial_conditions::Vector{Float64}`: Initial values for differential variables
+- `initial_state::Vector{Float64}`: Initial values for differential variables
 - `state_offset::Int`: Starting index in global state vector
 - `state_dim::Int`: Dimension of this system's state
 - `input_dim::Int`: Dimension of this system's input
@@ -17,7 +17,7 @@ Represents a single port-Hamiltonian system within a network.
 struct PHSNode{T<:Real}
     id::String
     system::PortHamSystem{T}
-    initial_conditions::Vector{T}
+    initial_state::Vector{T}
     state_offset::Int
     state_dim::Int
     input_dim::Int
@@ -26,14 +26,14 @@ struct PHSNode{T<:Real}
     function PHSNode(
         id::String,
         system::PortHamSystem{T},
-        initial_conditions::Vector{T},
+        initial_state::Vector{T},
         state_offset::Int=0,
     ) where {T<:Real}
         state_dim = state_dimension(system)
         input_dim = input_dimension(system)
         output_dim = input_dim  # For PHS, output_dim = input_dim (from y = B^T * ∇H)
 
-        new{T}(id, system, initial_conditions, state_offset, state_dim, input_dim, output_dim)
+        new{T}(id, system, initial_state, state_offset, state_dim, input_dim, output_dim)
     end
 end
 
@@ -194,10 +194,9 @@ function create_network_nodes(
         # Create PHS
         system = PortHamSystem(J, R, Q, B)
 
-        # Get initial conditions (default to zeros)
-        initial_conditions = if haskey(sys_config, "initial_conditions") &&
-           haskey(sys_config["initial_conditions"], "differential")
-            Vector{T}(sys_config["initial_conditions"]["differential"])
+        # Get initial state (default to zeros)
+        initial_state = if haskey(sys_config, "initial_state")
+            Vector{T}(sys_config["initial_state"])
         else
             # Count differential variables (non-zero diagonal in Q)
             n_diff = sum(Q[i, i] != 0 for i in 1:size(Q, 1))
@@ -205,7 +204,7 @@ function create_network_nodes(
         end
 
         # Create node
-        node = PHSNode(id, system, initial_conditions, state_offset)
+        node = PHSNode(id, system, initial_state, state_offset)
         nodes[id] = node
 
         # Update offset for next node

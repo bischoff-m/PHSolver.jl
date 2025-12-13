@@ -11,7 +11,6 @@ network:
   systems:
     # First mass-spring-damper subsystem
     - id: "mass1"
-      type: "phs"
       matrices:
         # State: [p1, q1] (momentum, position)
         # J matrix (skew-symmetric)
@@ -34,12 +33,10 @@ network:
           - [1.0]
           - [0.0]
       
-      initial_conditions:
-        differential: [0.5, 1.0]  # Initial momentum and position
+      initial_state: [0.5, 1.0]  # Initial momentum and position
     
     # Second mass-damper subsystem
     - id: "mass2"
-      type: "phs"
       matrices:
         # State: [p2, q2] (momentum, position)
         J:
@@ -58,8 +55,7 @@ network:
           - [1.0]
           - [0.0]
       
-      initial_conditions:
-        differential: [-0.3, -0.5]  # Initial momentum and position
+      initial_state: [-0.3, -0.5]  # Initial momentum and position
   
   # Interconnect the two masses through their outputs (velocities)
   connections:
@@ -78,9 +74,6 @@ network:
         system: "mass1"
         port: "input"
       type: "negative_feedback"
-  
-  # No external inputs (autonomous system)
-  external_inputs: []
   
   simulation:
     time_span: [0.0, 10.0]
