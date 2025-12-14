@@ -1,42 +1,13 @@
-using OrdinaryDiffEq
-using Sundials
-using Term
-using Term.Progress
+import OrdinaryDiffEq as Eq
+import Sundials
+import Term
 
-"""
-    solve_phs(
-        system::PortHamSystem,
-        x0::Vector,
-        differential_vars::Vector{Bool},
-        time_span::Tuple,
-        u_func::Function;
-        solver_name::String = "IDA"
-    )
-
-Solve a port-Hamiltonian system DAE.
-
-The DAE is:
-    Q * ẋ = (J - R) * x + B * u(t)
-
-# Arguments
-- `system::PortHamSystem`: The PHS to solve
-- `x0::Vector`: Initial conditions
-- `differential_vars::Vector{Bool}`: Indicators for differential variables
-- `time_span::Tuple`: Time span (t_start, t_end) for simulation
-- `u_func::Function`: Input function u(t)
-- `solver_name::String`: DAE solver to use ("IDA", "DFBDF", "Rodas5")
-
-# Returns
-- Solution object from DifferentialEquations.jl
-"""
 function solve_phs(
     system::PortHamSystem{T},
     x0::Vector{T},
     differential_vars::Vector{Bool},
-    time_span::Tuple{Real,Real},
     u_func::Function;
-    solver_name::String="IDA",
-    timestep::Union{Real,Nothing}=nothing,
+    sim_config::SimulationConfigSchema=SimulationConfigDefault,
 ) where {T<:Real}
     # Get matrices
     Q = system.mass
@@ -47,7 +18,7 @@ function solve_phs(
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
     dx0 = zeros(T, length(x0))
-    u0 = u_func(time_span[1])
+    u0 = u_func(sim_config.time_span[1])
     rhs = (J - R) * x0 + B * u0
 
     for i in 1:length(dx0)
@@ -64,17 +35,17 @@ function solve_phs(
     end
 
     # Create DAE problem
-    prob = DAEProblem(dae_residual!, dx0, x0, time_span; differential_vars=differential_vars)
+    prob = Eq.DAEProblem(dae_residual!, dx0, x0, sim_config.time_span; differential_vars=differential_vars)
 
     # Select solver
-    solver = get_dae_solver(solver_name)
+    solver = get_dae_solver(sim_config.solver)
 
     # Solve with automatic initialization
     # If timestep is specified, use saveat to control output times
-    if isnothing(timestep)
-        sol = solve(prob, solver; initializealg=OrdinaryDiffEq.BrownFullBasicInit())
+    if isnothing(sim_config.timestep)
+        sol = Eq.solve(prob, solver; initializealg=Eq.BrownFullBasicInit())
     else
-        sol = solve(prob, solver; initializealg=OrdinaryDiffEq.BrownFullBasicInit(), saveat=timestep)
+        sol = Eq.solve(prob, solver; initializealg=Eq.BrownFullBasicInit(), saveat=sim_config.timestep)
     end
 
     return sol
@@ -147,14 +118,14 @@ Get a DAE solver algorithm by name.
 """
 function get_dae_solver(solver_name::String)
     if solver_name == "IDA"
-        return IDA()
+        return Sundials.IDA()
     elseif solver_name == "DFBDF"
-        return DFBDF()
+        return Eq.DFBDF()
     elseif solver_name == "Rodas5"
-        return Rodas5()
+        return Eq.Rodas5()
     else
         @warn "Unknown solver '$solver_name', using IDA as default"
-        return IDA()
+        return Sundials.IDA()
     end
 end
 
@@ -162,7 +133,6 @@ struct SimulationResult{T}
     system::PortHamSystem{T}
     solution::Any
     graph::NetworkGraph{T}
-    config::Dict
 end
 
 """
@@ -182,66 +152,53 @@ Complete workflow: load network from YAML, assemble, validate, and solve.
 # Returns
 - `SimulationResult`: Struct containing system, solution, graph, and config
 """
-function simulate_file(
-    yaml_path::String;
-    validate::Bool=true,
-)
+function simulate_file(yaml_path::String)
     T = Float64
 
     # Verbose mode with progress tracking
     # Create progress bar
-    total_steps = validate ? 4 : 3
-    pbar = ProgressBar(;
+    pbar = Term.ProgressBar(
         columns=:default,
         width=80,
         transient=false,
         colors="cyan"
     )
 
-    result = with(pbar) do
-        job = addjob!(pbar; N=total_steps)
+    result = Term.with(pbar) do
+        job = Term.Progress.addjob!(pbar; N=3)
 
-        # Step 1: Load network
-        graph = load_network_from_yaml(yaml_path, T)
+        config = read_config(yaml_path)
+
+        # Load network
+        graph = load_network_from_yaml(config, T)
         Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
-        update!(job)
+        Term.Progress.update!(job)
 
-        # Step 2: Load configuration
-        sim_config = get_simulation_config(yaml_path)
-        Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config["time_span"]), solver={cyan}$(sim_config["solver"]){/cyan}")
-        update!(job)
+        # Load configuration
+        sim_config = config.network.simulation
+        sim_config = isnothing(sim_config) ? SimulationConfigDefault : sim_config
+        Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
+        Term.Progress.update!(job)
 
-        # Step 3: Assemble network
+        # Assemble network
         system, x0, differential_vars = assemble_network(graph)
         u_func = create_external_input_function(graph, system.input)
         n_nodes = length(graph.nodes)
         n_states = length(x0)
         Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
-        update!(job)
+        Term.Progress.update!(job)
 
-        # Step 4: Validate (if enabled)
-        if validate
-            if !validate_phs(system, "Assembled Network"; verbose=false)
-                Term.tprintln("  {bold red}✗{/bold red} Validation failed!")
-                error("Network validation failed!")
-            end
-            Term.tprintln("  {bold green}✓{/bold green} System validation passed")
-            update!(job)
-        end
-
-        # Step 5: Solve
+        # Solve
         sol = solve_phs(
             system,
             x0,
             differential_vars,
-            sim_config["time_span"],
             u_func;
-            solver_name=sim_config["solver"],
-            timestep=sim_config["timestep"],
+            sim_config=sim_config,
         )
         Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
-        return SimulationResult(system, sol, graph, sim_config)
+        return SimulationResult(system, sol, graph)
     end
 
     return result

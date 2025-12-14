@@ -7,7 +7,6 @@ include("PortHamSystem.jl")
 include("Network.jl")
 include("Interconnection.jl")
 include("NetworkAssembly.jl")
-include("Validation.jl")
 include("YAMLParser.jl")
 include("NetworkSolver.jl")
 
@@ -27,13 +26,8 @@ export apply_connection!
 export assemble_network
 export compute_hamiltonian, get_network_state_info
 
-# Export validation functions
-export validate_phs, validate_skew_symmetry, validate_symmetry
-export validate_positive_semidefinite, validate_diagonal
-export validate_power_balance
-
 # Export YAML parser functions
-export load_network_from_yaml, get_simulation_config
+export load_network_from_yaml, read_config
 export parse_input_function
 
 # Export solver functions

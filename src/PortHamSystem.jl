@@ -1,5 +1,4 @@
 using LinearAlgebra
-using OrdinaryDiffEq
 
 # Helper function to check if a matrix is skew-symmetric
 function isskewsym(A::AbstractMatrix{<:Real})

@@ -1,0 +1,209 @@
+{
+  "type": "object",
+  "properties": {
+    "network": {
+      "$ref": "#/$defs/NetworkConfigSchema"
+    }
+  },
+  "required": [
+    "network"
+  ],
+  "$defs": {
+    "NetworkConfigSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "systems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SystemSchema"
+          }
+        },
+        "connections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "object",
+                "properties": {
+                  "system": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "string"
+                  },
+                  "indices": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "system"
+                ]
+              },
+              "to": {
+                "type": "object",
+                "properties": {
+                  "system": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "string"
+                  },
+                  "indices": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "system"
+                ]
+              },
+              "type": {
+                "type": "string"
+              },
+              "coupling_matrix": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "type"
+            ]
+          }
+        },
+        "external_inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "system": {
+                "type": "string"
+              },
+              "indices": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "func": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "system",
+              "func"
+            ]
+          }
+        },
+        "simulation": {
+          "$ref": "#/$defs/SimulationConfigSchema"
+        }
+      },
+      "required": [
+        "systems"
+      ]
+    },
+    "SimulationConfigSchema": {
+      "type": "object",
+      "properties": {
+        "time_span": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "solver": {
+          "type": "string"
+        },
+        "timestep": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "time_span"
+      ]
+    },
+    "SystemSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "matrices": {
+          "$ref": "#/$defs/SystemMatricesSchema"
+        },
+        "initial_state": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "matrices"
+      ]
+    },
+    "SystemMatricesSchema": {
+      "type": "object",
+      "properties": {
+        "J": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "R": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "Q": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "B": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "required": [
+        "J",
+        "R",
+        "Q"
+      ]
+    }
+  }
+}
