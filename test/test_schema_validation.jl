@@ -1,4 +1,4 @@
-using YAML, JSON, JSONSchema, StructTypes, JSONSchemaGenerator
+using YAML, JSON3, JSONSchema, StructTypes, JSONSchemaGenerator
 
 # Define a simple schema for testing
 struct PersonSchema
@@ -58,7 +58,7 @@ println("Trying JSON3 approach (convert to JSON and back)...")
 using JSON3
 try
     # Convert to JSON string and parse with JSON3
-    json_str = JSON.json(yaml_dict)
+    json_str = JSON3.write(yaml_dict)
     println("JSON representation:")
     println(json_str)
     println()

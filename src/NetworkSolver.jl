@@ -165,7 +165,7 @@ function simulate_file(yaml_path::String)
     )
 
     result = Term.with(pbar) do
-        job = Term.Progress.addjob!(pbar; N=3)
+        job = Term.Progress.addjob!(pbar; N=4)
 
         config = read_config(yaml_path)
 
@@ -197,6 +197,10 @@ function simulate_file(yaml_path::String)
             sim_config=sim_config,
         )
         Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
+        Term.Progress.update!(job)
+
+        # Mark job as done
+        Term.Progress.stop!(job)
 
         return SimulationResult(system, sol, graph)
     end

@@ -1,4 +1,4 @@
-import YAML, JSON, JSONSchema, JSON3
+import YAML, JSONSchema, JSON3
 include("NetworkSchema.jl")
 
 """
@@ -59,7 +59,7 @@ Validate YAML configuration against JSON schema.
 function validate_config(config_dict::Dict)
     # Load schema
     schema_path = joinpath(dirname(@__DIR__), "schemas", "network.schema.json")
-    schema_dict = JSON.parsefile(schema_path)
+    schema_dict = JSON3.read(schema_path)
     schema = JSONSchema.Schema(schema_dict)
 
     # Validate (JSONSchema.jl works with Dict directly)

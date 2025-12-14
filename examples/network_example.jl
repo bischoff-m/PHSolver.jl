@@ -51,7 +51,5 @@ function run_example(example::String)
     savefig(plt_energy, output_dir * "/$(example)_energy.png")
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
-    run_example("dc_power_network")
-    run_example("coupled_masses")
-end
+run_example("dc_power_network")
+run_example("coupled_masses")

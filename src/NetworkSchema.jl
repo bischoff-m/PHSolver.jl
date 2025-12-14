@@ -1,4 +1,4 @@
-import JSONSchemaGenerator, StructTypes, JSON
+import JSONSchemaGenerator, StructTypes, JSON3
 
 """
 Schema definitions for network configuration YAML files.
@@ -167,7 +167,7 @@ function generate_schema(output_file::String="schemas/network.schema.json")
 
     # Write to file with pretty formatting
     open(output_file, "w") do io
-        JSON.print(io, schema_dict, 2)
+        JSON3.pretty(io, schema_dict)
     end
 
     println("Schema written to: $output_file")
