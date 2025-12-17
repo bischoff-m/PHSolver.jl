@@ -42,11 +42,9 @@ function solve_phs(
 
     # Solve with automatic initialization
     # If timestep is specified, use saveat to control output times
-    if isnothing(sim_config.timestep)
-        sol = Eq.solve(prob, solver; initializealg=Eq.BrownFullBasicInit())
-    else
-        sol = Eq.solve(prob, solver; initializealg=Eq.BrownFullBasicInit(), saveat=sim_config.timestep)
-    end
+    sol = Eq.solve(prob, solver;
+        initializealg=Eq.BrownFullBasicInit(),
+        (isnothing(sim_config.timestep) ? (;) : (saveat=sim_config.timestep,))...)
 
     return sol
 end
@@ -103,12 +101,17 @@ end
 """
     get_dae_solver(solver_name::String)
 
-Get a DAE solver algorithm by name.
+Get a DAE solver algorithm by name. See the
+[reference](https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/#OrdinaryDiffEq.jl-(Implicit-ODE)).
+
+Could be extended to support the [DASKR
+solver](https://docs.sciml.ai/DiffEqDocs/stable/api/daskr/#daskr) in the future.
 
 # Supported solvers
 - "IDA": Sundials IDA (implicit differential-algebraic)
 - "DFBDF": OrdinaryDiffEq DFBDF
-- "Rodas5": OrdinaryDiffEq Rodas5
+- "DABDF2": OrdinaryDiffEq DABDF2
+- "DImplicitEuler": OrdinaryDiffEq DImplicitEuler
 
 # Arguments
 - `solver_name::String`: Name of the solver
@@ -121,8 +124,10 @@ function get_dae_solver(solver_name::String)
         return Sundials.IDA()
     elseif solver_name == "DFBDF"
         return Eq.DFBDF()
-    elseif solver_name == "Rodas5"
-        return Eq.Rodas5()
+    elseif solver_name == "DABDF2"
+        return Eq.DABDF2()
+    elseif solver_name == "DImplicitEuler"
+        return Eq.DImplicitEuler()
     else
         @warn "Unknown solver '$solver_name', using IDA as default"
         return Sundials.IDA()

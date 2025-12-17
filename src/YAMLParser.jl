@@ -17,6 +17,7 @@ Supported expressions:
 # Returns
 - Function that takes time `t` and returns the value
 """
+# NEEDS REFACTORING
 function parse_input_function(expr::String)
     # Remove whitespace
     expr = strip(expr)
@@ -56,6 +57,7 @@ Validate YAML configuration against JSON schema.
 # Throws
 - Error if validation fails
 """
+# DONE
 function validate_config(config_dict::Dict)
     # Load schema
     schema_path = joinpath(dirname(@__DIR__), "schemas", "network.schema.json")
@@ -70,6 +72,7 @@ function validate_config(config_dict::Dict)
     end
 end
 
+# DONE
 function read_config(filepath::String)::RootConfigSchema
     # Load YAML file
     yaml_dict = YAML.load_file(filepath)
@@ -79,8 +82,7 @@ function read_config(filepath::String)::RootConfigSchema
 
     # Parse into typed structs
     json_str = JSON3.write(yaml_dict)
-    config = JSON3.read(json_str, RootConfigSchema)
-    return config
+    return JSON3.read(json_str, RootConfigSchema)
 end
 
 """

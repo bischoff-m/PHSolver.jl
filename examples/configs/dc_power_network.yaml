@@ -66,7 +66,7 @@ network:
   
   external_inputs:
     - system: "dc_network"
-      func: "constant(1.0)"
+      func: "constant(0.0)"
       indices: [3]  # Input applied to IG equation
 
   # Simulation configuration
