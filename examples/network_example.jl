@@ -33,24 +33,13 @@ function run_example(example::String)
         plot!(plt, sol.t, sol[i, :], label="x$i", lw=2)
     end
 
+    energy = HamiltonSim.compute_energy(sol, system)
+    plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot)
+
     isdir(output_dir) || mkdir(output_dir)
     savefig(plt, output_dir * "/$(example)_states.png")
-
-    # Plot network energy
-    energy = HamiltonSim.compute_energy(sol, system)
-    plt_energy = plot(
-        sol.t,
-        energy,
-        label="Total Energy",
-        xlabel="Time [s]",
-        ylabel="Energy [J]",
-        lw=2,
-        title="$(graph.name) - Energy",
-    )
-
-    savefig(plt_energy, output_dir * "/$(example)_energy.png")
 end
 
-run_example("pendulum")
-# run_example("dc_power_network")
+# run_example("pendulum")
+run_example("dc_power_network")
 # run_example("coupled_masses")
