@@ -22,7 +22,7 @@ function run_example(example::String)
     plt = plot(
         sol.t,
         sol[1, :],
-        label="x₁",
+        label="x1",
         xlabel="Time [s]",
         ylabel="State",
         lw=2,
@@ -51,5 +51,6 @@ function run_example(example::String)
     savefig(plt_energy, output_dir * "/$(example)_energy.png")
 end
 
-run_example("dc_power_network")
-run_example("coupled_masses")
+run_example("pendulum")
+# run_example("dc_power_network")
+# run_example("coupled_masses")

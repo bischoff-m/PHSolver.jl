@@ -1,0 +1,69 @@
+# m = 1.0 (mass)
+# g = 9.81 (gravity)
+# l = 1.0 (length of the pendulum)
+
+network:
+  name: "Pendulum with PI Controller"
+
+  systems:
+    - id: "pendulum"
+      matrices:
+        J:
+          - [0.0, 1.0]
+          - [-1.0, 0.0]
+
+        R:
+          - [0.0, 0.0] # No damping
+          - [0.0, 0.0]
+
+        Q:
+          - [9.81, 0.0]
+          - [0.0, 1.0]
+
+        B:
+          - [0.0]
+          - [1.0]
+
+      initial_state: [0.3, 0.0] # Initial angle (rad) and angular momentum
+
+    # PI Controller subsystem
+    - id: "controller"
+      matrices:
+        J:
+          - [0.0, 0.0]
+          - [0.0, 0.0]
+
+        R:
+          - [0.0, 0.0]
+          - [0.0, 0.0]
+
+        Q:
+          - [200.0, 0.0] # Integral gain (kI)
+          - [0.0, 400.0] # Proportional gain (kP)
+
+        B:
+          - [100.0]
+          - [0.0]
+
+      initial_state: [0.0, 0.0] # Controller starts with zero integral and proportional states
+
+  connections:
+    - from:
+        system: "controller"
+        port: "output"
+      to:
+        system: "pendulum"
+        port: "input"
+      type: "negative_feedback"
+
+    - from:
+        system: "pendulum"
+        port: "output"
+      to:
+        system: "controller"
+        port: "input"
+      type: "negative_feedback"
+
+  simulation:
+    time_span: [0.0, 1000.0]
+    solver: "IDA"
