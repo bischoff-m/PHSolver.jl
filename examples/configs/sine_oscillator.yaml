@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../schemas/network.schema.json
+
+# Minimal undamped harmonic oscillator (2D port-Hamiltonian system)
+#
+# Dynamics (with Q = I, R = 0):
+#   ẋ = J x
+#   J = [ 0  1;
+#        -1  0]
+#
+# With initial_state = [x1(0), x2(0)] = [0, 1], the solution is:
+#   x1(t) = sin(t)
+#   x2(t) = cos(t)
+
+network:
+  name: "Pure Sine Wave"
+
+  systems:
+    - id: "oscillator"
+      matrices:
+        # Skew-symmetric interconnection
+        J:
+          - [0.0, 1.0]
+          - [-1.0, 0.0]
+
+        # No damping
+        R:
+          - [0.0, 0.0]
+          - [0.0, 0.0]
+
+        # Unit mass matrix (diagonal, PSD)
+        Q:
+          - [1.0, 0.0]
+          - [0.0, 1.0]
+
+      # Both states are differential since diag(Q) is nonzero.
+      # Choose x1(0)=0, x2(0)=1 so x1(t) becomes a sine wave.
+      initial_state: [0.0, 1.0]
+
+  simulation:
+    time_span: [0.0, 10]
+    solver: "IDA"

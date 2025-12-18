@@ -12,13 +12,10 @@ function run_example(example::String)
 
     # Run complete simulation workflow
     result = HamiltonSim.simulate_file(config_file)
-
-    system = result.system
     sol = result.solution
-    graph = result.graph
 
     # Plot all state variables
-    n = HamiltonSim.state_dimension(system)
+    n = HamiltonSim.state_dimension(result.system)
     plt = plot(
         sol.t,
         sol[1, :],
@@ -26,20 +23,21 @@ function run_example(example::String)
         xlabel="Time [s]",
         ylabel="State",
         lw=2,
-        title=graph.name,
+        title=result.graph.name,
     )
 
     for i in 2:n
         plot!(plt, sol.t, sol[i, :], label="x$i", lw=2)
     end
 
-    energy = HamiltonSim.compute_energy(sol, system)
+    energy = HamiltonSim.compute_energy(sol, result.system)
     plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot)
 
     isdir(output_dir) || mkdir(output_dir)
-    savefig(plt, output_dir * "/$(example)_states.png")
+    savefig(plt, output_dir * "/$(example).png")
 end
 
 # run_example("pendulum")
-run_example("dc_power_network")
+# run_example("dc_power_network")
 # run_example("coupled_masses")
+run_example("sine_oscillator")

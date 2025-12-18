@@ -1,6 +1,10 @@
 import OrdinaryDiffEq as Eq
 import Sundials
 import Term
+import Logging: global_logger
+import TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger(right_justify=120))
+import ProgressLogging
 
 function solve_phs(
     system::PortHamSystem{T},
@@ -44,7 +48,11 @@ function solve_phs(
     # If timestep is specified, use saveat to control output times
     sol = Eq.solve(prob, solver;
         initializealg=Eq.BrownFullBasicInit(),
-        (isnothing(sim_config.timestep) ? (;) : (saveat=sim_config.timestep,))...)
+        progress=true,
+        progress_name="Solving DAE",
+        # (isnothing(sim_config.timestep) ? (;) :
+        # (saveat=sim_config.timestep,))...)
+    )
 
     return sol
 end
@@ -98,6 +106,14 @@ function create_external_input_function(graph::NetworkGraph{T}, B::Matrix{T}) wh
     return u_network
 end
 
+supported_solvers = Dict(
+    "default" => Sundials.IDA,
+    "IDA" => Sundials.IDA,
+    "DFBDF" => Eq.DFBDF,
+    "DABDF2" => Eq.DABDF2,
+    "DImplicitEuler" => Eq.DImplicitEuler,
+)
+
 """
     get_dae_solver(solver_name::String)
 
@@ -119,25 +135,52 @@ solver](https://docs.sciml.ai/DiffEqDocs/stable/api/daskr/#daskr) in the future.
 # Returns
 - Solver algorithm
 """
-function get_dae_solver(solver_name::String)
-    if solver_name == "IDA"
-        return Sundials.IDA()
-    elseif solver_name == "DFBDF"
-        return Eq.DFBDF()
-    elseif solver_name == "DABDF2"
-        return Eq.DABDF2()
-    elseif solver_name == "DImplicitEuler"
-        return Eq.DImplicitEuler()
-    else
-        @warn "Unknown solver '$solver_name', using IDA as default"
-        return Sundials.IDA()
+function get_dae_solver(solver_name::Union{Nothing,String})
+    key = isnothing(solver_name) ? "default" : solver_name
+
+    if haskey(supported_solvers, key)
+        return supported_solvers[key]()
     end
+
+    fallback = supported_solvers["default"]
+    @warn "Unknown solver '$solver_name', using $fallback as default"
+    return fallback()
 end
 
 struct SimulationResult{T}
     system::PortHamSystem{T}
     solution::Any
     graph::NetworkGraph{T}
+end
+
+function simulate_config(config::RootConfigSchema)
+    # Load network
+    graph = load_network_from_yaml(config, Float64)
+    Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
+
+    # Load configuration
+    sim_config = config.network.simulation
+    sim_config = isnothing(sim_config) ? SimulationConfigDefault : sim_config
+    Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
+
+    # Assemble network
+    system, x0, differential_vars = assemble_network(graph)
+    u_func = create_external_input_function(graph, system.input)
+    n_nodes = length(graph.nodes)
+    n_states = length(x0)
+    Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
+
+    # Solve
+    sol = solve_phs(
+        system,
+        x0,
+        differential_vars,
+        u_func;
+        sim_config=sim_config,
+    )
+    Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
+
+    return SimulationResult(system, sol, graph)
 end
 
 """
@@ -158,59 +201,7 @@ Complete workflow: load network from YAML, assemble, validate, and solve.
 - `SimulationResult`: Struct containing system, solution, graph, and config
 """
 function simulate_file(yaml_path::String)
-    T = Float64
-
-    # Verbose mode with progress tracking
-    # Create progress bar
-    pbar = Term.ProgressBar(
-        columns=:default,
-        width=80,
-        transient=false,
-        colors="cyan"
-    )
-
-    result = Term.with(pbar) do
-        job = Term.Progress.addjob!(pbar; N=4)
-
-        config = read_config(yaml_path)
-
-        # Load network
-        graph = load_network_from_yaml(config, T)
-        Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
-        Term.Progress.update!(job)
-
-        # Load configuration
-        sim_config = config.network.simulation
-        sim_config = isnothing(sim_config) ? SimulationConfigDefault : sim_config
-        Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
-        Term.Progress.update!(job)
-
-        # Assemble network
-        system, x0, differential_vars = assemble_network(graph)
-        u_func = create_external_input_function(graph, system.input)
-        n_nodes = length(graph.nodes)
-        n_states = length(x0)
-        Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
-        Term.Progress.update!(job)
-
-        # Solve
-        sol = solve_phs(
-            system,
-            x0,
-            differential_vars,
-            u_func;
-            sim_config=sim_config,
-        )
-        Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
-        Term.Progress.update!(job)
-
-        # Mark job as done
-        Term.Progress.stop!(job)
-
-        return SimulationResult(system, sol, graph)
-    end
-
-    return result
+    return simulate_config(read_config(yaml_path))
 end
 
 """

@@ -109,7 +109,7 @@ Defines simulation parameters.
 - `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
 - `timestep::Union{Nothing, Float64}`: Fixed timestep (optional)
 """
-struct SimulationConfigSchema
+mutable struct SimulationConfigSchema
     time_span::Vector{Float64}
     solver::Union{Nothing,String}
     timestep::Union{Nothing,Float64}

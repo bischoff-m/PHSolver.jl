@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "1d6f2a79bebdff625f03dc0bd3556f28333bc4f4"
+project_hash = "c398eaa60b5b6756dde6f0f5eab181e5ee2ac79a"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "8b2b045b22740e4be20654175cc38291d48539db"
@@ -800,7 +800,7 @@ uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 version = "1.10.19"
 
 [[deps.HamiltonSim]]
-deps = ["IJulia", "JSON", "JSONSchema", "JSONSchemaGenerator", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "StructTypes", "Sundials", "Term", "Test", "YAML"]
+deps = ["IJulia", "JSON3", "JSONSchema", "JSONSchemaGenerator", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "ProgressLogging", "StructTypes", "Sundials", "Term", "TerminalLoggers", "Test", "YAML"]
 path = "."
 uuid = "403392ac-400e-4968-aac6-7f11f909412e"
 version = "0.1.0"
@@ -1037,6 +1037,12 @@ version = "2.9.4"
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 version = "1.11.0"
+
+[[deps.LeftChildRightSiblingTrees]]
+deps = ["AbstractTrees"]
+git-tree-sha1 = "95ba48564903b43b2462318aa243ee79d81135ff"
+uuid = "1d6d02ad-be62-4b6b-8a6d-2f90e265016e"
+version = "0.2.1"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -2242,6 +2248,12 @@ deps = ["AbstractTrees", "CodeTracking", "Dates", "Highlights", "InteractiveUtil
 git-tree-sha1 = "dec48498aa80c84704745b3c267bac32e206dac2"
 uuid = "22787eb5-b846-44ae-b979-8e399b8463ab"
 version = "2.0.7"
+
+[[deps.TerminalLoggers]]
+deps = ["LeftChildRightSiblingTrees", "Logging", "Markdown", "Printf", "ProgressLogging", "UUIDs"]
+git-tree-sha1 = "f133fab380933d042f6796eda4e130272ba520ca"
+uuid = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
+version = "0.1.7"
 
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
