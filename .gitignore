@@ -1,5 +1,5 @@
 *.local*
-examples/output/
+output/
 
 .vscode/
 
