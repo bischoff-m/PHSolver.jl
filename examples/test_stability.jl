@@ -22,7 +22,7 @@ for solver_name in keys(HamiltonSim.supported_solvers)
 
     # Run complete simulation workflow
     result = HamiltonSim.simulate_config(config)
-    plt = HamiltonSim.plot_simulation_result(result, tmax=tmax)
+    plt = HamiltonSim.plot_simulation_result(result, tmax=tmax, title="Stability Test - Solver: $solver_name")
 
     isdir(output_dir) || mkdir(output_dir)
     savefig(plt, output_dir * "/stability_$(solver_name).png")

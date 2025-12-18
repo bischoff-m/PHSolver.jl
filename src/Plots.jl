@@ -1,6 +1,6 @@
 using Plots
 
-function plot_simulation_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing)
+function plot_simulation_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing, title::Union{Nothing,String}=nothing)
     sol = result.solution
     n = state_dimension(result.system)
     args = isnothing(tmax) ? () : (xlim=(0, tmax),)
@@ -10,11 +10,10 @@ function plot_simulation_result(result::SimulationResult; tmax::Union{Nothing,Fl
         sol.t,
         sol[1, :],
         label="x1",
+        lw=2,
         xlabel="Time [s]",
         ylabel="State",
-        lw=2,
-        title=result.graph.name,
-        args...,
+        args...
     )
 
     for i in 2:n
@@ -22,7 +21,7 @@ function plot_simulation_result(result::SimulationResult; tmax::Union{Nothing,Fl
     end
 
     energy = compute_energy(sol, result.system)
-    plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot)
+    plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot, title=isnothing(title) ? result.graph.name : title)
 
     return plt
 end

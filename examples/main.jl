@@ -13,7 +13,7 @@ function run_example(example::String)
 
     # Run complete simulation workflow
     result = HamiltonSim.simulate_file(config_file)
-    plt = HamiltonSim.plot_simulation_result(result)
+    plt = HamiltonSim.plot_simulation_result(result, title=result.graph.name)
 
     savefig(plt, output_dir * "/$(example).png")
     Term.tprintln()
