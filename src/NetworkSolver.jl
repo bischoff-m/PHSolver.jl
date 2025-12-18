@@ -49,7 +49,7 @@ function solve_phs(
     sol = Eq.solve(prob, solver;
         initializealg=Eq.BrownFullBasicInit(),
         progress=true,
-        progress_name="Solving DAE",
+        progress_name="Solver",
         (isnothing(sim_config.timestep) ? (;) :
          (saveat=sim_config.timestep,))...
     )
