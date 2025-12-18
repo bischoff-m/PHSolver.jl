@@ -67,5 +67,5 @@ network:
       type: "negative_feedback"
 
   simulation:
-    time_span: [0.0, 10.0]
+    time_span: [0.0, 50.0]
     solver: "IDA"
