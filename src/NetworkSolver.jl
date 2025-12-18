@@ -50,8 +50,8 @@ function solve_phs(
         initializealg=Eq.BrownFullBasicInit(),
         progress=true,
         progress_name="Solving DAE",
-        # (isnothing(sim_config.timestep) ? (;) :
-        # (saveat=sim_config.timestep,))...)
+        (isnothing(sim_config.timestep) ? (;) :
+         (saveat=sim_config.timestep,))...
     )
 
     return sol
