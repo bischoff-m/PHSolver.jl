@@ -19,53 +19,49 @@ network:
           - [0.0, 0.0]
 
         Q:
-          - [9.81, 0.0]
+          - [9.81, 0.0] # m = 1, g = 9.81, l = 1
           - [0.0, 1.0]
 
         B:
           - [0.0]
           - [1.0]
 
-      initial_state: [0.3, 0.0] # Initial angle (rad) and angular momentum
+      initial_state: [0.1745, 0.0] # Initial angle (rad) and angular momentum
 
     # PI Controller subsystem
     - id: "controller"
       matrices:
         J:
-          - [0.0, 0.0]
-          - [0.0, 0.0]
+          - [0.0, 1.0]
+          - [-1.0, 0.0]
 
         R:
           - [0.0, 0.0]
-          - [0.0, 0.0]
+          - [0.0, 20.0] # Proportional gain (Kp)
 
         Q:
-          - [200.0, 0.0] # Integral gain (kI)
-          - [0.0, 400.0] # Proportional gain (kP)
+          - [8.0, 0.0] # Integral gain (kI)
+          - [0.0, 0.1] # Derivative gain (1/kD)
 
         B:
-          - [100.0]
           - [0.0]
+          - [1.0]
 
       initial_state: [0.0, 0.0] # Controller starts with zero integral and proportional states
 
   connections:
     - from:
-        system: "controller"
-        port: "output"
-      to:
         system: "pendulum"
-        port: "input"
-      type: "negative_feedback"
-
+      to:
+        system: "controller"
+      type: "direct"
     - from:
-        system: "pendulum"
-        port: "output"
-      to:
         system: "controller"
-        port: "input"
+      to:
+        system: "pendulum"  
       type: "negative_feedback"
 
   simulation:
-    time_span: [0.0, 50.0]
+    time_span: [0.0, 100.0]
+    timestep: 0.1
     solver: "IDA"
