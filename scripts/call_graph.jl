@@ -17,6 +17,7 @@ struct Node
     title::String       # display name
     signature::String   # parameters + types (best-effort)
     description::String # short description
+    file::String        # source file for grouping
 end
 
 struct Edge
@@ -68,6 +69,7 @@ function define_graph()
         "HamiltonSim.simulate_file",
         "simulate_file(yaml_path::String)",
         "Complete workflow: read config, assemble network, solve DAE.",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.read_config"] = Node(
@@ -75,6 +77,7 @@ function define_graph()
         "HamiltonSim.read_config",
         "read_config(filepath::String)::RootConfigSchema",
         "Load YAML, validate schema, parse into typed structs.",
+        "src/YAMLParser.jl",
     )
 
     nodes["HamiltonSim.validate_config"] = Node(
@@ -82,6 +85,7 @@ function define_graph()
         "HamiltonSim.validate_config",
         "validate_config(config_dict::Dict)",
         "Validate YAML configuration against JSON schema.",
+        "src/YAMLParser.jl",
     )
 
     nodes["HamiltonSim.load_network_from_yaml"] = Node(
@@ -89,6 +93,7 @@ function define_graph()
         "HamiltonSim.load_network_from_yaml",
         "load_network_from_yaml(config::RootConfigSchema, ::Type{T}=Float64)",
         "Build NetworkGraph metadata from validated schema.",
+        "src/YAMLParser.jl",
     )
 
     nodes["HamiltonSim.create_network_nodes_from_schema"] = Node(
@@ -96,6 +101,7 @@ function define_graph()
         "HamiltonSim.create_network_nodes_from_schema",
         "create_network_nodes_from_schema(systems_schema::Vector{SystemSchema}, ::Type{T})",
         "Create PHSNode instances from schema objects.",
+        "src/YAMLParser.jl",
     )
 
     nodes["HamiltonSim.assemble_network"] = Node(
@@ -103,6 +109,7 @@ function define_graph()
         "HamiltonSim.assemble_network",
         "assemble_network(graph::NetworkGraph{T})",
         "Assemble network into one PortHamSystem and initial state.",
+        "src/NetworkAssembly.jl",
     )
 
     nodes["HamiltonSim.assemble_initial_state"] = Node(
@@ -110,6 +117,7 @@ function define_graph()
         "HamiltonSim.assemble_initial_state",
         "assemble_initial_state(graph::NetworkGraph{T}, Q::Matrix{T})",
         "Compute x0 and differential variable indicators.",
+        "src/NetworkAssembly.jl",
     )
 
     nodes["HamiltonSim.assemble_block_diagonal_matrix"] = Node(
@@ -117,6 +125,7 @@ function define_graph()
         "HamiltonSim.assemble_block_diagonal_matrix",
         "assemble_block_diagonal_matrix(\n    nodes::Dict{String,PHSNode{T}},\n    matrix_getter::Function,\n)",
         "Collect per-node matrices into a block-diagonal matrix.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.create_block_diagonal"] = Node(
@@ -124,6 +133,7 @@ function define_graph()
         "HamiltonSim.create_block_diagonal",
         "create_block_diagonal(matrices::Vector{Matrix{T}})",
         "Create a block diagonal matrix.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.apply_connection!"] = Node(
@@ -131,6 +141,7 @@ function define_graph()
         "HamiltonSim.apply_connection!",
         "apply_connection!(\n    J_global::Matrix{T},\n    nodes::Dict{String,PHSNode{T}},\n    edge::ConnectionEdge{T},\n)",
         "Dispatch to connection-type-specific coupling.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.apply_direct_connection!"] = Node(
@@ -138,6 +149,7 @@ function define_graph()
         "HamiltonSim.apply_direct_connection!",
         "apply_direct_connection!(\n    J_global::Matrix{T},\n    node_source::PHSNode{T},\n    node_target::PHSNode{T},\n    edge::ConnectionEdge{T},\n)",
         "Apply direct interconnection: u_target = y_source.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.apply_negative_feedback_connection!"] = Node(
@@ -145,6 +157,7 @@ function define_graph()
         "HamiltonSim.apply_negative_feedback_connection!",
         "apply_negative_feedback_connection!(\n    J_global::Matrix{T},\n    node_source::PHSNode{T},\n    node_target::PHSNode{T},\n    edge::ConnectionEdge{T},\n)",
         "Apply negative feedback: u_target = -y_source.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.apply_skew_symmetric_connection!"] = Node(
@@ -152,6 +165,7 @@ function define_graph()
         "HamiltonSim.apply_skew_symmetric_connection!",
         "apply_skew_symmetric_connection!(\n    J_global::Matrix{T},\n    node1::PHSNode{T},\n    node2::PHSNode{T},\n    edge::ConnectionEdge{T},\n)",
         "Apply K-based skew-symmetric power-conserving coupling.",
+        "src/Interconnection.jl",
     )
 
     nodes["HamiltonSim.create_external_input_function"] = Node(
@@ -159,6 +173,7 @@ function define_graph()
         "HamiltonSim.create_external_input_function",
         "create_external_input_function(graph::NetworkGraph{T}, B::Matrix{T})",
         "Build global u(t) from YAML external input specs.",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.create_external_input_function.u_network"] = Node(
@@ -166,6 +181,7 @@ function define_graph()
         "create_external_input_function.u_network",
         "u_network(t::Real)",
         "Global input function u(t) built from external inputs.",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.parse_input_function"] = Node(
@@ -173,6 +189,7 @@ function define_graph()
         "HamiltonSim.parse_input_function",
         "parse_input_function(expr::String)",
         "Parse a string expression into an input function u(t).",
+        "src/YAMLParser.jl",
     )
 
     nodes["HamiltonSim.solve_phs"] = Node(
@@ -180,6 +197,7 @@ function define_graph()
         "HamiltonSim.solve_phs",
         "solve_phs(\n    system::PortHamSystem{T},\n    x0::Vector{T},\n    differential_vars::Vector{Bool},\n    u_func::Function;\n    sim_config::SimulationConfigSchema = SimulationConfigDefault,\n)",
         "Set up and solve the DAE using OrdinaryDiffEq/Sundials.",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.solve_phs.dae_residual!"] = Node(
@@ -187,6 +205,7 @@ function define_graph()
         "solve_phs.dae_residual!",
         "dae_residual!(out, dx, x, p, t)",
         "DAE residual: Q*dx - (J-R)*x - B*u(t).",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.get_dae_solver"] = Node(
@@ -194,6 +213,7 @@ function define_graph()
         "HamiltonSim.get_dae_solver",
         "get_dae_solver(solver_name::String)",
         "Map solver name to a DAE algorithm instance.",
+        "src/NetworkSolver.jl",
     )
 
     nodes["HamiltonSim.input_dimension"] = Node(
@@ -201,6 +221,7 @@ function define_graph()
         "HamiltonSim.input_dimension",
         "input_dimension(sys::PortHamSystem)",
         "Return input dimension m.",
+        "src/PortHamSystem.jl",
     )
 
     nodes["HamiltonSim.state_dimension"] = Node(
@@ -208,6 +229,7 @@ function define_graph()
         "HamiltonSim.state_dimension",
         "state_dimension(sys::PortHamSystem)",
         "Return number of state variables.",
+        "src/PortHamSystem.jl",
     )
 
     nodes["HamiltonSim.PortHamSystem"] = Node(
@@ -215,6 +237,7 @@ function define_graph()
         "HamiltonSim.PortHamSystem",
         "PortHamSystem(\n    interconnection::AbstractMatrix{T},\n    dissipation::AbstractMatrix{T},\n    mass::AbstractMatrix{T},\n    input::AbstractMatrix{T},\n)",
         "Validated constructor for a port-Hamiltonian system.",
+        "src/PortHamSystem.jl",
     )
 
     nodes["HamiltonSim.PHSNode"] = Node(
@@ -222,6 +245,7 @@ function define_graph()
         "HamiltonSim.PHSNode",
         "PHSNode(\n    id::String,\n    system::PortHamSystem{T},\n    initial_state::Vector{T},\n    state_offset::Int = 0,\n)",
         "Network node holding one PHS and its state mapping.",
+        "src/Network.jl",
     )
 
     nodes["HamiltonSim.ConnectionEdge"] = Node(
@@ -229,6 +253,7 @@ function define_graph()
         "HamiltonSim.ConnectionEdge",
         "ConnectionEdge(from_node::String, to_node::String, type::Symbol; from_indices=nothing, to_indices=nothing, coupling_matrix=nothing)",
         "Edge describing how two nodes are interconnected.",
+        "src/Network.jl",
     )
 
     nodes["HamiltonSim.ExternalInput"] = Node(
@@ -236,6 +261,7 @@ function define_graph()
         "HamiltonSim.ExternalInput",
         "ExternalInput(system::String, indices::Union{Nothing,Vector{Int}}, function_expr::String)",
         "External input specification for a node.",
+        "src/Network.jl",
     )
 
     nodes["HamiltonSim.NetworkGraph"] = Node(
@@ -243,6 +269,7 @@ function define_graph()
         "HamiltonSim.NetworkGraph",
         "NetworkGraph(\n    name::String,\n    nodes::Dict{String,PHSNode{T}},\n    edges::Vector{ConnectionEdge{T}},\n    external_inputs::Vector{ExternalInput},\n)",
         "Network metadata used during assembly.",
+        "src/Network.jl",
     )
 
     nodes["HamiltonSim.SimulationResult"] = Node(
@@ -250,6 +277,7 @@ function define_graph()
         "HamiltonSim.SimulationResult",
         "SimulationResult(system::PortHamSystem{T}, solution::Any, graph::NetworkGraph{T})",
         "Return bundle from simulate_file.",
+        "src/NetworkSolver.jl",
     )
 
     # External / non-builtin libraries (excluding Term; omitted by request)
@@ -259,6 +287,7 @@ function define_graph()
         "YAML.load_file",
         "load_file(filepath::AbstractString)",
         "Read a YAML file into a Dict-like structure.",
+        "external",
     )
 
     nodes["JSON3.read"] = Node(
@@ -266,6 +295,7 @@ function define_graph()
         "JSON3.read",
         "read(input; kwargs...)",
         "Parse JSON into Julia data or typed structs.",
+        "external",
     )
 
     nodes["JSON3.write"] = Node(
@@ -273,6 +303,7 @@ function define_graph()
         "JSON3.write",
         "write(x; kwargs...)",
         "Serialize a Julia object to JSON.",
+        "external",
     )
 
     nodes["JSONSchema.Schema"] = Node(
@@ -280,6 +311,7 @@ function define_graph()
         "JSONSchema.Schema",
         "Schema(schema_dict)",
         "Create a JSON schema validator.",
+        "external",
     )
 
     nodes["JSONSchema.validate"] = Node(
@@ -287,6 +319,7 @@ function define_graph()
         "JSONSchema.validate",
         "validate(schema, instance)",
         "Validate an instance against a schema.",
+        "external",
     )
 
     nodes["Eq.DAEProblem"] = Node(
@@ -294,6 +327,7 @@ function define_graph()
         "Eq.DAEProblem",
         "DAEProblem(dae_residual!, dx0, x0, tspan; differential_vars=...)",
         "Define a DAE initial value problem.",
+        "external",
     )
 
     nodes["Eq.BrownFullBasicInit"] = Node(
@@ -301,6 +335,7 @@ function define_graph()
         "Eq.BrownFullBasicInit",
         "BrownFullBasicInit()",
         "Initialization algorithm for DAEs.",
+        "external",
     )
 
     nodes["Eq.solve"] = Node(
@@ -308,6 +343,7 @@ function define_graph()
         "Eq.solve",
         "solve(prob, alg; initializealg=..., saveat=...)",
         "Solve the DAE problem.",
+        "external",
     )
 
     nodes["Sundials.IDA"] = Node(
@@ -315,6 +351,7 @@ function define_graph()
         "Sundials.IDA",
         "IDA()",
         "SUNDIALS IDA DAE solver algorithm.",
+        "external",
     )
 
     nodes["Eq.DFBDF"] = Node(
@@ -322,6 +359,7 @@ function define_graph()
         "Eq.DFBDF",
         "DFBDF()",
         "OrdinaryDiffEq DFBDF algorithm.",
+        "external",
     )
 
     nodes["Eq.DABDF2"] = Node(
@@ -329,6 +367,7 @@ function define_graph()
         "Eq.DABDF2",
         "DABDF2()",
         "OrdinaryDiffEq DABDF2 algorithm.",
+        "external",
     )
 
     nodes["Eq.DImplicitEuler"] = Node(
@@ -336,6 +375,7 @@ function define_graph()
         "Eq.DImplicitEuler",
         "DImplicitEuler()",
         "OrdinaryDiffEq implicit Euler algorithm.",
+        "external",
     )
 
     edges = Edge[]
@@ -423,7 +463,8 @@ function dot_escape(s::String)
 end
 
 function node_label(n::Node)
-    dot_escape("$(n.title)\\n$(n.signature)\\n$(n.description)")
+    desc = n.file == "external" ? "$(n.description) (external)" : n.description
+    dot_escape("$(n.title)\\n$(n.signature)\\n$desc")
 end
 
 function write_dot(path::String, nodes::Dict{String,Node}, edges::Vector{Edge})
@@ -441,12 +482,36 @@ function write_dot(path::String, nodes::Dict{String,Node}, edges::Vector{Edge})
         println(io, "  node [shape=box, fontsize=10];")
         println(io, "  edge [fontsize=9];")
 
-        for id in sort(collect(referenced))
+        # Group nodes by source file
+        file_groups = Dict{String,Vector{String}}()
+        for id in referenced
             haskey(nodes, id) || error("Missing node definition for '$id' (add it in define_graph())")
-            n = nodes[id]
-            lbl = node_label(n)
-            style = startswith(id, "HamiltonSim.") ? "" : ", style=rounded"
-            println(io, "  \"$id\" [label=\"$lbl\"$style];")
+            file = nodes[id].file
+            push!(get!(file_groups, file, String[]), id)
+        end
+
+        for file in sort(collect(keys(file_groups)))
+            if file == "external"
+                for id in sort(file_groups[file])
+                    n = nodes[id]
+                    lbl = node_label(n)
+                    style = startswith(id, "HamiltonSim.") ? "" : ", style=rounded"
+                    println(io, "  \"$id\" [label=\"$lbl\"$style];")
+                end
+                continue
+            end
+
+            cluster_id = replace(file, r"[^A-Za-z0-9_]" => "_")
+            println(io, "  subgraph cluster_$cluster_id {")
+            println(io, "    label=\"$file\";")
+            println(io, "    style=rounded;")
+            for id in sort(file_groups[file])
+                n = nodes[id]
+                lbl = node_label(n)
+                style = startswith(id, "HamiltonSim.") ? "" : ", style=rounded"
+                println(io, "    \"$id\" [label=\"$lbl\"$style];")
+            end
+            println(io, "  }")
         end
 
         for e in edges
