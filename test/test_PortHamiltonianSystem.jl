@@ -14,6 +14,6 @@ using HamiltonSim
     @test sys isa PortHamSystem
     @test sys.interconnection == interconnection
     @test sys.dissipation == dissipation
-    @test sys.energy == energy
+    @test sys.mass == energy
     @test sys.input == input
 end
