@@ -544,7 +544,7 @@ function main(args::Vector{String})
 
     if render !== nothing
         out_rendered = try_render(out, render)
-        println("Rendered: $out_rendered")
+        println("Wrote SVG: $out_rendered")
     end
 end
 

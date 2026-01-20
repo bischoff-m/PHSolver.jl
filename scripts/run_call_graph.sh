@@ -15,10 +15,9 @@ DOT_OUT="$REPO_ROOT/output/call_graph.dot"
 
 cd "$REPO_ROOT"
 
-julia scripts/call_graph.jl --out "$DOT_OUT"
-
 if command -v dot >/dev/null 2>&1; then
   julia scripts/call_graph.jl --out "$DOT_OUT" --render svg
 else
   echo "GraphViz 'dot' not found; skipping SVG render" >&2
+  julia scripts/call_graph.jl --out "$DOT_OUT"
 fi
