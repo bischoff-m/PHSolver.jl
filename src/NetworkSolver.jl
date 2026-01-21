@@ -3,8 +3,8 @@ import Sundials
 import Term
 import Logging: global_logger
 import TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger(right_justify=120))
 import ProgressLogging
+global_logger(TerminalLogger(right_justify=120))
 
 function solve_phs(
     system::PortHamSystem{T},
@@ -25,7 +25,8 @@ function solve_phs(
     u0 = u_func(sim_config.time_span[1])
     rhs = (J - R) * x0 + B * u0
 
-    for i in 1:length(dx0)
+    # Fill in derivatives for differential variables
+    for i in eachindex(dx0)
         if differential_vars[i]
             dx0[i] = rhs[i] / Q[i, i]
         end
