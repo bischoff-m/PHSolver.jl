@@ -148,9 +148,9 @@ function get_dae_solver(solver_name::Union{Nothing,String})
     return fallback()
 end
 
-struct SimulationResult{T}
+struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
     system::PortHamSystem{T}
-    solution::Any
+    solution::S
     graph::NetworkGraph{T}
 end
 
@@ -201,43 +201,7 @@ Complete workflow: load network from YAML, assemble, validate, and solve.
 # Returns
 - `SimulationResult`: Struct containing system, solution, graph, and config
 """
-function simulate_file(yaml_path::String)
-    return simulate_config(read_config(yaml_path))
-end
-
-"""
-    extract_node_solution(solution, graph::NetworkGraph, node_id::String)
-
-Extract a specific node's state trajectory from the network solution.
-
-# Arguments
-- `solution`: Solution object from solve_phs
-- `graph::NetworkGraph`: The network graph metadata
-- `node_id::String`: ID of the node to extract
-
-# Returns
-- Matrix where each column is the node state at a time point
-"""
-function extract_node_solution(solution, graph::NetworkGraph, node_id::String)
-    node = get_node(graph, node_id)
-    range = get_node_state_range(node)
-
-    # Extract node states across all time points
-    return solution[range, :]
-end
-
-"""
-    compute_energy(solution, system::PortHamSystem)
-
-Compute the total energy over the solution trajectory.
-
-# Arguments
-- `solution`: Solution object
-- `system::PortHamSystem`: The PHS
-
-# Returns
-- Vector of energy values at each time point
-"""
-function compute_energy(solution, system::PortHamSystem{T}) where {T<:Real}
-    return [compute_hamiltonian(system, solution[:, i]) for i in 1:length(solution.t)]
+function simulate_file(config_path::String)
+    config = read_config(config_path)
+    return simulate_config(config)
 end

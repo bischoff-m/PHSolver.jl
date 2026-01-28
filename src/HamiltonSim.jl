@@ -10,6 +10,7 @@ include("NetworkAssembly.jl")
 include("YAMLParser.jl")
 include("NetworkSolver.jl")
 include("Plots.jl")
+include("Util.jl")
 
 
 # Export primary types and convenience functions
@@ -44,9 +45,10 @@ export solve_phs
 export simulate_file
 export supported_solvers
 export simulate_config
-export extract_node_solution
-export compute_energy
 export get_dae_solver
+
+# Export utility functions
+export compute_energy
 
 # Export plots
 export plot_simulation_result
