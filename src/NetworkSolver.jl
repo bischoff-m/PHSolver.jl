@@ -6,6 +6,38 @@ import TerminalLoggers: TerminalLogger
 import ProgressLogging
 global_logger(TerminalLogger(right_justify=120))
 
+# function get_problem()
+#     # Get matrices
+#     Q = system.mass
+#     J = system.interconnection
+#     R = system.dissipation
+#     B = system.input
+
+#     # Compute initial derivatives
+#     # Q * dx = (J - R) * x + B * u(0)
+#     dx0 = zeros(T, length(x0))
+#     u0 = u_func(sim_config.time_span[1])
+#     rhs = (J - R) * x0 + B * u0
+
+#     # Fill in derivatives for differential variables
+#     for i in eachindex(dx0)
+#         if differential_vars[i]
+#             dx0[i] = rhs[i] / Q[i, i]
+#         end
+#     end
+
+#     # Define DAE residual function
+#     # residual = Q * dx - (J - R) * x - B * u(t)
+#     function dae_residual!(out, dx, x, p, t)
+#         u_t = u_func(t)
+#         out .= Q * dx - (J - R) * x - B * u_t
+#     end
+
+#     # Create DAE problem
+#     prob = Eq.DAEProblem(dae_residual!, dx0, x0, sim_config.time_span; differential_vars=differential_vars)
+#     return prob, dx0
+# end
+
 function solve_phs(
     system::PortHamSystem{T},
     x0::Vector{T},
@@ -56,55 +88,6 @@ function solve_phs(
     )
 
     return sol
-end
-
-"""
-    create_external_input_function(graph::NetworkGraph, B::Matrix)
-
-Create an external input function for the network from YAML configuration.
-
-# Arguments
-- `graph::NetworkGraph`: Network graph with external input specifications
-- `B::Matrix`: Global input matrix
-
-# Returns
-- `Function`: u(t) that returns the input vector at time t
-"""
-function create_external_input_function(graph::NetworkGraph{T}, B::Matrix{T}) where {T<:Real}
-    n_inputs = size(B, 2)
-
-    # Parse all input function expressions
-    input_funcs = Dict{String,Function}()
-    for ext_input in graph.external_inputs
-        input_funcs[ext_input.system] = parse_input_function(ext_input.function_expr)
-    end
-
-    # Create global input function
-    function u_network(t::Real)
-        u = zeros(T, n_inputs)
-
-        input_offset = 0
-        for (node_id, node) in sort(collect(graph.nodes), by=x -> x[1])
-            node_input_dim = input_dimension(node.system)
-
-            # Check if this node has external input
-            if haskey(input_funcs, node_id)
-                node_u = input_funcs[node_id](t)
-                # Handle scalar vs vector input
-                if node_u isa Number
-                    u[input_offset+1] = node_u
-                else
-                    u[(input_offset+1):(input_offset+node_input_dim)] .= node_u
-                end
-            end
-
-            input_offset += node_input_dim
-        end
-
-        return u
-    end
-
-    return u_network
 end
 
 supported_solvers = Dict(

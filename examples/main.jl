@@ -20,6 +20,6 @@ function run_example(example::String)
 end
 
 run_example("pendulum")
-#run_example("dc_power_network")
-#run_example("coupled_masses")
-#run_example("sine_oscillator")
+run_example("dc_power_network")
+run_example("coupled_masses")
+run_example("sine_oscillator")

@@ -1,5 +1,56 @@
 using LinearAlgebra
 
+
+"""
+    create_external_input_function(graph::NetworkGraph, B::Matrix)
+
+Create an external input function for the network from YAML configuration.
+
+# Arguments
+- `graph::NetworkGraph`: Network graph with external input specifications
+- `B::Matrix`: Global input matrix
+
+# Returns
+- `Function`: u(t) that returns the input vector at time t
+"""
+function create_external_input_function(graph::NetworkGraph{T}, B::Matrix{T}) where {T<:Real}
+    n_inputs = size(B, 2)
+
+    # Parse all input function expressions
+    input_funcs = Dict{String,Function}()
+    for ext_input in graph.external_inputs
+        input_funcs[ext_input.system] = parse_input_function(ext_input.function_expr)
+    end
+
+    # Create global input function
+    function u_network(t::Real)
+        u = zeros(T, n_inputs)
+
+        input_offset = 0
+        for (node_id, node) in sort(collect(graph.nodes), by=x -> x[1])
+            node_input_dim = input_dimension(node.system)
+
+            # Check if this node has external input
+            if haskey(input_funcs, node_id)
+                node_u = input_funcs[node_id](t)
+                # Handle scalar vs vector input
+                if node_u isa Number
+                    u[input_offset+1] = node_u
+                else
+                    u[(input_offset+1):(input_offset+node_input_dim)] .= node_u
+                end
+            end
+
+            input_offset += node_input_dim
+        end
+
+        return u
+    end
+
+    return u_network
+end
+
+
 """
     assemble_network(graph::NetworkGraph)
 
@@ -45,7 +96,7 @@ function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
     B_global = B_block
 
     # Step 4: Assemble initial state for the network
-    x0, differential_vars = assemble_initial_state(graph, Q_global)
+    x0, differential_vars = assemble_initial_state(graph)
 
     # Create the assembled PortHamSystem (without validation checks since it's assembled)
     # We bypass the constructor validation since assembled networks may have special structure
@@ -55,7 +106,7 @@ function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
 end
 
 """
-    assemble_initial_state(graph::NetworkGraph, Q::Matrix)
+    assemble_initial_state(graph::NetworkGraph)
 
 Compute consistent initial state for the entire network.
 
@@ -66,40 +117,36 @@ This function:
 
 # Arguments
 - `graph::NetworkGraph`: Network graph metadata
-- `Q::Matrix`: Assembled mass matrix
-
 # Returns
 - `x0::Vector`: Initial state vector
 - `differential_vars::Vector{Bool}`: Indicators for differential variables
 """
 function assemble_initial_state(
     graph::NetworkGraph{T},
-    Q::Matrix{T},
 ) where {T<:Real}
     n = graph.total_state_dim
 
-    # Identify differential and algebraic variables in global system
-    differential_vars = [Q[i, i] != 0.0 for i in 1:n]
-
     # Build complete initial state vector
     x0 = zeros(T, n)
+    # Identify differential and algebraic variables in global system
+    differential_vars = falses(n)
 
     # Set differential variables from node initial conditions
     for node in values(graph.nodes)
-        node_range = get_node_state_range(node)
-        node_Q = node.system.mass
+        node_mass = node.system.mass
 
         # Identify differential variables in this node
-        node_diff_vars = [node_Q[i, i] != 0.0 for i in 1:size(node_Q, 1)]
+        node_diff_vars = [node_mass[i, i] != 0.0 for i in axes(node_mass, 1)]
         diff_idx = 1
         for (i, is_diff) in enumerate(node_diff_vars)
-            if is_diff
-                global_idx = node.state_offset + i
-                if diff_idx <= length(node.initial_state)
-                    x0[global_idx] = node.initial_state[diff_idx]
-                end
-                diff_idx += 1
+            global_idx = node.state_offset + i
+            differential_vars[global_idx] = is_diff
+            !is_diff && continue
+
+            if diff_idx <= length(node.initial_state)
+                x0[global_idx] = node.initial_state[diff_idx]
             end
+            diff_idx += 1
         end
     end
 
@@ -107,26 +154,7 @@ function assemble_initial_state(
     # For now, we initialize algebraic variables to zero
     # A more sophisticated approach would solve the algebraic constraints
 
-    return x0, differential_vars
-end
-
-"""
-    compute_hamiltonian(system::PortHamSystem, x::Vector)
-
-Compute the Hamiltonian of a port-Hamiltonian system.
-
-H(x) = 0.5 * x^T * Q * x
-
-# Arguments
-- `system::PortHamSystem`: The PHS
-- `x::Vector`: State vector
-
-# Returns
-- Total energy
-"""
-function compute_hamiltonian(system::PortHamSystem{T}, x::Vector{T}) where {T<:Real}
-    @assert length(x) == state_dimension(system) "State dimension mismatch"
-    return 0.5 * dot(x, system.mass * x)
+    return x0, Vector{Bool}(differential_vars)
 end
 
 """

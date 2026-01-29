@@ -1,6 +1,25 @@
 
 
 """
+    compute_hamiltonian(system::PortHamSystem, x::Vector)
+
+Compute the Hamiltonian of a port-Hamiltonian system.
+
+H(x) = 0.5 * x^T * Q * x
+
+# Arguments
+- `system::PortHamSystem`: The PHS
+- `x::Vector`: State vector
+
+# Returns
+- Total energy
+"""
+function compute_hamiltonian(system::PortHamSystem{T}, x::Vector{T}) where {T<:Real}
+    @assert length(x) == state_dimension(system) "State dimension mismatch"
+    return 0.5 * dot(x, system.mass * x)
+end
+
+"""
     compute_energy(solution, system::PortHamSystem)
 
 Compute the total energy over the solution trajectory.
