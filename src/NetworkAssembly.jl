@@ -13,7 +13,7 @@ Create an external input function for the network from YAML configuration.
 # Returns
 - `Function`: u(t) that returns the input vector at time t
 """
-function create_external_input_function(graph::NetworkGraph{T}, B::Matrix{T}) where {T<:Real}
+function create_external_input_function(graph::NetworkGraph{T}, B::AbstractMatrix{T}) where {T<:Real}
     n_inputs = size(B, 2)
 
     # Parse all input function expressions
@@ -73,29 +73,29 @@ where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 # Returns
 - `PortHamSystem`: Assembled network as a single PHS
 - `x0::Vector`: Initial conditions for the network
-- `differential_vars::Vector{Bool}`: Which variables are differential (vs algebraic)
+- `differential_vars::AbstractVector{Bool}`: Which variables are differential (vs algebraic)
 """
 function assemble_network(graph::NetworkGraph{T}) where {T<:Real}
     n = graph.total_state_dim
 
-    # Step 1: Create block diagonal matrices from individual systems
+    # Create block diagonal matrices from individual systems
     J_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.interconnection)
     R_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.dissipation)
     Q_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.mass)
     B_block = assemble_block_diagonal_matrix(graph.nodes, sys -> sys.input)
 
-    # Step 2: Start with block diagonal J, then apply interconnections
+    # Start with block diagonal J, then apply interconnections
     J_global = copy(J_block)
     for edge in graph.edges
         apply_connection!(J_global, graph.nodes, edge)
     end
 
-    # Step 3: R and Q remain block diagonal (no coupling through dissipation/mass)
+    # R and Q remain block diagonal (no coupling through dissipation/mass)
     R_global = R_block
     Q_global = Q_block
     B_global = B_block
 
-    # Step 4: Assemble initial state for the network
+    # Assemble initial state for the network
     x0, differential_vars = assemble_initial_state(graph)
 
     # Create the assembled PortHamSystem (without validation checks since it's assembled)
@@ -119,7 +119,7 @@ This function:
 - `graph::NetworkGraph`: Network graph metadata
 # Returns
 - `x0::Vector`: Initial state vector
-- `differential_vars::Vector{Bool}`: Indicators for differential variables
+- `differential_vars::AbstractVector{Bool}`: Indicators for differential variables
 """
 function assemble_initial_state(
     graph::NetworkGraph{T},
@@ -155,32 +155,4 @@ function assemble_initial_state(
     # A more sophisticated approach would solve the algebraic constraints
 
     return x0, Vector{Bool}(differential_vars)
-end
-
-"""
-    get_network_state_info(graph::NetworkGraph)
-
-Get information about the network state structure.
-
-# Returns
-- Dictionary with state information for each node
-"""
-function get_network_state_info(graph::NetworkGraph)
-    info = Dict{String,Dict{String,Any}}()
-
-    for (id, node) in graph.nodes
-        node_Q = node.system.mass
-        diff_vars = [node_Q[i, i] != 0.0 for i in 1:size(node_Q, 1)]
-
-        info[id] = Dict(
-            "state_dim" => node.state_dim,
-            "state_range" => get_node_state_range(node),
-            "n_differential" => sum(diff_vars),
-            "n_algebraic" => node.state_dim - sum(diff_vars),
-            "differential_indices" => findall(diff_vars),
-            "algebraic_indices" => findall(.!diff_vars),
-        )
-    end
-
-    return info
 end

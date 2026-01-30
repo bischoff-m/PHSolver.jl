@@ -31,7 +31,7 @@ struct PortHamSystem{T<:Real}
 
         # Check properties
         @assert issymmetric(dissipation) "Dissipation matrix must be symmetric"
-        @assert all(eigvals(dissipation) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
+        @assert all(eigvals(Matrix(dissipation)) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
         @assert isdiag(mass) "Mass matrix must be diagonal"
         @assert all(diag(mass) .>= -1e-10) "Mass matrix must be positive semi-definite"
         @assert isskewsym(interconnection) "Interconnection matrix must be skew-symmetric"

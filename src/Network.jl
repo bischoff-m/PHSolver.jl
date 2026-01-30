@@ -8,7 +8,7 @@ Represents a single port-Hamiltonian system within a network.
 # Fields
 - `id::String`: Unique identifier for the system
 - `system::PortHamSystem`: The underlying PHS
-- `initial_state::Vector{Float64}`: Initial values for differential variables
+- `initial_state::AbstractVector{Float64}`: Initial values for differential variables
 - `state_offset::Int`: Starting index in global state vector
 - `state_dim::Int`: Dimension of this system's state
 - `input_dim::Int`: Dimension of this system's input
@@ -17,7 +17,7 @@ Represents a single port-Hamiltonian system within a network.
 struct PHSNode{T<:Real}
     id::String
     system::PortHamSystem{T}
-    initial_state::Vector{T}
+    initial_state::AbstractVector{T}
     state_offset::Int
     state_dim::Int
     input_dim::Int
@@ -26,7 +26,7 @@ struct PHSNode{T<:Real}
     function PHSNode(
         id::String,
         system::PortHamSystem{T},
-        initial_state::Vector{T},
+        initial_state::AbstractVector{T},
         state_offset::Int=0,
     ) where {T<:Real}
         state_dim = state_dimension(system)
@@ -49,27 +49,27 @@ Represents an interconnection between two port-Hamiltonian systems.
 
 # Fields
 - `from_node::String`: ID of source system
-- `from_indices::Union{Nothing, Vector{Int}}`: Output indices (nothing = all)
+- `from_indices::Union{Nothing, AbstractVector{Int}}`: Output indices (nothing = all)
 - `to_node::String`: ID of target system
-- `to_indices::Union{Nothing, Vector{Int}}`: Input indices (nothing = all)
+- `to_indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
 - `type::Symbol`: Connection type
-- `coupling_matrix::Union{Nothing, Matrix{Float64}}`: Coupling matrix K for skew-symmetric
+- `coupling_matrix::Union{Nothing, AbstractMatrix{Float64}}`: Coupling matrix K for skew-symmetric
 """
 struct ConnectionEdge{T<:Real}
     from_node::String
-    from_indices::Union{Nothing,Vector{Int}}
+    from_indices::Union{Nothing,AbstractVector{Int}}
     to_node::String
-    to_indices::Union{Nothing,Vector{Int}}
+    to_indices::Union{Nothing,AbstractVector{Int}}
     type::Symbol
-    coupling_matrix::Union{Nothing,Matrix{T}}
+    coupling_matrix::Union{Nothing,AbstractMatrix{T}}
 
     function ConnectionEdge{T}(
         from_node::String,
         to_node::String,
         type::Symbol;
-        from_indices::Union{Nothing,Vector{Int}}=nothing,
-        to_indices::Union{Nothing,Vector{Int}}=nothing,
-        coupling_matrix::Union{Nothing,Matrix{T}}=nothing,
+        from_indices::Union{Nothing,AbstractVector{Int}}=nothing,
+        to_indices::Union{Nothing,AbstractVector{Int}}=nothing,
+        coupling_matrix::Union{Nothing,AbstractMatrix{T}}=nothing,
     ) where {T<:Real}
         @assert type in [:direct, :negative_feedback, :skew_symmetric] "Invalid connection type: $type"
 
@@ -86,9 +86,9 @@ function ConnectionEdge(
     from_node::String,
     to_node::String,
     type::Symbol;
-    from_indices::Union{Nothing,Vector{Int}}=nothing,
-    to_indices::Union{Nothing,Vector{Int}}=nothing,
-    coupling_matrix::Union{Nothing,Matrix{<:Real}}=nothing,
+    from_indices::Union{Nothing,AbstractVector{Int}}=nothing,
+    to_indices::Union{Nothing,AbstractVector{Int}}=nothing,
+    coupling_matrix::Union{Nothing,AbstractMatrix{<:Real}}=nothing,
 )
     T = isnothing(coupling_matrix) ? Float64 : eltype(coupling_matrix)
     ConnectionEdge{T}(
@@ -108,12 +108,12 @@ Represents an external input to a system in the network.
 
 # Fields
 - `system::String`: ID of target system
-- `indices::Union{Nothing, Vector{Int}}`: Input indices (nothing = all)
+- `indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
 - `function_expr::String`: Expression for the input function (e.g., "constant(0.0)")
 """
 struct ExternalInput
     system::String
-    indices::Union{Nothing,Vector{Int}}
+    indices::Union{Nothing,AbstractVector{Int}}
     function_expr::String
 end
 
@@ -126,22 +126,22 @@ This is only used during assembly - the assembled result is a PortHamSystem.
 # Fields
 - `name::String`: Network name
 - `nodes::Dict{String, PHSNode}`: All PHS nodes indexed by ID
-- `edges::Vector{ConnectionEdge}`: All interconnections
-- `external_inputs::Vector{ExternalInput}`: External inputs to the network
+- `edges::AbstractVector{ConnectionEdge}`: All interconnections
+- `external_inputs::AbstractVector{ExternalInput}`: External inputs to the network
 - `total_state_dim::Int`: Total dimension of global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
     nodes::Dict{String,PHSNode{T}}
-    edges::Vector{ConnectionEdge{T}}
-    external_inputs::Vector{ExternalInput}
+    edges::AbstractVector{ConnectionEdge{T}}
+    external_inputs::AbstractVector{ExternalInput}
     total_state_dim::Int
 
     function NetworkGraph(
         name::String,
         nodes::Dict{String,PHSNode{T}},
-        edges::Vector{ConnectionEdge{T}},
-        external_inputs::Vector{ExternalInput},
+        edges::AbstractVector{ConnectionEdge{T}},
+        external_inputs::AbstractVector{ExternalInput},
     ) where {T<:Real}
         # Calculate total state dimension
         total_state_dim = sum(node.state_dim for node in values(nodes))
@@ -199,7 +199,7 @@ function create_network_nodes(
             Vector{T}(sys_config["initial_state"])
         else
             # Count differential variables (non-zero diagonal in Q)
-            n_diff = sum(Q[i, i] != 0 for i in 1:size(Q, 1))
+            n_diff = sum(Q[i, i] != 0 for i in 1:axes(Q, 1))
             zeros(T, n_diff)
         end
 

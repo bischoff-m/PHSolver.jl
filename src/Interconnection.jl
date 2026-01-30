@@ -1,4 +1,5 @@
 using LinearAlgebra
+using SparseArrays
 
 """
     apply_direct_connection!(
@@ -16,7 +17,7 @@ we add coupling terms in J_global that implement the power-conserving
 interconnection.
 """
 function apply_direct_connection!(
-    J_global::Matrix{T},
+    J_global::AbstractMatrix{T},
     node_source::PHSNode{T},
     node_target::PHSNode{T},
     edge::ConnectionEdge{T},
@@ -53,7 +54,7 @@ Apply a negative feedback connection: u_target = -y_source
 This is the standard feedback interconnection for control.
 """
 function apply_negative_feedback_connection!(
-    J_global::Matrix{T},
+    J_global::AbstractMatrix{T},
     node_source::PHSNode{T},
     node_target::PHSNode{T},
     edge::ConnectionEdge{T},
@@ -93,7 +94,7 @@ This implements the interconnection:
 where K is the coupling matrix specified in the edge.
 """
 function apply_skew_symmetric_connection!(
-    J_global::Matrix{T},
+    J_global::AbstractMatrix{T},
     node1::PHSNode{T},
     node2::PHSNode{T},
     edge::ConnectionEdge{T},
@@ -130,7 +131,7 @@ end
 Apply a connection to the global interconnection matrix based on connection type.
 """
 function apply_connection!(
-    J_global::Matrix{T},
+    J_global::AbstractMatrix{T},
     nodes::Dict{String,PHSNode{T}},
     edge::ConnectionEdge{T},
 ) where {T<:Real}
@@ -153,35 +154,6 @@ function apply_connection!(
     return nothing
 end
 
-"""
-    create_block_diagonal(matrices::Vector{Matrix{T}})
-
-Create a block diagonal matrix from a vector of matrices.
-"""
-function create_block_diagonal(matrices::Vector{Matrix{T}}) where {T<:Real}
-    if isempty(matrices)
-        return zeros(T, 0, 0)
-    end
-
-    # Calculate total dimensions
-    total_rows = sum(size(M, 1) for M in matrices)
-    total_cols = sum(size(M, 2) for M in matrices)
-
-    # Create block diagonal matrix
-    result = zeros(T, total_rows, total_cols)
-
-    row_offset = 0
-    col_offset = 0
-
-    for M in matrices
-        rows, cols = size(M)
-        result[(row_offset+1):(row_offset+rows), (col_offset+1):(col_offset+cols)] .= M
-        row_offset += rows
-        col_offset += cols
-    end
-
-    return result
-end
 
 """
     assemble_block_diagonal_matrix(
@@ -204,7 +176,7 @@ function assemble_block_diagonal_matrix(
     sorted_nodes = sort(collect(values(nodes)); by=n -> n.state_offset)
 
     # Extract matrices in order
-    matrices = [matrix_getter(node.system) for node in sorted_nodes]
+    matrices = [sparse(matrix_getter(node.system)) for node in sorted_nodes]
 
-    return create_block_diagonal(matrices)
+    return blockdiag(matrices...)
 end

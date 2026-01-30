@@ -40,8 +40,8 @@ global_logger(TerminalLogger(right_justify=120))
 
 function solve_phs(
     system::PortHamSystem{T},
-    x0::Vector{T},
-    differential_vars::Vector{Bool},
+    x0::AbstractVector{T},
+    differential_vars::AbstractVector{Bool},
     u_func::Function;
     sim_config::SimulationConfigSchema=SimulationConfigDefault,
 ) where {T<:Real}

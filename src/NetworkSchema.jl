@@ -11,16 +11,16 @@ These structs define the expected structure and types for network configurations
 Defines the matrices for a port-Hamiltonian system.
 
 # Fields
-- `J::Vector{Vector{Float64}}`: Interconnection matrix (skew-symmetric)
-- `R::Vector{Vector{Float64}}`: Dissipation matrix (symmetric, PSD)
-- `Q::Vector{Vector{Float64}}`: Mass/storage matrix (symmetric, PSD)
-- `B::Union{Nothing, Vector{Vector{Float64}}}`: Input matrix (optional)
+- `J::AbstractVector{AbstractVector{Float64}}`: Interconnection matrix (skew-symmetric)
+- `R::AbstractVector{AbstractVector{Float64}}`: Dissipation matrix (symmetric, PSD)
+- `Q::AbstractVector{AbstractVector{Float64}}`: Mass/storage matrix (symmetric, PSD)
+- `B::Union{Nothing, AbstractVector{AbstractVector{Float64}}}`: Input matrix (optional)
 """
 struct SystemMatricesSchema
-    J::Vector{Vector{Float64}}
-    R::Vector{Vector{Float64}}
-    Q::Vector{Vector{Float64}}
-    B::Union{Nothing,Vector{Vector{Float64}}}
+    J::AbstractVector{AbstractVector{Float64}}
+    R::AbstractVector{AbstractVector{Float64}}
+    Q::AbstractVector{AbstractVector{Float64}}
+    B::Union{Nothing,AbstractVector{AbstractVector{Float64}}}
 end
 StructTypes.StructType(::Type{SystemMatricesSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SystemMatricesSchema}) = (:B,)
@@ -33,12 +33,12 @@ Defines a single port-Hamiltonian system in the network.
 # Fields
 - `id::String`: Unique identifier for the system
 - `matrices::SystemMatricesSchema`: System matrices (J, R, Q, B)
-- `initial_state::Union{Nothing, Vector{Float64}}`: Initial state values (optional)
+- `initial_state::Union{Nothing, AbstractVector{Float64}}`: Initial state values (optional)
 """
 struct SystemSchema
     id::String
     matrices::SystemMatricesSchema
-    initial_state::Union{Nothing,Vector{Float64}}
+    initial_state::Union{Nothing,AbstractVector{Float64}}
 end
 StructTypes.StructType(::Type{SystemSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SystemSchema}) = (:initial_state,)
@@ -51,12 +51,12 @@ Defines one endpoint of a connection.
 # Fields
 - `system::String`: ID of the system
 - `port::Union{Nothing, String}`: Port name (optional, e.g., "input", "output")
-- `indices::Union{Nothing, Vector{Int}}`: Specific port indices (optional)
+- `indices::Union{Nothing, AbstractVector{Int}}`: Specific port indices (optional)
 """
 struct ConnectionEndpointSchema
     system::String
     port::Union{Nothing,String}
-    indices::Union{Nothing,Vector{Int}}
+    indices::Union{Nothing,AbstractVector{Int}}
 end
 StructTypes.StructType(::Type{ConnectionEndpointSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ConnectionEndpointSchema}) = (:port, :indices)
@@ -70,13 +70,13 @@ Defines an interconnection between two systems.
 - `from::ConnectionEndpointSchema`: Source system endpoint
 - `to::ConnectionEndpointSchema`: Target system endpoint
 - `type::String`: Connection type ("direct", "negative_feedback", "skew_symmetric")
-- `coupling_matrix::Union{Nothing, Vector{Vector{Float64}}}`: Coupling matrix for skew_symmetric (optional)
+- `coupling_matrix::Union{Nothing, AbstractVector{AbstractVector{Float64}}}`: Coupling matrix for skew_symmetric (optional)
 """
 struct ConnectionSchema
     from::ConnectionEndpointSchema
     to::ConnectionEndpointSchema
     type::String
-    coupling_matrix::Union{Nothing,Vector{Vector{Float64}}}
+    coupling_matrix::Union{Nothing,AbstractVector{AbstractVector{Float64}}}
 end
 StructTypes.StructType(::Type{ConnectionSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ConnectionSchema}) = (:coupling_matrix,)
@@ -88,12 +88,12 @@ Defines an external input to a system.
 
 # Fields
 - `system::String`: ID of the target system
-- `indices::Union{Nothing, Vector{Int}}`: Input port indices (optional)
+- `indices::Union{Nothing, AbstractVector{Int}}`: Input port indices (optional)
 - `func::String`: Input function expression (e.g., "constant(1.0)", "sin(2*pi*t)")
 """
 struct ExternalInputSchema
     system::String
-    indices::Union{Nothing,Vector{Int}}
+    indices::Union{Nothing,AbstractVector{Int}}
     func::String  # Using 'func' instead of 'function' (keyword)
 end
 StructTypes.StructType(::Type{ExternalInputSchema}) = StructTypes.Struct()
@@ -105,12 +105,12 @@ StructTypes.omitempties(::Type{ExternalInputSchema}) = (:indices,)
 Defines simulation parameters.
 
 # Fields
-- `time_span::Vector{Float64}`: Start and end time [t0, tf]
+- `time_span::AbstractVector{Float64}`: Start and end time [t0, tf]
 - `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
 - `timestep::Union{Nothing, Float64}`: Fixed timestep (optional)
 """
 mutable struct SimulationConfigSchema
-    time_span::Vector{Float64}
+    time_span::AbstractVector{Float64}
     solver::Union{Nothing,String}
     timestep::Union{Nothing,Float64}
 end
@@ -125,16 +125,16 @@ Top-level network configuration.
 
 # Fields
 - `name::Union{Nothing, String}`: Network name (optional)
-- `systems::Vector{SystemSchema}`: List of systems in the network
-- `connections::Union{Nothing, Vector{ConnectionSchema}}`: System interconnections (optional)
-- `external_inputs::Union{Nothing, Vector{ExternalInputSchema}}`: External inputs (optional)
+- `systems::AbstractVector{SystemSchema}`: List of systems in the network
+- `connections::Union{Nothing, AbstractVector{ConnectionSchema}}`: System interconnections (optional)
+- `external_inputs::Union{Nothing, AbstractVector{ExternalInputSchema}}`: External inputs (optional)
 - `simulation::Union{Nothing, SimulationConfigSchema}`: Simulation configuration (optional)
 """
 struct NetworkConfigSchema
     name::Union{Nothing,String}
-    systems::Vector{SystemSchema}
-    connections::Union{Nothing,Vector{ConnectionSchema}}
-    external_inputs::Union{Nothing,Vector{ExternalInputSchema}}
+    systems::AbstractVector{SystemSchema}
+    connections::Union{Nothing,AbstractVector{ConnectionSchema}}
+    external_inputs::Union{Nothing,AbstractVector{ExternalInputSchema}}
     simulation::Union{Nothing,SimulationConfigSchema}
 end
 StructTypes.StructType(::Type{NetworkConfigSchema}) = StructTypes.Struct()

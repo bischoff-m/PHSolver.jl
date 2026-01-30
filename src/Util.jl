@@ -14,7 +14,7 @@ H(x) = 0.5 * x^T * Q * x
 # Returns
 - Total energy
 """
-function compute_hamiltonian(system::PortHamSystem{T}, x::Vector{T}) where {T<:Real}
+function compute_hamiltonian(system::PortHamSystem{T}, x::AbstractVector{T}) where {T<:Real}
     @assert length(x) == state_dimension(system) "State dimension mismatch"
     return 0.5 * dot(x, system.mass * x)
 end

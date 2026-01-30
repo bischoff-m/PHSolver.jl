@@ -1,4 +1,4 @@
-.PHONY: help format format-check format-diff test test-verbose docs-build docs-serve
+.PHONY: help format format-check format-diff test test-verbose docs-build docs-serve examples
 
 help:
 	@echo "Available targets:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make format-diff  - Show diff of formatting changes"
 	@echo "  make test         - Run tests"
 	@echo "  make test-verbose - Run tests with verbose output"
+	@echo "  make examples     - Run example scripts"
 	@echo "  make help         - Show this help message"
 
 docs-build:
@@ -31,3 +32,6 @@ test:
 
 test-verbose:
 	julia --project=. -e 'using Pkg; Pkg.test()'
+
+examples:
+	julia --project=. examples/main.jl

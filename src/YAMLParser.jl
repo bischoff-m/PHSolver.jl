@@ -159,18 +159,18 @@ function load_network_from_yaml(config::RootConfigSchema, ::Type{T}=Float64) whe
 end
 
 """
-    create_network_nodes_from_schema(systems_schema::Vector{SystemSchema}, ::Type{T})
+    create_network_nodes_from_schema(systems_schema::AbstractVector{SystemSchema}, ::Type{T})
 
 Create network nodes from validated schema objects.
 
 # Arguments
-- `systems_schema::Vector{SystemSchema}`: Vector of system schema objects
+- `systems_schema::AbstractVector{SystemSchema}`: Vector of system schema objects
 - `T::Type`: Element type for matrices
 
 # Returns
 - `Dict{String, PHSNode{T}}`: Dictionary of network nodes
 """
-function create_network_nodes_from_schema(systems_schema::Vector{SystemSchema}, ::Type{T}) where {T<:Real}
+function create_network_nodes_from_schema(systems_schema::AbstractVector{SystemSchema}, ::Type{T}) where {T<:Real}
     nodes = Dict{String,PHSNode{T}}()
     offset = 0
 

@@ -11,7 +11,7 @@ StructTypes.omitempties(::Type{PersonSchema}) = (:email,)
 
 struct ConfigSchema
     version::String
-    people::Vector{PersonSchema}
+    people::AbstractVector{PersonSchema}
 end
 StructTypes.StructType(::Type{ConfigSchema}) = StructTypes.Struct()
 
