@@ -4,16 +4,16 @@ using HamiltonSim
 
 @testset "PortHamSystem construction" begin
     # small valid PH system (n=2, m=1)
-    interconnection = [0.0 -1.0; 1.0 0.0]
-    dissipation = [0.1 0.0; 0.0 0.1]
-    energy = [1.0 0.0; 0.0 1.0]
-    input = reshape([1.0, 0.0], 2, 1)
+    J = [0.0 -1.0; 1.0 0.0]
+    R = [0.1 0.0; 0.0 0.1]
+    Q = [1.0 0.0; 0.0 1.0]
+    B = reshape([1.0, 0.0], 2, 1)
 
-    sys = PortHamSystem(interconnection, dissipation, energy, input)
+    sys = PortHamSystem(J, R, Q, B)
 
     @test sys isa PortHamSystem
-    @test sys.interconnection == interconnection
-    @test sys.dissipation == dissipation
-    @test sys.mass == energy
-    @test sys.input == input
+    @test sys.connections == J
+    @test sys.dissipation == R
+    @test sys.mass == Q
+    @test sys.input == B
 end

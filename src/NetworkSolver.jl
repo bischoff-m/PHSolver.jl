@@ -9,7 +9,7 @@ global_logger(TerminalLogger(right_justify=120))
 # function get_problem()
 #     # Get matrices
 #     Q = system.mass
-#     J = system.interconnection
+#     J = system.connections
 #     R = system.dissipation
 #     B = system.input
 
@@ -47,7 +47,7 @@ function solve_phs(
 ) where {T<:Real}
     # Get matrices
     Q = system.mass
-    J = system.interconnection
+    J = system.connections
     R = system.dissipation
     B = system.input
 

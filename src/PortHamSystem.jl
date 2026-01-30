@@ -6,13 +6,13 @@ function isskewsym(A::AbstractMatrix{<:Real})
 end
 
 struct PortHamSystem{T<:Real}
-    interconnection::AbstractMatrix{T}
+    connections::AbstractMatrix{T}
     dissipation::AbstractMatrix{T}
     mass::AbstractMatrix{T}
     input::AbstractMatrix{T}
 
     function PortHamSystem(
-        interconnection::AbstractMatrix{T},
+        connections::AbstractMatrix{T},
         dissipation::AbstractMatrix{T},
         mass::AbstractMatrix{T},
         input::AbstractMatrix{T},
@@ -21,8 +21,8 @@ struct PortHamSystem{T<:Real}
         n = size(mass, 1)
 
         # Check dimensions
-        @assert size(interconnection, 1) == n "Interconnection matrix must have size (n, n)"
-        @assert size(interconnection, 2) == n "Interconnection matrix must have size (n, n)"
+        @assert size(connections, 1) == n "Interconnection matrix must have size (n, n)"
+        @assert size(connections, 2) == n "Interconnection matrix must have size (n, n)"
         @assert size(dissipation, 1) == n "Dissipation matrix must have size (n, n)"
         @assert size(dissipation, 2) == n "Dissipation matrix must have size (n, n)"
         @assert size(mass, 1) == n "Mass matrix must have size (n, n)"
@@ -34,9 +34,9 @@ struct PortHamSystem{T<:Real}
         @assert all(eigvals(Matrix(dissipation)) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
         @assert isdiag(mass) "Mass matrix must be diagonal"
         @assert all(diag(mass) .>= -1e-10) "Mass matrix must be positive semi-definite"
-        @assert isskewsym(interconnection) "Interconnection matrix must be skew-symmetric"
+        @assert isskewsym(connections) "Interconnection matrix must be skew-symmetric"
 
-        new{T}(interconnection, dissipation, mass, input)
+        new{T}(connections, dissipation, mass, input)
     end
 end
 
