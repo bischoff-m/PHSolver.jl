@@ -31,13 +31,13 @@ export get_node_state_range
 export apply_connection!
 
 # Export network assembly functions
-export assemble_network
+export build_network
 export compute_hamiltonian
+export parse_external_function
 
 # Export YAML parser functions
 export load_network_from_yaml
 export read_config
-export parse_input_function
 
 # Export solver functions
 export solve_phs

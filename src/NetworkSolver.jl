@@ -148,8 +148,8 @@ function simulate_config(config::RootConfigSchema)
     Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
 
     # Assemble network
-    system, x0, differential_vars = assemble_network(graph)
-    u_func = create_external_input_function(graph, system.input)
+    system, x0, differential_vars = build_network(graph)
+    u_func = get_input_function(graph, system.input)
     n_nodes = length(graph.nodes)
     n_states = length(x0)
     Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")

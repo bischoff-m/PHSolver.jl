@@ -1,50 +1,6 @@
 import YAML, JSONSchema, JSON3
 include("NetworkSchema.jl")
 
-"""
-    parse_input_function(expr::String)
-
-Parse a string expression into a Julia function.
-
-Supported expressions:
-- "constant(value)": Returns constant value
-- "sin(freq*t)" or similar: Evaluates Julia expression with variable t
-- "step(t0, value)": Step function at time t0
-
-# Arguments
-- `expr::String`: Function expression
-
-# Returns
-- Function that takes time `t` and returns the value
-"""
-# NEEDS REFACTORING
-function parse_input_function(expr::String)
-    # Remove whitespace
-    expr = strip(expr)
-
-    # Match constant(value) pattern
-    const_match = match(r"constant\(([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\)", expr)
-    if !isnothing(const_match)
-        value = parse(Float64, const_match.captures[1])
-        return t -> value
-    end
-
-    # Match step(t0, value) pattern
-    step_match = match(r"step\(([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?),\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\)", expr)
-    if !isnothing(step_match)
-        t0 = parse(Float64, step_match.captures[1])
-        value = parse(Float64, step_match.captures[2])
-        return t -> t >= t0 ? value : 0.0
-    end
-
-    # Otherwise, try to evaluate as Julia expression with variable 't'
-    # This is potentially unsafe - in production, use a safer parser
-    try
-        return eval(Meta.parse("t -> $expr"))
-    catch e
-        error("Failed to parse input function expression '$expr': $e")
-    end
-end
 
 """
     validate_config(config_dict::Dict)
@@ -57,7 +13,6 @@ Validate YAML configuration against JSON schema.
 # Throws
 - Error if validation fails
 """
-# DONE
 function validate_config(config_dict::Dict)
     # Load schema
     schema_path = joinpath(dirname(@__DIR__), "schemas", "network.schema.json")

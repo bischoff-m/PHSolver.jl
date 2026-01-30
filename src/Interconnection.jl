@@ -38,8 +38,6 @@ function apply_direct_connection!(
 
     J_global[target_range, source_range] .+= B_target * B_source'
     J_global[source_range, target_range] .-= B_source * B_target'
-
-    return nothing
 end
 
 """
@@ -73,8 +71,6 @@ function apply_negative_feedback_connection!(
 
     J_global[target_range, source_range] .-= B_target * B_source'
     J_global[source_range, target_range] .+= B_source * B_target'
-
-    return nothing
 end
 
 """
@@ -117,8 +113,6 @@ function apply_skew_symmetric_connection!(
 
     J_global[range1, range2] .-= B1 * K * B2'
     J_global[range2, range1] .+= B2 * K' * B1'
-
-    return nothing
 end
 
 """
@@ -150,33 +144,4 @@ function apply_connection!(
     else
         error("Unknown connection type: $(edge.type)")
     end
-
-    return nothing
-end
-
-
-"""
-    assemble_block_diagonal_matrix(
-        nodes::Dict{String, PHSNode},
-        matrix_getter::Function
-    )
-
-Assemble a block diagonal matrix from individual system matrices.
-
-# Arguments
-- `nodes`: Dictionary of PHSNode objects
-- `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
-                   (e.g., sys -> sys.interconnection)
-"""
-function assemble_block_diagonal_matrix(
-    nodes::Dict{String,PHSNode{T}},
-    matrix_getter::Function,
-) where {T<:Real}
-    # Sort nodes by state offset to maintain consistent ordering
-    sorted_nodes = sort(collect(values(nodes)); by=n -> n.state_offset)
-
-    # Extract matrices in order
-    matrices = [sparse(matrix_getter(node.system)) for node in sorted_nodes]
-
-    return blockdiag(matrices...)
 end
