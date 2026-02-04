@@ -65,29 +65,15 @@ function load_network_from_yaml(config::RootConfigSchema, ::Type{T}=Float64) whe
     edges = ConnectionEdge{T}[]
     if !isnothing(network_config.connections)
         for conn_schema in network_config.connections
-            from_node = conn_schema.from.system
-            to_node = conn_schema.to.system
-
-            # Get optional indices
-            from_indices = conn_schema.from.indices
-            to_indices = conn_schema.to.indices
-
-            # Parse connection type
-            type = Symbol(conn_schema.type)
-
-            # Get coupling matrix for skew_symmetric
-            coupling_matrix = nothing
-            if type == :skew_symmetric && !isnothing(conn_schema.coupling_matrix)
-                K = conn_schema.coupling_matrix
-                coupling_matrix = Matrix{T}(hcat(K...)')
+            coupling_matrix = if isnothing(conn_schema.coupling_matrix)
+                nothing
+            else
+                Matrix{T}(hcat(conn_schema.coupling_matrix...)')
             end
-
-            edge = ConnectionEdge(
-                from_node,
-                to_node,
-                type;
-                from_indices=from_indices,
-                to_indices=to_indices,
+            edge = ConnectionEdge{T}(
+                conn_schema.from.system,
+                conn_schema.to.system,
+                Symbol(conn_schema.type);
                 coupling_matrix=coupling_matrix,
             )
 
@@ -109,9 +95,7 @@ function load_network_from_yaml(config::RootConfigSchema, ::Type{T}=Float64) whe
     end
 
     # Create network graph
-    graph = NetworkGraph(name, nodes, edges, external_inputs)
-
-    return graph
+    return NetworkGraph(name, nodes, edges, external_inputs)
 end
 
 """

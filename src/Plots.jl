@@ -1,6 +1,6 @@
 using Plots
 
-function plot_simulation_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing, title::Union{Nothing,String}=nothing)
+function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing, title::Union{Nothing,String}=nothing)
     sol = result.solution
     n = state_dimension(result.system)
     args = isnothing(tmax) ? () : (xlim=(0, tmax),)

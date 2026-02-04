@@ -5,7 +5,7 @@ Schema definitions for network configuration YAML files.
 These structs define the expected structure and types for network configurations.
 """
 
-# TODO: Rename to connections, dissipation, mass and input for consistency?
+# TODO: Rename to interaction, dissipation, mass and input for consistency?
 """
     SystemMatricesSchema
 

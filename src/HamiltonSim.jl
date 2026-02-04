@@ -4,13 +4,14 @@ module HamiltonSim
 # Include component/source files so the entire library is exported from this
 # single module. Files included here should NOT declare their own `module`.
 include("PortHamSystem.jl")
-include("Network.jl")
+include("NetworkModels.jl")
 include("Interconnection.jl")
 include("NetworkAssembly.jl")
 include("YAMLParser.jl")
 include("NetworkSolver.jl")
 include("Plots.jl")
 include("Util.jl")
+include("InputFunction.jl")
 
 
 # Export primary types and convenience functions
@@ -23,8 +24,6 @@ export PHSNode
 export ConnectionEdge
 export ExternalInput
 export NetworkGraph
-export get_node
-export create_network_nodes
 
 # Export interconnection functions
 export apply_connection!
@@ -49,6 +48,6 @@ export get_dae_solver
 export compute_energy
 
 # Export plots
-export plot_simulation_result
+export plot_result
 
 end

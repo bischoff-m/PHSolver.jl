@@ -3,146 +3,28 @@ using OrderedCollections
 
 
 """
-    create_external_input_function(graph::NetworkGraph, B::Matrix)
+    build_block_diagonal(
+        nodes::OrderedDict{String, PHSNode},
+        matrix_getter::Function
+    )
 
-Create an external input function for the network from YAML configuration.
-
-# Arguments
-- `graph::NetworkGraph`: Network graph with external input specifications
-- `B::Matrix`: Global input matrix
-
-# Returns
-- `Function`: u(t) that returns the input vector at time t
-"""
-function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
-    n_inputs = size(input_matrix, 2)
-
-    # Parse all input function expressions
-    input_funcs = OrderedDict{String,Function}()
-    for ext_input in graph.external_inputs
-        input_funcs[ext_input.system] = parse_external_function(ext_input.function_expr)
-    end
-
-    # Create global input function
-    function u_network(t::Real)
-        u = zeros(T, n_inputs)
-
-        input_offset = 0
-        for (node_id, node) in graph.nodes
-            node_input_dim = input_dimension(node.system)
-
-            # Check if this node has external input
-            if haskey(input_funcs, node_id)
-                node_u = input_funcs[node_id](t)
-                # Handle scalar vs vector input
-                if node_u isa Number
-                    u[input_offset+1] = node_u
-                else
-                    u[(input_offset+1):(input_offset+node_input_dim)] .= node_u
-                end
-            end
-
-            input_offset += node_input_dim
-        end
-
-        return u
-    end
-
-    return u_network
-end
-
-
-"""
-    parse_external_function(expr::String)
-
-Parse a string expression into a Julia function.
-
-Supported expressions:
-- "constant(value)": Returns constant value
-- "sin(freq*t)" or similar: Evaluates Julia expression with variable t
-- "step(t0, value)": Step function at time t0
+Assemble a block diagonal matrix from individual system matrices.
 
 # Arguments
-- `expr::String`: Function expression
-
-# Returns
-- Function that takes time `t` and returns the value
+- `nodes`: Ordered dictionary of PHSNode objects
+- `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
+                (e.g., sys -> sys.interaction)
 """
-# NEEDS REFACTORING, AND ALLOWS RCE
-function parse_external_function(expr::String)
-    # Remove whitespace
-    expr = strip(expr)
+function build_block_diagonal(
+    nodes::OrderedDict{String,PHSNode{T}},
+    matrix_getter::Function,
+) where {T<:Real}
+    # Extract matrices in insertion order
+    matrices = [sparse(matrix_getter(node.system)) for node in values(nodes)]
 
-    # Match constant(value) pattern
-    const_match = match(r"constant\(([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\)", expr)
-    if !isnothing(const_match)
-        value = parse(Float64, const_match.captures[1])
-        return t -> value
-    end
-
-    # Match step(t0, value) pattern
-    step_match = match(r"step\(([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?),\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\)", expr)
-    if !isnothing(step_match)
-        t0 = parse(Float64, step_match.captures[1])
-        value = parse(Float64, step_match.captures[2])
-        return t -> t >= t0 ? value : 0.0
-    end
-
-    # Otherwise, try to evaluate as Julia expression with variable 't'
-    # This is potentially unsafe - in production, use a safer parser
-    try
-        return eval(Meta.parse("t -> $expr"))
-    catch e
-        error("Failed to parse input function expression '$expr': $e")
-    end
+    return blockdiag(matrices...)
 end
 
-
-"""
-    assemble_network(graph::NetworkGraph)
-
-Assemble a port-Hamiltonian network into a single PortHamSystem.
-
-This function:
-1. Creates block diagonal matrices from individual systems
-2. Applies interconnections to modify the global J matrix
-3. Assembles initial conditions from individual nodes
-4. Returns a PortHamSystem representing the entire network
-
-The assembled system satisfies:
-    Q * ẋ = (J - R) * x + B * u(t)
-
-where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
-
-# Arguments
-- `graph::NetworkGraph`: Network graph metadata
-
-# Returns
-- `PortHamSystem`: Assembled network as a single PHS
-- `x0::Vector`: Initial conditions for the network
-- `differential_vars::AbstractVector{Bool}`: Which variables are differential (vs algebraic)
-"""
-function build_network(graph::NetworkGraph{T}) where {T<:Real}
-    # Create block diagonal matrices from individual systems
-    J = build_block_diagonal(graph.nodes, sys -> sys.interaction)
-    R = build_block_diagonal(graph.nodes, sys -> sys.dissipation)
-    Q = build_block_diagonal(graph.nodes, sys -> sys.mass)
-    B = build_block_diagonal(graph.nodes, sys -> sys.input)
-
-    # Apply interconnections to J
-    for edge in graph.edges
-        source = graph.nodes[edge.from_node]
-        target = graph.nodes[edge.to_node]
-        apply_connection!(J, edge, source, target)
-    end
-
-    # Assemble initial state for the network
-    x0, differential_vars = build_initial_state(graph)
-    # Create the assembled PortHamSystem
-    network_phs = PortHamSystem(J, R, Q, B)
-
-    return network_phs, x0, differential_vars
-end
 
 """
     build_initial_state(graph::NetworkGraph)
@@ -198,25 +80,47 @@ end
 
 
 """
-    build_block_diagonal(
-        nodes::OrderedDict{String, PHSNode},
-        matrix_getter::Function
-    )
+    assemble_network(graph::NetworkGraph)
 
-Assemble a block diagonal matrix from individual system matrices.
+Assemble a port-Hamiltonian network into a single PortHamSystem.
+
+This function:
+1. Creates block diagonal matrices from individual systems
+2. Applies interconnections to modify the global J matrix
+3. Assembles initial conditions from individual nodes
+4. Returns a PortHamSystem representing the entire network
+
+The assembled system satisfies:
+    Q * ẋ = (J - R) * x + B * u(t)
+
+where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 
 # Arguments
-- `nodes`: Ordered dictionary of PHSNode objects
-- `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
-                   (e.g., sys -> sys.interaction)
+- `graph::NetworkGraph`: Network graph metadata
+
+# Returns
+- `PortHamSystem`: Assembled network as a single PHS
+- `x0::Vector`: Initial conditions for the network
+- `differential_vars::AbstractVector{Bool}`: Which variables are differential (vs algebraic)
 """
-function build_block_diagonal(
-    nodes::OrderedDict{String,PHSNode{T}},
-    matrix_getter::Function,
-) where {T<:Real}
-    # Extract matrices in insertion order
-    matrices = [sparse(matrix_getter(node.system)) for node in values(nodes)]
+function build_network(graph::NetworkGraph{T}) where {T<:Real}
+    # Create block diagonal matrices from individual systems
+    J = build_block_diagonal(graph.nodes, sys -> sys.interaction)
+    R = build_block_diagonal(graph.nodes, sys -> sys.dissipation)
+    Q = build_block_diagonal(graph.nodes, sys -> sys.mass)
+    B = build_block_diagonal(graph.nodes, sys -> sys.input)
 
-    return blockdiag(matrices...)
+    # Apply interconnections to J
+    for edge in graph.edges
+        source = graph.nodes[edge.source]
+        target = graph.nodes[edge.target]
+        apply_connection!(J, edge, source, target)
+    end
+
+    # Assemble initial state for the network
+    x0, differential_vars = build_initial_state(graph)
+    # Create the assembled PortHamSystem
+    network_phs = PortHamSystem(J, R, Q, B)
+
+    return network_phs, x0, differential_vars
 end
-
