@@ -1,7 +1,5 @@
 import YAML, JSONSchema, JSON3
 using OrderedCollections
-include("NetworkSchema.jl")
-
 
 """
     validate_config(config_dict::Dict)

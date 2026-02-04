@@ -82,23 +82,22 @@ StructTypes.StructType(::Type{ConnectionSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ConnectionSchema}) = (:coupling_matrix,)
 
 """
-    SimulationConfigSchema
+    ExternalInput
 
-Defines simulation parameters.
+Represents an external input to a system in the network.
 
 # Fields
-- `time_span::Vector{Float64}`: Start and end time [t0, tf]
-- `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
-- `timestep::Union{Nothing, Float64}`: Fixed timestep (optional)
+- `system::String`: ID of target system
+- `indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
+- `func::String`: Expression for the input function (e.g., "constant(0.0)")
 """
-mutable struct SimulationConfigSchema
-    time_span::Vector{Float64}
-    solver::Union{Nothing,String}
-    timestep::Union{Nothing,Float64}
+struct ExternalInput
+    system::String
+    indices::Union{Nothing,AbstractVector{Int}}
+    func::String
 end
-StructTypes.StructType(::Type{SimulationConfigSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SimulationConfigSchema}) = (:solver, :timestep)
-SimulationConfigDefault = SimulationConfigSchema([0.0, 1.0], nothing, nothing)
+StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{ExternalInput}) = (:indices,)
 
 """
     NetworkConfigSchema
@@ -120,6 +119,25 @@ struct NetworkConfigSchema
 end
 StructTypes.StructType(::Type{NetworkConfigSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{NetworkConfigSchema}) = (:name, :connections, :external_inputs)
+
+"""
+    SimulationConfigSchema
+
+Defines simulation parameters.
+
+# Fields
+- `time_span::Vector{Float64}`: Start and end time [t0, tf]
+- `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
+- `timestep::Union{Nothing, Float64}`: Fixed timestep (optional)
+"""
+mutable struct SimulationConfigSchema
+    time_span::Vector{Float64}
+    solver::Union{Nothing,String}
+    timestep::Union{Nothing,Float64}
+end
+StructTypes.StructType(::Type{SimulationConfigSchema}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SimulationConfigSchema}) = (:solver, :timestep)
+SimulationConfigDefault = SimulationConfigSchema([0.0, 1.0], nothing, nothing)
 
 """
     RootConfigSchema

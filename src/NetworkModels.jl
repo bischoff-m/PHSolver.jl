@@ -74,25 +74,6 @@ struct ConnectionEdge{T<:Real}
 end
 
 """
-    ExternalInput
-
-Represents an external input to a system in the network.
-
-# Fields
-- `system::String`: ID of target system
-- `indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
-- `func::String`: Expression for the input function (e.g., "constant(0.0)")
-"""
-struct ExternalInput
-    system::String
-    indices::Union{Nothing,AbstractVector{Int}}
-    func::String
-end
-
-StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{ExternalInput}) = (:indices,)
-
-"""
     NetworkGraph
 
 Metadata for a network of interconnected port-Hamiltonian systems.
