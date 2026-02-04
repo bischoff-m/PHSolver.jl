@@ -5,7 +5,6 @@ Schema definitions for network configuration YAML files.
 These structs define the expected structure and types for network configurations.
 """
 
-# TODO: Rename to interaction, dissipation, mass and input for consistency?
 """
     SystemMatricesSchema
 
@@ -95,7 +94,7 @@ Defines an external input to a system.
 struct ExternalInputSchema
     system::String
     indices::Union{Nothing,Vector{Int}}
-    func::String  # Using 'func' instead of 'function' (keyword)
+    func::String
 end
 StructTypes.StructType(::Type{ExternalInputSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ExternalInputSchema}) = (:indices,)
@@ -179,3 +178,4 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     generate_schema()
 end
+generate_schema()

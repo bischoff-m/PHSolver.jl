@@ -80,12 +80,12 @@ Represents an external input to a system in the network.
 # Fields
 - `system::String`: ID of target system
 - `indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
-- `function_expr::String`: Expression for the input function (e.g., "constant(0.0)")
+- `func::String`: Expression for the input function (e.g., "constant(0.0)")
 """
 struct ExternalInput
     system::String
     indices::Union{Nothing,AbstractVector{Int}}
-    function_expr::String
+    func::String
 end
 
 """

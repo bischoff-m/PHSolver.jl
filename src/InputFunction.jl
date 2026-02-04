@@ -66,7 +66,7 @@ function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix
     # Parse all input function expressions
     input_funcs = OrderedDict{String,Function}()
     for ext_input in graph.external_inputs
-        input_funcs[ext_input.system] = parse_external_function(ext_input.function_expr)
+        input_funcs[ext_input.system] = parse_external_function(ext_input.func)
     end
 
     # Create global input function
