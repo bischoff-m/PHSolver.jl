@@ -58,10 +58,10 @@ network:
     - from:
         system: "controller"
       to:
-        system: "pendulum"  
+        system: "pendulum"
       type: "direct"
 
-  simulation:
-    time_span: [0.0, 50.0]
-    timestep: 0.1
-    solver: "IDA"
+simulation:
+  time_span: [0.0, 50.0]
+  timestep: 0.1
+  solver: "IDA"

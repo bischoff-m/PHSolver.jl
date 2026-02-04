@@ -1,4 +1,4 @@
-.PHONY: help format format-check format-diff test test-verbose docs-build docs-serve examples
+.PHONY: help format format-check format-diff test test-verbose docs-build docs-serve examples schema
 
 help:
 	@echo "Available targets:"
@@ -10,6 +10,7 @@ help:
 	@echo "  make test         - Run tests"
 	@echo "  make test-verbose - Run tests with verbose output"
 	@echo "  make examples     - Run example scripts"
+	@echo "  make schema       - Generate JSON schema"
 	@echo "  make help         - Show this help message"
 
 docs-build:
@@ -35,3 +36,6 @@ test-verbose:
 
 examples:
 	julia --project=. examples/main.jl
+
+schema:
+	julia --project=. scripts/update_schema.jl

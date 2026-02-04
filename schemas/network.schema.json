@@ -2,14 +2,18 @@
     "type": "object",
     "properties": {
         "network": {
-            "$ref": "#/$defs/NetworkConfigSchema"
+            "$ref": "#/$defs/Main.HamiltonSim.NetworkConfigSchema"
+        },
+        "simulation": {
+            "$ref": "#/$defs/Main.HamiltonSim.SimulationConfigSchema"
         }
     },
     "required": [
-        "network"
+        "network",
+        "simulation"
     ],
     "$defs": {
-        "NetworkConfigSchema": {
+        "Main.HamiltonSim.NetworkConfigSchema": {
             "type": "object",
             "properties": {
                 "name": {
@@ -18,7 +22,7 @@
                 "systems": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/SystemSchema"
+                        "$ref": "#/$defs/Main.HamiltonSim.SystemSchema"
                     }
                 },
                 "connections": {
@@ -109,16 +113,13 @@
                             "func"
                         ]
                     }
-                },
-                "simulation": {
-                    "$ref": "#/$defs/SimulationConfigSchema"
                 }
             },
             "required": [
                 "systems"
             ]
         },
-        "SimulationConfigSchema": {
+        "Main.HamiltonSim.SimulationConfigSchema": {
             "type": "object",
             "properties": {
                 "time_span": {
@@ -138,28 +139,7 @@
                 "time_span"
             ]
         },
-        "SystemSchema": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "matrices": {
-                    "$ref": "#/$defs/SystemMatricesSchema"
-                },
-                "initial_state": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                }
-            },
-            "required": [
-                "id",
-                "matrices"
-            ]
-        },
-        "SystemMatricesSchema": {
+        "Main.HamiltonSim.SystemMatricesSchema": {
             "type": "object",
             "properties": {
                 "J": {
@@ -203,6 +183,27 @@
                 "J",
                 "R",
                 "Q"
+            ]
+        },
+        "Main.HamiltonSim.SystemSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "matrices": {
+                    "$ref": "#/$defs/Main.HamiltonSim.SystemMatricesSchema"
+                },
+                "initial_state": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "matrices"
             ]
         }
     }

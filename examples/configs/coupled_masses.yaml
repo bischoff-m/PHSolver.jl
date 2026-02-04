@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=../../schemas/network.schema.json
+
 # Simple Interconnected Mass-Spring-Damper System
 # Two masses connected by a spring with damping
 #
@@ -7,7 +9,7 @@
 
 network:
   name: "Coupled Mass-Spring-Damper"
-  
+
   systems:
     # First mass-spring-damper subsystem
     - id: "mass1"
@@ -17,24 +19,24 @@ network:
         J:
           - [0.0, 1.0]
           - [-1.0, 0.0]
-        
+
         # R matrix (damping)
         R:
-          - [0.5, 0.0]   # Damping coefficient
+          - [0.5, 0.0] # Damping coefficient
           - [0.0, 0.0]
-        
+
         # Q matrix (mass and spring)
         Q:
-          - [1.0, 0.0]   # Mass m1 = 1.0
-          - [0.0, 2.0]   # Spring k1 = 2.0
-        
+          - [1.0, 0.0] # Mass m1 = 1.0
+          - [0.0, 2.0] # Spring k1 = 2.0
+
         # B matrix (input on momentum)
         B:
           - [1.0]
           - [0.0]
-      
-      initial_state: [0.5, 1.0]  # Initial momentum and position
-    
+
+      initial_state: [0.5, 1.0] # Initial momentum and position
+
     # Second mass-damper subsystem
     - id: "mass2"
       matrices:
@@ -42,21 +44,21 @@ network:
         J:
           - [0.0, 1.0]
           - [-1.0, 0.0]
-        
+
         R:
-          - [0.3, 0.0]   # Damping coefficient
+          - [0.3, 0.0] # Damping coefficient
           - [0.0, 0.0]
-        
+
         Q:
-          - [1.5, 0.0]   # Mass m2 = 1.5
-          - [0.0, 1.0]   # Spring k2 = 1.0
-        
+          - [1.5, 0.0] # Mass m2 = 1.5
+          - [0.0, 1.0] # Spring k2 = 1.0
+
         B:
           - [1.0]
           - [0.0]
-      
-      initial_state: [-0.3, -0.5]  # Initial momentum and position
-  
+
+      initial_state: [-0.3, -0.5] # Initial momentum and position
+
   # Interconnect the two masses through their outputs (velocities)
   connections:
     - from:
@@ -65,8 +67,8 @@ network:
       to:
         system: "mass2"
         port: "input"
-      type: "negative_feedback"  # Standard feedback coupling
-    
+      type: "negative_feedback" # Standard feedback coupling
+
     - from:
         system: "mass2"
         port: "output"
@@ -74,7 +76,7 @@ network:
         system: "mass1"
         port: "input"
       type: "negative_feedback"
-  
-  simulation:
-    time_span: [0.0, 10.0]
-    solver: "IDA"
+
+simulation:
+  time_span: [0.0, 10.0]
+  solver: "IDA"

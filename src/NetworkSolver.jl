@@ -143,7 +143,7 @@ function simulate_config(config::RootConfigSchema)
     Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
 
     # Load configuration
-    sim_config = config.network.simulation
+    sim_config = config.simulation
     sim_config = isnothing(sim_config) ? SimulationConfigDefault : sim_config
     Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
 

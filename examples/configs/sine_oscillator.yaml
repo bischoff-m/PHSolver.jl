@@ -36,6 +36,6 @@ network:
       # Choose x1(0)=0, x2(0)=1 so x1(t) becomes a sine wave.
       initial_state: [0.0, 1.0]
 
-  simulation:
-    time_span: [0.0, 10]
-    solver: "IDA"
+simulation:
+  time_span: [0.0, 10]
+  solver: "IDA"

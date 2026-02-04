@@ -82,24 +82,6 @@ StructTypes.StructType(::Type{ConnectionSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ConnectionSchema}) = (:coupling_matrix,)
 
 """
-    ExternalInputSchema
-
-Defines an external input to a system.
-
-# Fields
-- `system::String`: ID of the target system
-- `indices::Union{Nothing, Vector{Int}}`: Input port indices (optional)
-- `func::String`: Input function expression (e.g., "constant(1.0)", "sin(2*pi*t)")
-"""
-struct ExternalInputSchema
-    system::String
-    indices::Union{Nothing,Vector{Int}}
-    func::String
-end
-StructTypes.StructType(::Type{ExternalInputSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{ExternalInputSchema}) = (:indices,)
-
-"""
     SimulationConfigSchema
 
 Defines simulation parameters.
@@ -134,11 +116,10 @@ struct NetworkConfigSchema
     name::Union{Nothing,String}
     systems::Vector{SystemSchema}
     connections::Union{Nothing,Vector{ConnectionSchema}}
-    external_inputs::Union{Nothing,Vector{ExternalInputSchema}}
-    simulation::Union{Nothing,SimulationConfigSchema}
+    external_inputs::Union{Nothing,Vector{ExternalInput}}
 end
 StructTypes.StructType(::Type{NetworkConfigSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{NetworkConfigSchema}) = (:name, :connections, :external_inputs, :simulation)
+StructTypes.omitempties(::Type{NetworkConfigSchema}) = (:name, :connections, :external_inputs)
 
 """
     RootConfigSchema
@@ -150,32 +131,6 @@ Root-level configuration object.
 """
 struct RootConfigSchema
     network::NetworkConfigSchema
+    simulation::SimulationConfigSchema
 end
 StructTypes.StructType(::Type{RootConfigSchema}) = StructTypes.Struct()
-
-"""
-    generate_schema(output_file::String="schemas/network.schema.json")
-
-Generate and write the JSON schema to a file.
-
-# Arguments
-- `output_file::String`: Path to output JSON schema file
-"""
-function generate_schema(output_file::String="schemas/network.schema.json")
-    # Generate schema with references for cleaner structure
-    schema_dict = JSONSchemaGenerator.schema(RootConfigSchema, use_references=true)
-
-    # Write to file with pretty formatting
-    open(output_file, "w") do io
-        JSON3.pretty(io, schema_dict)
-    end
-
-    println("Schema written to: $output_file")
-    return schema_dict
-end
-
-# Generate schema if run as script
-if abspath(PROGRAM_FILE) == @__FILE__
-    generate_schema()
-end
-generate_schema()

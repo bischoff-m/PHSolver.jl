@@ -1,5 +1,6 @@
 using LinearAlgebra
 using OrderedCollections
+using StructTypes
 
 
 """
@@ -87,6 +88,9 @@ struct ExternalInput
     indices::Union{Nothing,AbstractVector{Int}}
     func::String
 end
+
+StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{ExternalInput}) = (:indices,)
 
 """
     NetworkGraph
