@@ -1,5 +1,6 @@
 using LinearAlgebra
 using SparseArrays
+using OrderedCollections
 
 """
     apply_direct_connection!(
@@ -118,7 +119,7 @@ end
 """
     apply_connection!(
         J_global::Matrix,
-        nodes::Dict{String, PHSNode},
+        nodes::OrderedDict{String, PHSNode},
         edge::ConnectionEdge
     )
 
@@ -126,7 +127,7 @@ Apply a connection to the global interconnection matrix based on connection type
 """
 function apply_connection!(
     J_global::AbstractMatrix{T},
-    nodes::Dict{String,PHSNode{T}},
+    nodes::OrderedDict{String,PHSNode{T}},
     edge::ConnectionEdge{T},
 ) where {T<:Real}
     # Get nodes

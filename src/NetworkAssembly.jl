@@ -1,4 +1,5 @@
 using LinearAlgebra
+using OrderedCollections
 
 
 """
@@ -13,11 +14,11 @@ Create an external input function for the network from YAML configuration.
 # Returns
 - `Function`: u(t) that returns the input vector at time t
 """
-function get_input_function(graph::NetworkGraph{T}, B::AbstractMatrix{T}) where {T<:Real}
-    n_inputs = size(B, 2)
+function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
+    n_inputs = size(input_matrix, 2)
 
     # Parse all input function expressions
-    input_funcs = Dict{String,Function}()
+    input_funcs = OrderedDict{String,Function}()
     for ext_input in graph.external_inputs
         input_funcs[ext_input.system] = parse_external_function(ext_input.function_expr)
     end
@@ -27,7 +28,7 @@ function get_input_function(graph::NetworkGraph{T}, B::AbstractMatrix{T}) where 
         u = zeros(T, n_inputs)
 
         input_offset = 0
-        for (node_id, node) in sort(collect(graph.nodes), by=x -> x[1])
+        for (node_id, node) in graph.nodes
             node_input_dim = input_dimension(node.system)
 
             # Check if this node has external input
@@ -196,26 +197,23 @@ end
 
 """
     build_block_diagonal(
-        nodes::Dict{String, PHSNode},
+        nodes::OrderedDict{String, PHSNode},
         matrix_getter::Function
     )
 
 Assemble a block diagonal matrix from individual system matrices.
 
 # Arguments
-- `nodes`: Dictionary of PHSNode objects
+- `nodes`: Ordered dictionary of PHSNode objects
 - `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
                    (e.g., sys -> sys.connections)
 """
 function build_block_diagonal(
-    nodes::Dict{String,PHSNode{T}},
+    nodes::OrderedDict{String,PHSNode{T}},
     matrix_getter::Function,
 ) where {T<:Real}
-    # Sort nodes by state offset to maintain consistent ordering
-    sorted_nodes = sort(collect(values(nodes)); by=n -> n.state_offset)
-
-    # Extract matrices in order
-    matrices = [sparse(matrix_getter(node.system)) for node in sorted_nodes]
+    # Extract matrices in insertion order
+    matrices = [sparse(matrix_getter(node.system)) for node in values(nodes)]
 
     return blockdiag(matrices...)
 end

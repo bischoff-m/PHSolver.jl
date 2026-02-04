@@ -1,4 +1,5 @@
 import YAML, JSONSchema, JSON3
+using OrderedCollections
 include("NetworkSchema.jl")
 
 
@@ -123,10 +124,10 @@ Create network nodes from validated schema objects.
 - `T::Type`: Element type for matrices
 
 # Returns
-- `Dict{String, PHSNode{T}}`: Dictionary of network nodes
+- `OrderedDict{String, PHSNode{T}}`: Dictionary of network nodes
 """
 function create_network_nodes_from_schema(systems_schema::AbstractVector{SystemSchema}, ::Type{T}) where {T<:Real}
-    nodes = Dict{String,PHSNode{T}}()
+    nodes = OrderedDict{String,PHSNode{T}}()
     offset = 0
 
     for sys_schema in systems_schema

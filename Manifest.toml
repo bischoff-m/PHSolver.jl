@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "63e8a88ba3669640e83391c4f69cd5a705606557"
+project_hash = "a5bf7fbdebbfa557e5fd096da82a22389d746f43"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -793,7 +793,7 @@ uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 version = "1.10.19"
 
 [[deps.HamiltonSim]]
-deps = ["IJulia", "JSON3", "JSONSchema", "JSONSchemaGenerator", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "Logging", "OrdinaryDiffEq", "Plots", "ProgressLogging", "StructTypes", "Sundials", "Term", "TerminalLoggers", "Test", "YAML"]
+deps = ["IJulia", "JSON3", "JSONSchema", "JSONSchemaGenerator", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "Logging", "OrdinaryDiffEq", "Plots", "ProgressLogging", "SparseArrays", "StructTypes", "Sundials", "Term", "TerminalLoggers", "Test", "YAML"]
 path = "."
 uuid = "403392ac-400e-4968-aac6-7f11f909412e"
 version = "0.1.0"

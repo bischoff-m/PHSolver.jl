@@ -1,4 +1,5 @@
 using LinearAlgebra
+using OrderedCollections
 
 """
     PHSNode
@@ -125,21 +126,21 @@ This is only used during assembly - the assembled result is a PortHamSystem.
 
 # Fields
 - `name::String`: Network name
-- `nodes::Dict{String, PHSNode}`: All PHS nodes indexed by ID
+- `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
 - `edges::AbstractVector{ConnectionEdge}`: All interconnections
 - `external_inputs::AbstractVector{ExternalInput}`: External inputs to the network
 - `total_state_dim::Int`: Total dimension of global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
-    nodes::Dict{String,PHSNode{T}}
+    nodes::OrderedDict{String,PHSNode{T}}
     edges::AbstractVector{ConnectionEdge{T}}
     external_inputs::AbstractVector{ExternalInput}
     total_state_dim::Int
 
     function NetworkGraph(
         name::String,
-        nodes::Dict{String,PHSNode{T}},
+        nodes::OrderedDict{String,PHSNode{T}},
         edges::AbstractVector{ConnectionEdge{T}},
         external_inputs::AbstractVector{ExternalInput},
     ) where {T<:Real}
@@ -178,7 +179,7 @@ function create_network_nodes(
     systems_config::Vector,
     ::Type{T}=Float64,
 ) where {T<:Real}
-    nodes = Dict{String,PHSNode{T}}()
+    nodes = OrderedDict{String,PHSNode{T}}()
     state_offset = 0
 
     for sys_config in systems_config
