@@ -214,12 +214,3 @@ function create_network_nodes(
 
     return nodes
 end
-
-"""
-    get_node_state_range(node::PHSNode)
-
-Get the range of indices for a node's state in the global state vector.
-"""
-function get_node_state_range(node::PHSNode)
-    return (node.state_offset+1):(node.state_offset+node.state_dim)
-end

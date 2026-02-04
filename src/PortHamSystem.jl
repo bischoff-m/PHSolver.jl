@@ -6,13 +6,19 @@ function isskewsym(A::AbstractMatrix{<:Real})
 end
 
 struct PortHamSystem{T<:Real}
-    connections::AbstractMatrix{T}
+    # Name "interaction" from the figure in
+    # "Port-Hamiltonian framework in power systems domain: A survey"
+    # https://doi.org/10.1016/j.egyr.2023.09.077
+    # and
+    # Name "mass" from mass matrix in DAE literature
+    # https://en.wikipedia.org/wiki/Mass_matrix
+    interaction::AbstractMatrix{T}
     dissipation::AbstractMatrix{T}
     mass::AbstractMatrix{T}
     input::AbstractMatrix{T}
 
     function PortHamSystem(
-        connections::AbstractMatrix{T},
+        interaction::AbstractMatrix{T},
         dissipation::AbstractMatrix{T},
         mass::AbstractMatrix{T},
         input::AbstractMatrix{T},
@@ -21,8 +27,8 @@ struct PortHamSystem{T<:Real}
         n = size(mass, 1)
 
         # Check dimensions
-        @assert size(connections, 1) == n "Interconnection matrix must have size (n, n)"
-        @assert size(connections, 2) == n "Interconnection matrix must have size (n, n)"
+        @assert size(interaction, 1) == n "Interconnection matrix must have size (n, n)"
+        @assert size(interaction, 2) == n "Interconnection matrix must have size (n, n)"
         @assert size(dissipation, 1) == n "Dissipation matrix must have size (n, n)"
         @assert size(dissipation, 2) == n "Dissipation matrix must have size (n, n)"
         @assert size(mass, 1) == n "Mass matrix must have size (n, n)"
@@ -34,9 +40,9 @@ struct PortHamSystem{T<:Real}
         @assert all(eigvals(Matrix(dissipation)) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
         @assert isdiag(mass) "Mass matrix must be diagonal"
         @assert all(diag(mass) .>= -1e-10) "Mass matrix must be positive semi-definite"
-        @assert isskewsym(connections) "Interconnection matrix must be skew-symmetric"
+        @assert isskewsym(interaction) "Interconnection matrix must be skew-symmetric"
 
-        new{T}(connections, dissipation, mass, input)
+        new{T}(interaction, dissipation, mass, input)
     end
 end
 

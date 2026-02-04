@@ -124,14 +124,16 @@ where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 """
 function build_network(graph::NetworkGraph{T}) where {T<:Real}
     # Create block diagonal matrices from individual systems
-    J = build_block_diagonal(graph.nodes, sys -> sys.connections)
+    J = build_block_diagonal(graph.nodes, sys -> sys.interaction)
     R = build_block_diagonal(graph.nodes, sys -> sys.dissipation)
     Q = build_block_diagonal(graph.nodes, sys -> sys.mass)
     B = build_block_diagonal(graph.nodes, sys -> sys.input)
 
     # Apply interconnections to J
     for edge in graph.edges
-        apply_connection!(J, graph.nodes, edge)
+        source = graph.nodes[edge.from_node]
+        target = graph.nodes[edge.to_node]
+        apply_connection!(J, edge, source, target)
     end
 
     # Assemble initial state for the network
@@ -206,7 +208,7 @@ Assemble a block diagonal matrix from individual system matrices.
 # Arguments
 - `nodes`: Ordered dictionary of PHSNode objects
 - `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
-                   (e.g., sys -> sys.connections)
+                   (e.g., sys -> sys.interaction)
 """
 function build_block_diagonal(
     nodes::OrderedDict{String,PHSNode{T}},

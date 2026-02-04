@@ -25,7 +25,6 @@ export ExternalInput
 export NetworkGraph
 export get_node
 export create_network_nodes
-export get_node_state_range
 
 # Export interconnection functions
 export apply_connection!
