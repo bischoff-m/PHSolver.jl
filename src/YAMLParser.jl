@@ -50,39 +50,23 @@ Load a port-Hamiltonian network configuration from a YAML file.
 # Returns
 - `NetworkGraph`: Network graph metadata ready for assembly
 """
-function load_network_from_yaml(config::RootConfigSchema, ::Type{T}=Float64) where {T<:Real}
-    network_config = config.network
-
+function load_network(config::NetworkConfigSchema, ::Type{T}=Float64) where {T<:Real}
     # Parse network name
-    name = something(network_config.name, "Unnamed Network")
+    name = something(config.name, "Unnamed Network")
 
     # Parse systems and create nodes
-    nodes = create_network_nodes_from_schema(network_config.systems, T)
+    nodes = create_network_nodes_from_schema(config.systems, T)
 
-    # Parse connections
-    edges = ConnectionEdge{T}[]
-    if !isnothing(network_config.connections)
-        for conn_schema in network_config.connections
-            coupling_matrix = if isnothing(conn_schema.coupling_matrix)
-                nothing
-            else
-                Matrix{T}(hcat(conn_schema.coupling_matrix...)')
-            end
-            edge = ConnectionEdge{T}(
-                conn_schema.from.system,
-                conn_schema.to.system,
-                Symbol(conn_schema.type);
-                coupling_matrix=coupling_matrix,
-            )
-
-            push!(edges, edge)
-        end
+    edges = if !isnothing(config.connections)
+        config.connections
+    else
+        Connection[]
     end
 
     # Parse external inputs
     external_inputs = ExternalInput[]
-    if !isnothing(network_config.external_inputs)
-        for input_schema in network_config.external_inputs
+    if !isnothing(config.external_inputs)
+        for input_schema in config.external_inputs
             system = input_schema.system
             indices = input_schema.indices
             function_expr = input_schema.func

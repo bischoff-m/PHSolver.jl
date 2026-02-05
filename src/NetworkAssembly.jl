@@ -112,8 +112,8 @@ function build_network(graph::NetworkGraph{T}) where {T<:Real}
 
     # Apply interconnections to J
     for edge in graph.edges
-        source = graph.nodes[edge.source]
-        target = graph.nodes[edge.target]
+        source = graph.nodes[edge.from]
+        target = graph.nodes[edge.to]
         apply_connection!(J, edge, source, target)
     end
 

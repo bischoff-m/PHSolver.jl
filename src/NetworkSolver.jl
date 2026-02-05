@@ -139,7 +139,7 @@ end
 
 function simulate_config(config::RootConfigSchema)
     # Load network
-    graph = load_network_from_yaml(config, Float64)
+    graph = load_network(config.network, Float64)
     Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
 
     # Load configuration

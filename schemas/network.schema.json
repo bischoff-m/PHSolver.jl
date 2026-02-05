@@ -13,6 +13,27 @@
         "simulation"
     ],
     "$defs": {
+        "Main.HamiltonSim.SystemSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "matrices": {
+                    "$ref": "#/$defs/Main.HamiltonSim.SystemMatricesSchema"
+                },
+                "initial_state": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "matrices"
+            ]
+        },
         "Main.HamiltonSim.NetworkConfigSchema": {
             "type": "object",
             "properties": {
@@ -31,55 +52,30 @@
                         "type": "object",
                         "properties": {
                             "from": {
-                                "type": "object",
-                                "properties": {
-                                    "system": {
-                                        "type": "string"
-                                    },
-                                    "port": {
-                                        "type": "string"
-                                    },
-                                    "indices": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "integer"
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "system"
-                                ]
+                                "type": "string"
                             },
                             "to": {
-                                "type": "object",
-                                "properties": {
-                                    "system": {
-                                        "type": "string"
-                                    },
-                                    "port": {
-                                        "type": "string"
-                                    },
-                                    "indices": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "integer"
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "system"
-                                ]
+                                "type": "string"
                             },
                             "type": {
                                 "type": "string"
                             },
+                            "from_ports": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "to_ports": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
                             "coupling_matrix": {
                                 "type": "array",
                                 "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "number"
-                                    }
+                                    "type": "number"
                                 }
                             }
                         },
@@ -117,26 +113,6 @@
             },
             "required": [
                 "systems"
-            ]
-        },
-        "Main.HamiltonSim.SimulationConfigSchema": {
-            "type": "object",
-            "properties": {
-                "time_span": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "solver": {
-                    "type": "string"
-                },
-                "timestep": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "time_span"
             ]
         },
         "Main.HamiltonSim.SystemMatricesSchema": {
@@ -185,25 +161,24 @@
                 "Q"
             ]
         },
-        "Main.HamiltonSim.SystemSchema": {
+        "Main.HamiltonSim.SimulationConfigSchema": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "matrices": {
-                    "$ref": "#/$defs/Main.HamiltonSim.SystemMatricesSchema"
-                },
-                "initial_state": {
+                "time_span": {
                     "type": "array",
                     "items": {
                         "type": "number"
                     }
+                },
+                "solver": {
+                    "type": "string"
+                },
+                "timestep": {
+                    "type": "number"
                 }
             },
             "required": [
-                "id",
-                "matrices"
+                "time_span"
             ]
         }
     }

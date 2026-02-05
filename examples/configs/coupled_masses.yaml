@@ -61,20 +61,16 @@ network:
 
   # Interconnect the two masses through their outputs (velocities)
   connections:
-    - from:
-        system: "mass1"
-        port: "output"
-      to:
-        system: "mass2"
-        port: "input"
+    - from: "mass1"
+      from_ports: [1]
+      to: "mass2"
+      to_ports: [1]
       type: "negative_feedback" # Standard feedback coupling
 
-    - from:
-        system: "mass2"
-        port: "output"
-      to:
-        system: "mass1"
-        port: "input"
+    - from: "mass2"
+      from_ports: [1]
+      to: "mass1"
+      to_ports: [1]
       type: "negative_feedback"
 
 simulation:

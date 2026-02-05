@@ -22,7 +22,7 @@ export input_dimension
 
 # Export network types
 export PHSNode
-export ConnectionEdge
+export Connection
 export ExternalInput
 export NetworkGraph
 
@@ -35,7 +35,7 @@ export compute_hamiltonian
 export parse_external_function
 
 # Export YAML parser functions
-export load_network_from_yaml
+export load_network
 export read_config
 
 # Export solver functions

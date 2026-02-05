@@ -7,7 +7,7 @@ using OrderedCollections
         J_global::Matrix,
         node_source::PHSNode,
         node_target::PHSNode,
-        edge::ConnectionEdge
+        edge::Connection
     )
 
 Apply a direct connection: u_target = y_source
@@ -33,7 +33,7 @@ end
         J_global::Matrix,
         node_source::PHSNode,
         node_target::PHSNode,
-        edge::ConnectionEdge
+        edge::Connection
     )
 
 Apply a negative feedback connection: u_target = -y_source
@@ -55,7 +55,7 @@ end
         J_global::Matrix,
         node1::PHSNode,
         node2::PHSNode,
-        edge::ConnectionEdge
+        edge::Connection
     )
 
 Apply a skew-symmetric power-conserving connection between two systems.
@@ -72,7 +72,7 @@ function apply_skew_symmetric_connection!(
     B2::AbstractMatrix{T},
     range1::UnitRange{Int},
     range2::UnitRange{Int},
-    edge::ConnectionEdge{T},
+    edge::Connection,
 ) where {T<:Real}
     K = edge.coupling_matrix
     @assert !isnothing(K) "Skew-symmetric connection requires coupling matrix"
@@ -85,14 +85,14 @@ end
     apply_connection!(
         J_global::Matrix,
         nodes::OrderedDict{String, PHSNode},
-        edge::ConnectionEdge
+        edge::Connection
     )
 
 Apply a connection to the global interconnection matrix based on connection type.
 """
 function apply_connection!(
     interaction::AbstractMatrix{T},
-    edge::ConnectionEdge{T},
+    edge::Connection,
     source::PHSNode,
     target::PHSNode,
 ) where {T<:Real}

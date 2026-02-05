@@ -44,24 +44,6 @@ StructTypes.StructType(::Type{SystemSchema}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SystemSchema}) = (:initial_state,)
 
 """
-    ConnectionEndpointSchema
-
-Defines one endpoint of a connection.
-
-# Fields
-- `system::String`: ID of the system
-- `port::Union{Nothing, String}`: Port name (optional, e.g., "input", "output")
-- `indices::Union{Nothing, Vector{Int}}`: Specific port indices (optional)
-"""
-struct ConnectionEndpointSchema
-    system::String
-    port::Union{Nothing,String}
-    indices::Union{Nothing,Vector{Int}}
-end
-StructTypes.StructType(::Type{ConnectionEndpointSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{ConnectionEndpointSchema}) = (:port, :indices)
-
-"""
     ConnectionSchema
 
 Defines an interconnection between two systems.
@@ -72,14 +54,33 @@ Defines an interconnection between two systems.
 - `type::String`: Connection type ("direct", "negative_feedback", "skew_symmetric")
 - `coupling_matrix::Union{Nothing, Vector{Vector{Float64}}}`: Coupling matrix for skew_symmetric (optional)
 """
-struct ConnectionSchema
-    from::ConnectionEndpointSchema
-    to::ConnectionEndpointSchema
-    type::String
-    coupling_matrix::Union{Nothing,Vector{Vector{Float64}}}
+struct Connection
+    from::String
+    to::String
+    type::Symbol
+    from_ports::Union{Nothing,AbstractVector{Integer}}
+    to_ports::Union{Nothing,AbstractVector{Integer}}
+    coupling_matrix::Union{Nothing,AbstractMatrix{Real}}
+
+    function Connection(
+        from::String,
+        to::String,
+        type::Symbol,
+        from_ports::Union{Nothing,AbstractVector{Integer}}=nothing,
+        to_ports::Union{Nothing,AbstractVector{Integer}}=nothing,
+        coupling_matrix::Union{Nothing,AbstractMatrix{Real}}=nothing
+    )
+        @assert type in [:direct, :negative_feedback, :skew_symmetric] "Invalid connection type: $type"
+
+        if type == :skew_symmetric
+            @assert !isnothing(coupling_matrix) "Skew-symmetric connections require a coupling matrix"
+        end
+
+        new(from, to, type, from_ports, to_ports, coupling_matrix)
+    end
 end
-StructTypes.StructType(::Type{ConnectionSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{ConnectionSchema}) = (:coupling_matrix,)
+StructTypes.StructType(::Type{Connection}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{Connection}) = (:from_ports, :to_ports, :coupling_matrix,)
 
 """
     ExternalInput
@@ -88,12 +89,12 @@ Represents an external input to a system in the network.
 
 # Fields
 - `system::String`: ID of target system
-- `indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
+- `indices::Union{Nothing, AbstractVector{Integer}}`: Input indices (nothing = all)
 - `func::String`: Expression for the input function (e.g., "constant(0.0)")
 """
 struct ExternalInput
     system::String
-    indices::Union{Nothing,AbstractVector{Int}}
+    indices::Union{Nothing,AbstractVector{Integer}}
     func::String
 end
 StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
@@ -114,7 +115,7 @@ Top-level network configuration.
 struct NetworkConfigSchema
     name::Union{Nothing,String}
     systems::Vector{SystemSchema}
-    connections::Union{Nothing,Vector{ConnectionSchema}}
+    connections::Union{Nothing,Vector{Connection}}
     external_inputs::Union{Nothing,Vector{ExternalInput}}
 end
 StructTypes.StructType(::Type{NetworkConfigSchema}) = StructTypes.Struct()

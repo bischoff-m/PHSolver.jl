@@ -34,46 +34,6 @@ end
 
 
 """
-    ConnectionEdge
-
-Represents an interconnection between two port-Hamiltonian systems.
-
-# Connection Types
-- `:direct`: u_target = y_source + external
-- `:negative_feedback`: u_target = -y_source + external
-- `:skew_symmetric`: Power-conserving skew-symmetric coupling
-
-# Fields
-- `from_node::String`: ID of source system
-- `from_indices::Union{Nothing, AbstractVector{Int}}`: Output indices (nothing = all)
-- `to_node::String`: ID of target system
-- `to_indices::Union{Nothing, AbstractVector{Int}}`: Input indices (nothing = all)
-- `type::Symbol`: Connection type
-- `coupling_matrix::Union{Nothing, AbstractMatrix{Float64}}`: Coupling matrix K for skew-symmetric
-"""
-struct ConnectionEdge{T<:Real}
-    source::String
-    target::String
-    type::Symbol
-    coupling_matrix::Union{Nothing,AbstractMatrix{T}}
-
-    function ConnectionEdge{T}(
-        source::String,
-        target::String,
-        type::Symbol;
-        coupling_matrix::Union{Nothing,AbstractMatrix{T}}=nothing,
-    ) where {T<:Real}
-        @assert type in [:direct, :negative_feedback, :skew_symmetric] "Invalid connection type: $type"
-
-        if type == :skew_symmetric
-            @assert !isnothing(coupling_matrix) "Skew-symmetric connections require a coupling matrix"
-        end
-
-        new{T}(source, target, type, coupling_matrix)
-    end
-end
-
-"""
     NetworkGraph
 
 Metadata for a network of interconnected port-Hamiltonian systems.
@@ -82,21 +42,21 @@ This is only used during assembly - the assembled result is a PortHamSystem.
 # Fields
 - `name::String`: Network name
 - `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
-- `edges::AbstractVector{ConnectionEdge}`: All interconnections
+- `edges::AbstractVector{Connection}`: All interconnections
 - `external_inputs::AbstractVector{ExternalInput}`: External inputs to the network
 - `total_state_dim::Int`: Total dimension of global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
     nodes::OrderedDict{String,PHSNode{T}}
-    edges::AbstractVector{ConnectionEdge{T}}
+    edges::AbstractVector{Connection}
     external_inputs::AbstractVector{ExternalInput}
     total_state_dim::Int
 
     function NetworkGraph(
         name::String,
         nodes::OrderedDict{String,PHSNode{T}},
-        edges::AbstractVector{ConnectionEdge{T}},
+        edges::AbstractVector{Connection},
         external_inputs::AbstractVector{ExternalInput},
     ) where {T<:Real}
         # Calculate total state dimension

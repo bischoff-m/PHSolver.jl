@@ -50,15 +50,15 @@ network:
       initial_state: [0.0, 0.0] # Controller starts with zero integral and proportional states
 
   connections:
-    - from:
-        system: "pendulum"
-      to:
-        system: "controller"
+    - from: "pendulum"
+      from_ports: [1]
+      to: "controller"
+      to_ports: [1]
       type: "negative_feedback"
-    - from:
-        system: "controller"
-      to:
-        system: "pendulum"
+    - from: "controller"
+      from_ports: [1]
+      to: "pendulum"
+      to_ports: [1]
       type: "direct"
 
 simulation:
