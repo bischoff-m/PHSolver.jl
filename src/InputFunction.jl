@@ -49,7 +49,7 @@ end
 
 
 """
-    create_external_input_function(graph::NetworkGraph, B::Matrix)
+    build_input_func(graph::NetworkGraph, B::Matrix)
 
 Create an external input function for the network from YAML configuration.
 
@@ -60,7 +60,7 @@ Create an external input function for the network from YAML configuration.
 # Returns
 - `Function`: u(t) that returns the input vector at time t
 """
-function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
+function build_input_func(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
     n_inputs = size(input_matrix, 2)
 
     # Parse all input function expressions
@@ -69,8 +69,8 @@ function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix
         input_funcs[ext_input.system] = parse_external_function(ext_input.func)
     end
 
-    # Create global input function
-    function u_network(t::Real)
+    # Create input function
+    function input_function(t::Real)
         u = zeros(T, n_inputs)
 
         input_offset = 0
@@ -94,5 +94,5 @@ function get_input_function(graph::NetworkGraph{T}, input_matrix::AbstractMatrix
         return u
     end
 
-    return u_network
+    return input_function
 end

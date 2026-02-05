@@ -48,3 +48,23 @@ end
 
 state_dimension(sys::PortHamSystem) = size(sys.mass, 1)
 input_dimension(sys::PortHamSystem) = size(sys.input, 2)
+
+struct SimDynamics{T<:Real}
+    system::PortHamSystem{T}
+    x0::AbstractVector{T}
+    differential_vars::AbstractVector{Bool}
+    input_func::Function
+
+    function SimDynamics(
+        system::PortHamSystem{T},
+        x0::AbstractVector{T},
+        differential_vars::AbstractVector{Bool},
+        input_func::Function,
+    ) where {T<:Real}
+        n = state_dimension(system)
+        @assert length(x0) == n "Initial state vector x0 must have length $n"
+        @assert length(differential_vars) == n "Differential vars vector must have length $n"
+
+        new{T}(system, x0, differential_vars, input_func)
+    end
+end

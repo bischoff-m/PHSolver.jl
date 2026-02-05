@@ -39,27 +39,24 @@ global_logger(TerminalLogger(right_justify=120))
 # end
 
 function solve_phs(
-    system::PortHamSystem{T},
-    x0::AbstractVector{T},
-    differential_vars::AbstractVector{Bool},
-    u_func::Function;
+    dynamics::SimDynamics{T};
     sim_config::SimulationConfigSchema=SimulationConfigDefault,
 ) where {T<:Real}
     # Get matrices
-    Q = system.mass
-    J = system.interaction
-    R = system.dissipation
-    B = system.input
+    Q = dynamics.system.mass
+    J = dynamics.system.interaction
+    R = dynamics.system.dissipation
+    B = dynamics.system.input
 
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
-    dx0 = zeros(T, length(x0))
-    u0 = u_func(sim_config.time_span[1])
-    rhs = (J - R) * x0 + B * u0
+    dx0 = zeros(T, length(dynamics.x0))
+    u0 = dynamics.input_func(sim_config.time_span[1])
+    rhs = (J - R) * dynamics.x0 + B * u0
 
     # Fill in derivatives for differential variables
     for i in eachindex(dx0)
-        if differential_vars[i]
+        if dynamics.differential_vars[i]
             dx0[i] = rhs[i] / Q[i, i]
         end
     end
@@ -67,12 +64,12 @@ function solve_phs(
     # Define DAE residual function
     # residual = Q * dx - (J - R) * x - B * u(t)
     function dae_residual!(out, dx, x, p, t)
-        u_t = u_func(t)
+        u_t = dynamics.input_func(t)
         out .= Q * dx - (J - R) * x - B * u_t
     end
 
     # Create DAE problem
-    prob = Eq.DAEProblem(dae_residual!, dx0, x0, sim_config.time_span; differential_vars=differential_vars)
+    prob = Eq.DAEProblem(dae_residual!, dx0, dynamics.x0, sim_config.time_span; differential_vars=dynamics.differential_vars)
 
     # Select solver
     solver = get_dae_solver(sim_config.solver)
@@ -148,23 +145,16 @@ function simulate_config(config::RootConfigSchema)
     Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
 
     # Assemble network
-    system, x0, differential_vars = build_network(graph)
-    u_func = get_input_function(graph, system.input)
+    sim_input = build_network(graph)
     n_nodes = length(graph.nodes)
-    n_states = length(x0)
+    n_states = length(sim_input.x0)
     Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
 
     # Solve
-    sol = solve_phs(
-        system,
-        x0,
-        differential_vars,
-        u_func;
-        sim_config=sim_config,
-    )
+    sol = solve_phs(sim_input, sim_config=sim_config)
     Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
-    return SimulationResult(system, sol, graph)
+    return SimulationResult(sim_input.system, sol, graph)
 end
 
 """

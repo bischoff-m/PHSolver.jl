@@ -90,8 +90,7 @@ This function:
 3. Assembles initial conditions from individual nodes
 4. Returns a PortHamSystem representing the entire network
 
-The assembled system satisfies:
-    Q * ẋ = (J - R) * x + B * u(t)
+The assembled system satisfies: Q * ẋ = (J - R) * x + B * u(t)
 
 where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 
@@ -99,9 +98,8 @@ where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
 - `graph::NetworkGraph`: Network graph metadata
 
 # Returns
-- `PortHamSystem`: Assembled network as a single PHS
-- `x0::Vector`: Initial conditions for the network
-- `differential_vars::AbstractVector{Bool}`: Which variables are differential (vs algebraic)
+- `SimDynamics`: Assembled network as a single PHS with initial conditions
+  and differential variable indicators
 """
 function build_network(graph::NetworkGraph{T}) where {T<:Real}
     # Create block diagonal matrices from individual systems
@@ -117,10 +115,11 @@ function build_network(graph::NetworkGraph{T}) where {T<:Real}
         apply_connection!(J, edge, source, target)
     end
 
-    # Assemble initial state for the network
-    x0, differential_vars = build_initial_state(graph)
+
     # Create the assembled PortHamSystem
     network_phs = PortHamSystem(J, R, Q, B)
+    x0, differential_vars = build_initial_state(graph)
+    u_func = build_input_func(graph, B)
 
-    return network_phs, x0, differential_vars
+    return SimDynamics(network_phs, x0, differential_vars, u_func)
 end
