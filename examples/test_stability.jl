@@ -5,7 +5,7 @@ using Plots
 import Term
 
 config_file = joinpath(@__DIR__, "configs", "sine_oscillator.yaml")
-output_dir = joinpath(@__DIR__, "output", "stability_tests")
+output_dir = joinpath(@__DIR__, "output.local", "stability_tests")
 
 tmax = 10000.0
 config = HamiltonSim.read_config(config_file)

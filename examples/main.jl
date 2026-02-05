@@ -4,7 +4,7 @@ import .HamiltonSim
 using Plots
 import Term
 
-output_dir = joinpath(@__DIR__, "output")
+output_dir = joinpath(@__DIR__, "output.local")
 isdir(output_dir) || mkdir(output_dir)
 
 function run_example(example::String)
