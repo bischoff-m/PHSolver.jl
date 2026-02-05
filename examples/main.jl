@@ -1,6 +1,6 @@
-include("../src/HamiltonSim.jl")
+include("../src/PHSim.jl")
 
-import .HamiltonSim
+import .PHSim
 using Plots
 import Term
 
@@ -12,8 +12,8 @@ function run_example(example::String)
     config_file = joinpath(@__DIR__, "configs", "$(example).yaml")
 
     # Run complete simulation workflow
-    result = HamiltonSim.simulate_file(config_file)
-    plt = HamiltonSim.plot_result(result, title=result.graph.name)
+    result = PHSim.simulate_file(config_file)
+    plt = PHSim.plot_result(result, title=result.graph.name)
     display(plt)
     savefig(plt, output_dir * "/$(example).png")
     Term.tprintln()

@@ -6,7 +6,7 @@ bib = CitationBibliography(
     style=:numeric
 )
 makedocs(
-    sitename="HamiltonSim Documentation",
+    sitename="PHSim Documentation",
     format=Documenter.HTML(assets=["assets/custom.css"]),
     plugins=[bib],
     pages=[
