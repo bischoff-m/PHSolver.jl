@@ -14,6 +14,7 @@ function run_example(example::String)
     # Run complete simulation workflow
     result = HamiltonSim.simulate_file(config_file)
     plt = HamiltonSim.plot_result(result, title=result.graph.name)
+    display(plt)
     savefig(plt, output_dir * "/$(example).png")
     Term.tprintln()
 end
@@ -22,4 +23,3 @@ end
 # run_example("coupled_masses")
 # run_example("sine_oscillator")
 run_example("dc_power_network")
-readline()
