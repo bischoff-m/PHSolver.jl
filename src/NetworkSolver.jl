@@ -6,47 +6,13 @@ import TerminalLoggers: TerminalLogger
 import ProgressLogging
 global_logger(TerminalLogger(right_justify=120))
 
-# function get_problem()
-#     # Get matrices
-#     Q = system.mass
-#     J = system.interaction
-#     R = system.dissipation
-#     B = system.input
-
-#     # Compute initial derivatives
-#     # Q * dx = (J - R) * x + B * u(0)
-#     dx0 = zeros(T, length(x0))
-#     u0 = u_func(sim_config.time_span[1])
-#     rhs = (J - R) * x0 + B * u0
-
-#     # Fill in derivatives for differential variables
-#     for i in eachindex(dx0)
-#         if differential_vars[i]
-#             dx0[i] = rhs[i] / Q[i, i]
-#         end
-#     end
-
-#     # Define DAE residual function
-#     # residual = Q * dx - (J - R) * x - B * u(t)
-#     function dae_residual!(out, dx, x, p, t)
-#         u_t = u_func(t)
-#         out .= Q * dx - (J - R) * x - B * u_t
-#     end
-
-#     # Create DAE problem
-#     prob = Eq.DAEProblem(dae_residual!, dx0, x0, sim_config.time_span; differential_vars=differential_vars)
-#     return prob, dx0
-# end
-
-function solve_phs(
-    dynamics::SimDynamics{T};
-    sim_config::SimulationConfigSchema=SimulationConfigDefault,
-) where {T<:Real}
+function get_problem(dynamics::SimDynamics{T}, sim_config::SimulationConfig) where {T<:Real}
+    system = dynamics.system
     # Get matrices
-    Q = dynamics.system.mass
-    J = dynamics.system.interaction
-    R = dynamics.system.dissipation
-    B = dynamics.system.input
+    Q = system.mass
+    J = system.interaction
+    R = system.dissipation
+    B = system.input
 
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
@@ -69,9 +35,21 @@ function solve_phs(
     end
 
     # Create DAE problem
-    prob = Eq.DAEProblem(dae_residual!, dx0, dynamics.x0, sim_config.time_span; differential_vars=dynamics.differential_vars)
+    return Eq.DAEProblem(
+        dae_residual!,
+        dx0,
+        dynamics.x0,
+        sim_config.time_span;
+        differential_vars=dynamics.differential_vars
+    )
+end
 
-    # Select solver
+function solve_phs(
+    dynamics::SimDynamics{T};
+    sim_config::SimulationConfig=SimulationConfigDefault,
+) where {T<:Real}
+    # Get problem and solver
+    prob = get_problem(dynamics, sim_config)
     solver = get_dae_solver(sim_config.solver)
 
     # Solve with automatic initialization
@@ -129,12 +107,12 @@ function get_dae_solver(solver_name::Union{Nothing,String})
 end
 
 struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
-    system::PortHamSystem{T}
     solution::S
+    system::PortHamSystem{T}
     graph::NetworkGraph{T}
 end
 
-function simulate_config(config::RootConfigSchema)
+function simulate_config(config::RootConfig)
     # Load network
     graph = load_network(config.network, Float64)
     Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
@@ -154,7 +132,7 @@ function simulate_config(config::RootConfigSchema)
     sol = solve_phs(sim_input, sim_config=sim_config)
     Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
-    return SimulationResult(sim_input.system, sol, graph)
+    return SimulationResult(sol, sim_input.system, graph)
 end
 
 """

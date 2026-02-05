@@ -16,14 +16,14 @@ Defines the matrices for a port-Hamiltonian system.
 - `Q::Vector{Vector{Float64}}`: Mass/storage matrix (symmetric, PSD)
 - `B::Union{Nothing, Vector{Vector{Float64}}}`: Input matrix (optional)
 """
-struct SystemMatricesSchema
+struct SystemMatrices
     J::Vector{Vector{Float64}}
     R::Vector{Vector{Float64}}
     Q::Vector{Vector{Float64}}
     B::Union{Nothing,Vector{Vector{Float64}}}
 end
-StructTypes.StructType(::Type{SystemMatricesSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SystemMatricesSchema}) = (:B,)
+StructTypes.StructType(::Type{SystemMatrices}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SystemMatrices}) = (:B,)
 
 """
     SystemSchema
@@ -32,16 +32,16 @@ Defines a single port-Hamiltonian system in the network.
 
 # Fields
 - `id::String`: Unique identifier for the system
-- `matrices::SystemMatricesSchema`: System matrices (J, R, Q, B)
+- `matrices::SystemMatrices`: System matrices (J, R, Q, B)
 - `initial_state::Union{Nothing, Vector{Float64}}`: Initial state values (optional)
 """
-struct SystemSchema
+struct System
     id::String
-    matrices::SystemMatricesSchema
+    matrices::SystemMatrices
     initial_state::Union{Nothing,Vector{Float64}}
 end
-StructTypes.StructType(::Type{SystemSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SystemSchema}) = (:initial_state,)
+StructTypes.StructType(::Type{System}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{System}) = (:initial_state,)
 
 """
     ConnectionSchema
@@ -112,14 +112,14 @@ Top-level network configuration.
 - `external_inputs::Union{Nothing, Vector{ExternalInputSchema}}`: External inputs (optional)
 - `simulation::Union{Nothing, SimulationConfigSchema}`: Simulation configuration (optional)
 """
-struct NetworkConfigSchema
+struct NetworkConfig
     name::Union{Nothing,String}
-    systems::Vector{SystemSchema}
+    systems::Vector{System}
     connections::Union{Nothing,Vector{Connection}}
     external_inputs::Union{Nothing,Vector{ExternalInput}}
 end
-StructTypes.StructType(::Type{NetworkConfigSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{NetworkConfigSchema}) = (:name, :connections, :external_inputs)
+StructTypes.StructType(::Type{NetworkConfig}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{NetworkConfig}) = (:name, :connections, :external_inputs)
 
 """
     SimulationConfigSchema
@@ -131,14 +131,14 @@ Defines simulation parameters.
 - `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
 - `timestep::Union{Nothing, Float64}`: Fixed timestep (optional)
 """
-mutable struct SimulationConfigSchema
+mutable struct SimulationConfig
     time_span::Vector{Float64}
     solver::Union{Nothing,String}
     timestep::Union{Nothing,Float64}
 end
-StructTypes.StructType(::Type{SimulationConfigSchema}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SimulationConfigSchema}) = (:solver, :timestep)
-SimulationConfigDefault = SimulationConfigSchema([0.0, 1.0], nothing, nothing)
+StructTypes.StructType(::Type{SimulationConfig}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SimulationConfig}) = (:solver, :timestep)
+SimulationConfigDefault = SimulationConfig([0.0, 1.0], nothing, nothing)
 
 """
     RootConfigSchema
@@ -146,10 +146,10 @@ SimulationConfigDefault = SimulationConfigSchema([0.0, 1.0], nothing, nothing)
 Root-level configuration object.
 
 # Fields
-- `network::NetworkConfigSchema`: The network configuration
+- `network::NetworkConfig`: The network configuration
 """
-struct RootConfigSchema
-    network::NetworkConfigSchema
-    simulation::SimulationConfigSchema
+struct RootConfig
+    network::NetworkConfig
+    simulation::SimulationConfig
 end
-StructTypes.StructType(::Type{RootConfigSchema}) = StructTypes.Struct()
+StructTypes.StructType(::Type{RootConfig}) = StructTypes.Struct()

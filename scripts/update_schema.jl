@@ -13,7 +13,7 @@ Generate and write the JSON schema to a file.
 """
 function generate_schema(output_file::String="schemas/network.schema.json")
     # Generate schema with references for cleaner structure
-    schema_dict = JSONSchemaGenerator.schema(HamiltonSim.RootConfigSchema, use_references=true)
+    schema_dict = JSONSchemaGenerator.schema(HamiltonSim.RootConfig, use_references=true)
 
     # Write to file with pretty formatting
     open(output_file, "w") do io

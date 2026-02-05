@@ -27,7 +27,7 @@ function validate_config(config_dict::Dict)
 end
 
 # DONE
-function read_config(filepath::String)::RootConfigSchema
+function read_config(filepath::String)::RootConfig
     # Load YAML file
     yaml_dict = YAML.load_file(filepath)
 
@@ -36,7 +36,7 @@ function read_config(filepath::String)::RootConfigSchema
 
     # Parse into typed structs
     json_str = JSON3.write(yaml_dict)
-    return JSON3.read(json_str, RootConfigSchema)
+    return JSON3.read(json_str, RootConfig)
 end
 
 """
@@ -50,7 +50,7 @@ Load a port-Hamiltonian network configuration from a YAML file.
 # Returns
 - `NetworkGraph`: Network graph metadata ready for assembly
 """
-function load_network(config::NetworkConfigSchema, ::Type{T}=Float64) where {T<:Real}
+function load_network(config::NetworkConfig, ::Type{T}=Float64) where {T<:Real}
     # Parse network name
     name = something(config.name, "Unnamed Network")
 
@@ -92,7 +92,7 @@ Create network nodes from validated schema objects.
 # Returns
 - `OrderedDict{String, PHSNode{T}}`: Dictionary of network nodes
 """
-function create_network_nodes_from_schema(systems_schema::AbstractVector{SystemSchema}, ::Type{T}) where {T<:Real}
+function create_network_nodes_from_schema(systems_schema::AbstractVector{System}, ::Type{T}) where {T<:Real}
     nodes = OrderedDict{String,PHSNode{T}}()
     offset = 0
 

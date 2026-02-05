@@ -2,10 +2,10 @@
     "type": "object",
     "properties": {
         "network": {
-            "$ref": "#/$defs/Main.HamiltonSim.NetworkConfigSchema"
+            "$ref": "#/$defs/Main.HamiltonSim.NetworkConfig"
         },
         "simulation": {
-            "$ref": "#/$defs/Main.HamiltonSim.SimulationConfigSchema"
+            "$ref": "#/$defs/Main.HamiltonSim.SimulationConfig"
         }
     },
     "required": [
@@ -13,14 +13,34 @@
         "simulation"
     ],
     "$defs": {
-        "Main.HamiltonSim.SystemSchema": {
+        "Main.HamiltonSim.SimulationConfig": {
+            "type": "object",
+            "properties": {
+                "time_span": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "solver": {
+                    "type": "string"
+                },
+                "timestep": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "time_span"
+            ]
+        },
+        "Main.HamiltonSim.System": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "string"
                 },
                 "matrices": {
-                    "$ref": "#/$defs/Main.HamiltonSim.SystemMatricesSchema"
+                    "$ref": "#/$defs/Main.HamiltonSim.SystemMatrices"
                 },
                 "initial_state": {
                     "type": "array",
@@ -34,7 +54,7 @@
                 "matrices"
             ]
         },
-        "Main.HamiltonSim.NetworkConfigSchema": {
+        "Main.HamiltonSim.NetworkConfig": {
             "type": "object",
             "properties": {
                 "name": {
@@ -43,7 +63,7 @@
                 "systems": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.HamiltonSim.SystemSchema"
+                        "$ref": "#/$defs/Main.HamiltonSim.System"
                     }
                 },
                 "connections": {
@@ -115,7 +135,7 @@
                 "systems"
             ]
         },
-        "Main.HamiltonSim.SystemMatricesSchema": {
+        "Main.HamiltonSim.SystemMatrices": {
             "type": "object",
             "properties": {
                 "J": {
@@ -159,26 +179,6 @@
                 "J",
                 "R",
                 "Q"
-            ]
-        },
-        "Main.HamiltonSim.SimulationConfigSchema": {
-            "type": "object",
-            "properties": {
-                "time_span": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "solver": {
-                    "type": "string"
-                },
-                "timestep": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "time_span"
             ]
         }
     }

@@ -51,4 +51,6 @@ export compute_energy
 # Export plots
 export plot_result
 
+export RootConfig
+
 end
