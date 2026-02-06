@@ -6,6 +6,15 @@ import TerminalLoggers: TerminalLogger
 import ProgressLogging
 global_logger(TerminalLogger(right_justify=120))
 
+"""
+    nonlinear_resistance!(x::AbstractVector, R::AbstractMatrix)
+
+Example nonlinear resistance update used inside the DAE residual.
+
+This function mutates `R` based on the current state `x` to demonstrate
+state-dependent dissipation. It is a placeholder and can be replaced with a
+model-specific law.
+"""
 function nonlinear_resistance!(x::AbstractVector{T}, R::AbstractMatrix{T}) where {T<:Real}
     # Example nonlinear resistance function
     current = abs(x[5])
@@ -17,13 +26,24 @@ function nonlinear_resistance!(x::AbstractVector{T}, R::AbstractMatrix{T}) where
     end
 end
 
-function get_problem(dynamics::SimDynamics{T}, sim_config::SimulationConfig) where {T<:Real}
-    system = dynamics.system
+"""
+    get_problem(dynamics::SimDynamics, sim_config::SimulationConfig)
+
+Construct a DAE problem for a port-Hamiltonian network.
+
+The residual is \$Q \\dot{x} - (J - R) x - B u(t)\$, with initial derivatives
+computed only for differential variables.
+"""
+
+function get_problem(
+    dynamics::SimDynamics{T},
+    sim_config::SimulationConfig
+) where {T<:Real}
     # Get matrices
-    Q = system.mass
-    J = system.interaction
-    R = copy(system.dissipation)
-    B = system.input
+    Q = dynamics.system.mass
+    J = dynamics.system.interaction
+    R = copy(dynamics.system.dissipation)
+    B = dynamics.system.input
 
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
@@ -56,6 +76,14 @@ function get_problem(dynamics::SimDynamics{T}, sim_config::SimulationConfig) whe
     )
 end
 
+"""
+    solve_phs(dynamics::SimDynamics; sim_config=SimulationConfigDefault)
+
+Solve the assembled DAE and return the SciML solution object.
+
+If `sim_config.timestep` is provided, the solver output is sampled at that
+fixed interval via `saveat`.
+"""
 function solve_phs(
     dynamics::SimDynamics{T};
     sim_config::SimulationConfig=SimulationConfigDefault,
@@ -77,6 +105,14 @@ function solve_phs(
     return sol
 end
 
+"""
+    solve_phs_realtime(dynamics::SimDynamics; sim_config=SimulationConfigDefault)
+
+Solve the DAE while plotting the state trajectories in (near) real time.
+
+This advances the integrator in fixed steps and updates the plot after each
+step. Useful for interactive exploration.
+"""
 function solve_phs_realtime(
     dynamics::SimDynamics{T};
     sim_config::SimulationConfig=SimulationConfigDefault,
@@ -109,6 +145,9 @@ function solve_phs_realtime(
     return integrator.sol
 end
 
+"""
+Dictionary of supported DAE solver names to solver instances.
+"""
 supported_solvers = Dict(
     "default" => Sundials.IDA(),
     "IDA" => Sundials.IDA(),
@@ -118,7 +157,7 @@ supported_solvers = Dict(
 )
 
 """
-    get_dae_solver(solver_name::String)
+    get_dae_solver(solver_name::Union{Nothing, String})
 
 Get a DAE solver algorithm by name. See the
 [reference](https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/#OrdinaryDiffEq.jl-(Implicit-ODE)).
@@ -133,7 +172,7 @@ solver](https://docs.sciml.ai/DiffEqDocs/stable/api/daskr/#daskr) in the future.
 - "DImplicitEuler": OrdinaryDiffEq DImplicitEuler
 
 # Arguments
-- `solver_name::String`: Name of the solver
+- `solver_name`: Name of the solver (use `nothing` for default)
 
 # Returns
 - Solver algorithm
@@ -150,6 +189,14 @@ function get_dae_solver(solver_name::Union{Nothing,String})
     return fallback()
 end
 
+"""
+    simulate_config(config::RootConfig)
+
+Load, assemble, and solve a network configuration.
+
+Returns a `SimulationResult` containing the solution, assembled system, and
+graph metadata.
+"""
 function simulate_config(config::RootConfig)
     # Load network
     graph = load_network(config.network, Float64)
@@ -174,21 +221,15 @@ function simulate_config(config::RootConfig)
 end
 
 """
-    simulate_network_from_yaml(
-        yaml_path::String;
-        verbose::Bool = true,
-        validate::Bool = true
-    )
+    simulate_file(config_path::String)
 
-Complete workflow: load network from YAML, assemble, validate, and solve.
+Complete workflow: read config, assemble the network, and solve it.
 
 # Arguments
-- `yaml_path::String`: Path to YAML configuration file
-- `verbose::Bool`: Print progress messages
-- `validate::Bool`: Validate network before solving
+- `config_path::String`: Path to the YAML configuration file
 
 # Returns
-- `SimulationResult`: Struct containing system, solution, graph, and config
+- `SimulationResult`: Struct containing system, solution, and graph metadata
 """
 function simulate_file(config_path::String)
     config = read_config(config_path)

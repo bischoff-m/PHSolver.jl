@@ -5,18 +5,22 @@ using OrderedCollections
 """
     parse_external_function(expr::String)
 
-Parse a string expression into a Julia function.
+Parse a string expression into a time-dependent input function `u(t)`.
 
-Supported expressions:
-- "constant(value)": Returns constant value
-- "sin(freq*t)" or similar: Evaluates Julia expression with variable t
-- "step(t0, value)": Step function at time t0
+Supported forms:
+- `constant(value)`: constant scalar output
+- `step(t0, value)`: step that switches at `t0`
+- Any Julia expression in `t` (e.g., `sin(2*pi*t)`)
+
+Notes:
+- The fallback path uses `eval(Meta.parse(...))` and is unsafe for untrusted
+    input. This is intended for local, trusted configuration files only.
 
 # Arguments
 - `expr::String`: Function expression
 
 # Returns
-- Function that takes time `t` and returns the value
+- A function `u(t)` that returns a scalar or vector value
 """
 # NEEDS REFACTORING, AND ALLOWS RCE
 function parse_external_function(expr::String)
@@ -49,16 +53,21 @@ end
 
 
 """
-    build_input_func(graph::NetworkGraph, B::Matrix)
+    build_input_func(graph::NetworkGraph, input_matrix::AbstractMatrix)
 
-Create an external input function for the network from YAML configuration.
+Create a global input function `u(t)` from the network configuration.
+
+Inputs are matched by node id and assembled in the global input order defined
+by the block-diagonal input matrix. For now, per-port indices in
+`ExternalInput` are not applied; if a node has an external input, the function
+is written into the first `input_dimension(system)` entries for that node.
 
 # Arguments
 - `graph::NetworkGraph`: Network graph with external input specifications
-- `B::Matrix`: Global input matrix
+- `input_matrix::AbstractMatrix`: Global input matrix for sizing
 
 # Returns
-- `Function`: u(t) that returns the input vector at time t
+- A function `u(t)` that returns the global input vector at time `t`
 """
 function build_input_func(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
     n_inputs = size(input_matrix, 2)

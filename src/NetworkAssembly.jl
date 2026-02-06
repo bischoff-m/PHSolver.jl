@@ -8,12 +8,16 @@ using OrderedCollections
         matrix_getter::Function
     )
 
-Assemble a block diagonal matrix from individual system matrices.
+Assemble a sparse block-diagonal matrix from the per-node matrices.
 
 # Arguments
-- `nodes`: Ordered dictionary of PHSNode objects
-- `matrix_getter`: Function that takes a PortHamSystem and returns the desired matrix
-                (e.g., sys -> sys.interaction)
+- `nodes`: Ordered dictionary of `PHSNode` objects
+- `matrix_getter`: Function that takes a `PortHamSystem` and returns the
+  desired matrix (e.g., `sys -> sys.interaction`)
+
+# Returns
+- A sparse block-diagonal matrix containing the specified matrices from each
+  node, in the order they were defined in the configuration
 """
 function build_block_diagonal(
     nodes::OrderedDict{String,PHSNode{T}},
@@ -29,22 +33,20 @@ end
 """
     build_initial_state(graph::NetworkGraph)
 
-Compute consistent initial state for the entire network.
+Build the initial state vector and differential-variable mask.
 
-This function:
-1. Collects initial differential variable values from each node
-2. Solves for algebraic variables using the network DAE constraints
-3. Returns initial state and differential variable indicators
+Differential variables are inferred from the diagonal of each node's mass
+matrix (nonzero entries are treated as differential). Algebraic variables are
+initialized to zero.
 
 # Arguments
 - `graph::NetworkGraph`: Network graph metadata
+
 # Returns
 - `x0::Vector`: Initial state vector
-- `differential_vars::AbstractVector{Bool}`: Indicators for differential variables
+- `differential_vars::AbstractVector{Bool}`: `true` for differential variables
 """
-function build_initial_state(
-    graph::NetworkGraph{T},
-) where {T<:Real}
+function build_initial_state(graph::NetworkGraph{T}) where {T<:Real}
     n = graph.total_state_dim
 
     # Build complete initial state vector
@@ -71,7 +73,7 @@ function build_initial_state(
         end
     end
 
-    # Note: Algebraic variables remain zero unless computed elsewhere
+    # TODO: Algebraic variables remain zero unless computed elsewhere
     # For now, we initialize algebraic variables to zero
     # A more sophisticated approach would solve the algebraic constraints
 
@@ -80,26 +82,23 @@ end
 
 
 """
-    assemble_network(graph::NetworkGraph)
+    build_network(graph::NetworkGraph)
 
-Assemble a port-Hamiltonian network into a single PortHamSystem.
+Assemble a port-Hamiltonian network into a single system with dynamics.
 
-This function:
-1. Creates block diagonal matrices from individual systems
-2. Applies interconnections to modify the global J matrix
-3. Assembles initial conditions from individual nodes
-4. Returns a PortHamSystem representing the entire network
+Steps:
+1. Build block-diagonal `J`, `R`, `Q`, and `B` from per-node matrices.
+2. Apply interconnections to the interconnection matrix `J`.
+3. Assemble initial conditions and differential-variable indicators.
 
-The assembled system satisfies: Q * ẋ = (J - R) * x + B * u(t)
-
-where J is skew-symmetric, R is symmetric PSD, and Q is diagonal PSD.
+The assembled system satisfies \$Q \\dot{x} = (J - R) x + B u(t)\$, where
+`J` is skew-symmetric, `R` is symmetric PSD, and `Q` is diagonal PSD.
 
 # Arguments
 - `graph::NetworkGraph`: Network graph metadata
 
 # Returns
-- `SimDynamics`: Assembled network as a single PHS with initial conditions
-  and differential variable indicators
+- `SimDynamics`: Assembled network dynamics with initial conditions
 """
 function build_network(graph::NetworkGraph{T}) where {T<:Real}
     # Create block diagonal matrices from individual systems

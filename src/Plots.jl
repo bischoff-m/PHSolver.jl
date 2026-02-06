@@ -1,5 +1,20 @@
 using Plots
 
+"""
+    plot_result(result::SimulationResult; tmax=nothing, title=nothing)
+
+Plot all state trajectories and the Hamiltonian over time.
+
+The Hamiltonian is plotted as a dotted line labeled `H`.
+
+# Arguments
+- `result::SimulationResult`: Simulation result to plot
+- `tmax`: Optional maximum time to display
+- `title`: Optional plot title (defaults to `result.graph.name`)
+
+# Returns
+- The `Plots.jl` plot object
+"""
 function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing, title::Union{Nothing,String}=nothing)
     sol = result.solution
     n = state_dimension(result.system)

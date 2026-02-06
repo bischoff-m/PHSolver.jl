@@ -2,7 +2,9 @@ import JSONSchemaGenerator, StructTypes, JSON3
 
 """
 Schema definitions for network configuration YAML files.
-These structs define the expected structure and types for network configurations.
+
+These structs define the expected structure and types for validated network
+configurations parsed from YAML.
 """
 
 struct SystemComponent
@@ -15,15 +17,18 @@ StructTypes.StructType(::Type{SystemComponent}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SystemComponent}) = (:dissipation, :energy, :x0,)
 
 """
-    SystemMatricesSchema
+    SystemMatrices
 
-Defines the matrices for a port-Hamiltonian system.
+Defines the matrices for a port-Hamiltonian system as parsed from YAML.
+
+Each matrix is represented as a vector of row vectors (as produced by YAML
+array parsing), and is later converted to a dense matrix in the loader.
 
 # Fields
 - `J::AbstractMatrix{Real}`: Interconnection matrix (skew-symmetric)
-- `R::AbstractVector{Real}`: Dissipation matrix (symmetric, PSD)
-- `Q::AbstractVector{Real}`: Mass/storage matrix (symmetric, PSD)
-- `B::Union{Nothing, AbstractVector{Real}}`: Input matrix (optional)
+- `R::AbstractVector{Real}`: Dissipation matrix rows
+- `Q::AbstractVector{Real}`: Mass/energy storage matrix rows
+- `B::Union{Nothing, AbstractVector{Real}}`: Input matrix rows (optional)
 """
 struct SystemMatrices
     J::AbstractMatrix{Real}
@@ -35,9 +40,9 @@ StructTypes.StructType(::Type{SystemMatrices}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SystemMatrices}) = (:B,)
 
 """
-    SystemSchema
+    System
 
-Defines a single port-Hamiltonian system in the network.
+Defines a single port-Hamiltonian system in the network configuration.
 
 # Fields
 - `id::String`: Unique identifier for the system
@@ -53,15 +58,18 @@ StructTypes.StructType(::Type{System}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{System}) = (:initial_state,)
 
 """
-    ConnectionSchema
+    Connection
 
 Defines an interconnection between two systems.
 
 # Fields
-- `from::ConnectionEndpointSchema`: Source system endpoint
-- `to::ConnectionEndpointSchema`: Target system endpoint
-- `type::String`: Connection type ("direct", "negative_feedback", "skew_symmetric")
-- `coupling_matrix::Union{Nothing, AbstractMatrix{Real}}`: Coupling matrix for skew_symmetric (optional)
+- `from::String`: Source system id
+- `to::String`: Target system id
+- `type::Symbol`: Connection type (`:direct`, `:negative_feedback`, `:skew_symmetric`)
+- `from_ports::Union{Nothing, AbstractVector{Integer}}`: Optional source ports
+- `to_ports::Union{Nothing, AbstractVector{Integer}}`: Optional target ports
+- `coupling_matrix::Union{Nothing, AbstractMatrix{Real}}`: Coupling matrix for
+    `:skew_symmetric` (optional)
 """
 struct Connection
     from::String
@@ -110,16 +118,15 @@ StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ExternalInput}) = (:indices,)
 
 """
-    NetworkConfigSchema
+    NetworkConfig
 
-Top-level network configuration.
+Top-level network configuration block.
 
 # Fields
 - `name::Union{Nothing, String}`: Network name (optional)
-- `systems::AbstractVector{SystemSchema}`: List of systems in the network
-- `connections::Union{Nothing, AbstractVector{ConnectionSchema}}`: System interconnections (optional)
-- `external_inputs::Union{Nothing, AbstractVector{ExternalInputSchema}}`: External inputs (optional)
-- `simulation::Union{Nothing, SimulationConfigSchema}`: Simulation configuration (optional)
+- `systems::AbstractVector{System}`: List of systems in the network
+- `connections::Union{Nothing, AbstractVector{Connection}}`: System interconnections (optional)
+- `external_inputs::Union{Nothing, AbstractVector{ExternalInput}}`: External inputs (optional)
 """
 struct NetworkConfig
     name::Union{Nothing,String}
@@ -131,13 +138,13 @@ StructTypes.StructType(::Type{NetworkConfig}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{NetworkConfig}) = (:name, :connections, :external_inputs)
 
 """
-    SimulationConfigSchema
+    SimulationConfig
 
 Defines simulation parameters.
 
 # Fields
-- `time_span::AbstractVector{Real}`: Start and end time [t0, tf]
-- `solver::Union{Nothing, String}`: Solver name (optional, default: "IDA")
+- `time_span::AbstractVector{Real}`: Start and end time `[t0, tf]`
+- `solver::Union{Nothing, String}`: Solver name (optional)
 - `timestep::Union{Nothing, Real}`: Fixed timestep (optional)
 """
 mutable struct SimulationConfig
@@ -150,12 +157,13 @@ StructTypes.omitempties(::Type{SimulationConfig}) = (:solver, :timestep)
 SimulationConfigDefault = SimulationConfig([0.0, 1.0], nothing, nothing)
 
 """
-    RootConfigSchema
+    RootConfig
 
 Root-level configuration object.
 
 # Fields
-- `network::NetworkConfig`: The network configuration
+- `network::NetworkConfig`: Network configuration
+- `simulation::SimulationConfig`: Simulation configuration
 """
 struct RootConfig
     network::NetworkConfig

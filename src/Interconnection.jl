@@ -4,18 +4,18 @@ using OrderedCollections
 
 """
     apply_direct_connection!(
-        J_global::Matrix,
-        node_source::PHSNode,
-        node_target::PHSNode,
-        edge::Connection
+        J::AbstractMatrix,
+        B1::AbstractMatrix,
+        B2::AbstractMatrix,
+        range1::UnitRange{Int},
+        range2::UnitRange{Int}
     )
 
-Apply a direct connection: u_target = y_source
-This modifies the global interconnection matrix J.
+Apply a direct connection \$u_2 = y_1\$ between two subsystems.
 
-For a direct connection from output of source to input of target,
-we add coupling terms in J_global that implement the power-conserving
-interconnection.
+This updates the interconnection matrix `J` using the input matrices `B1` and
+`B2` for the source and target subsystems, respectively. The ranges select the
+state slices for each subsystem in the state vector.
 """
 function apply_direct_connection!(
     J::AbstractMatrix{T},
@@ -30,14 +30,17 @@ end
 
 """
     apply_negative_feedback_connection!(
-        J_global::Matrix,
-        node_source::PHSNode,
-        node_target::PHSNode,
-        edge::Connection
+        J::AbstractMatrix,
+        B1::AbstractMatrix,
+        B2::AbstractMatrix,
+        range1::UnitRange{Int},
+        range2::UnitRange{Int}
     )
 
-Apply a negative feedback connection: u_target = -y_source
-This is the standard feedback interconnection for control.
+Apply a negative feedback connection \$u_2 = -y_1\$.
+
+This is the standard control interconnection that preserves passivity by
+updating the skew-symmetric structure in `J`.
 """
 function apply_negative_feedback_connection!(
     J::AbstractMatrix{T},
@@ -52,19 +55,21 @@ end
 
 """
     apply_skew_symmetric_connection!(
-        J_global::Matrix,
-        node1::PHSNode,
-        node2::PHSNode,
+        J::AbstractMatrix,
+        B1::AbstractMatrix,
+        B2::AbstractMatrix,
+        range1::UnitRange{Int},
+        range2::UnitRange{Int},
         edge::Connection
     )
 
 Apply a skew-symmetric power-conserving connection between two systems.
 
-This implements the interconnection:
+The interconnection is:
     [u_1]   [  0    -K ] [y_1]
     [u_2] = [ K^T    0 ] [y_2]
 
-where K is the coupling matrix specified in the edge.
+where `K` comes from `edge.coupling_matrix`.
 """
 function apply_skew_symmetric_connection!(
     J::AbstractMatrix{T},
@@ -83,12 +88,15 @@ end
 
 """
     apply_connection!(
-        J_global::Matrix,
-        nodes::OrderedDict{String, PHSNode},
-        edge::Connection
+        interaction::AbstractMatrix,
+        edge::Connection,
+        source::PHSNode,
+        target::PHSNode
     )
 
-Apply a connection to the global interconnection matrix based on connection type.
+Apply a connection to the interconnection matrix based on `edge.type`.
+
+Supported types: `:direct`, `:negative_feedback`, `:skew_symmetric`.
 """
 function apply_connection!(
     interaction::AbstractMatrix{T},

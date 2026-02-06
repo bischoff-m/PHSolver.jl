@@ -4,7 +4,7 @@ using OrderedCollections
 """
     validate_config(config_dict::Dict)
 
-Validate YAML configuration against JSON schema.
+Validate a YAML configuration against the JSON schema.
 
 # Arguments
 - `config_dict::Dict`: Configuration dictionary from YAML file
@@ -26,6 +26,13 @@ function validate_config(config_dict::Dict)
     end
 end
 
+"""
+    read_config(filepath::String)::RootConfig
+
+Read a YAML configuration file and parse it into typed structs.
+
+The file is validated against the JSON schema before parsing.
+"""
 function read_config(filepath::String)::RootConfig
     # Load YAML file
     yaml_dict = YAML.load_file(filepath)
@@ -39,12 +46,13 @@ function read_config(filepath::String)::RootConfig
 end
 
 """
-    load_network_from_yaml(filepath::String)
+    load_network(config::NetworkConfig, ::Type{T}=Float64)
 
-Load a port-Hamiltonian network configuration from a YAML file.
+Build a `NetworkGraph` from a validated network configuration.
 
 # Arguments
-- `filepath::String`: Path to YAML configuration file
+- `config::NetworkConfig`: Parsed configuration
+- `T::Type`: Element type for matrices (default: `Float64`)
 
 # Returns
 - `NetworkGraph`: Network graph metadata ready for assembly
@@ -80,12 +88,12 @@ function load_network(config::NetworkConfig, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-    create_network_nodes_from_schema(systems_schema::AbstractVector{SystemSchema}, ::Type{T})
+    create_network_nodes_from_schema(systems_schema::AbstractVector{System}, ::Type{T})
 
-Create network nodes from validated schema objects.
+Create network nodes from validated configuration objects.
 
 # Arguments
-- `systems_schema::AbstractVector{SystemSchema}`: Vector of system schema objects
+- `systems_schema::AbstractVector{System}`: Vector of system definitions
 - `T::Type`: Element type for matrices
 
 # Returns

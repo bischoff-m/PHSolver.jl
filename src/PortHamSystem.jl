@@ -1,10 +1,27 @@
 using LinearAlgebra
 
-# Helper function to check if a matrix is skew-symmetric
+"""
+    isskewsym(A::AbstractMatrix)
+
+Check whether a matrix is (approximately) skew-symmetric.
+"""
 function isskewsym(A::AbstractMatrix{<:Real})
     return A ≈ -transpose(A)
 end
 
+"""
+    PortHamSystem
+
+Port-Hamiltonian system with matrices \$(J, R, Q, B)\$.
+
+The system satisfies \$Q \\dot{x} = (J - R) x + B u\$.
+
+# Fields
+- `interaction`: Interconnection matrix `J` (skew-symmetric)
+- `dissipation`: Dissipation matrix `R` (symmetric PSD)
+- `mass`: Mass/storage matrix `Q` (diagonal PSD)
+- `input`: Input matrix `B`
+"""
 struct PortHamSystem{T<:Real}
     # Name "interaction" from the figure in
     # "Port-Hamiltonian framework in power systems domain: A survey"
@@ -46,9 +63,31 @@ struct PortHamSystem{T<:Real}
     end
 end
 
+"""
+    state_dimension(sys::PortHamSystem)
+
+Return the state dimension of the system.
+"""
 state_dimension(sys::PortHamSystem) = size(sys.mass, 1)
+
+"""
+    input_dimension(sys::PortHamSystem)
+
+Return the input dimension of the system.
+"""
 input_dimension(sys::PortHamSystem) = size(sys.input, 2)
 
+"""
+    SimDynamics
+
+Simulation-ready dynamics container for a port-Hamiltonian system.
+
+# Fields
+- `system::PortHamSystem{T}`: Assembled system
+- `x0::AbstractVector{T}`: Initial state
+- `differential_vars::AbstractVector{Bool}`: Mask for differential variables
+- `input_func::Function`: Input function `u(t)`
+"""
 struct SimDynamics{T<:Real}
     system::PortHamSystem{T}
     x0::AbstractVector{T}

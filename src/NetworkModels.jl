@@ -10,8 +10,8 @@ Represents a single port-Hamiltonian system within a network.
 
 # Fields
 - `id::String`: Unique identifier for the system
-- `system::PortHamSystem`: The underlying PHS
-- `initial_state::AbstractVector{Float64}`: Initial values for differential variables
+- `system::PortHamSystem{T}`: The underlying PHS
+- `initial_state::AbstractVector{T}`: Initial values for differential variables
 - `state_offset::Int`: Starting index in global state vector
 - `state_dim::Int`: Dimension of this system's state
 """
@@ -37,14 +37,14 @@ end
     NetworkGraph
 
 Metadata for a network of interconnected port-Hamiltonian systems.
-This is only used during assembly - the assembled result is a PortHamSystem.
+This is used during assembly; the assembled result is a single `PortHamSystem`.
 
 # Fields
 - `name::String`: Network name
 - `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
 - `edges::AbstractVector{Connection}`: All interconnections
 - `external_inputs::AbstractVector{ExternalInput}`: External inputs to the network
-- `total_state_dim::Int`: Total dimension of global state vector
+- `total_state_dim::Int`: Total dimension of the global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
@@ -72,6 +72,17 @@ struct NetworkGraph{T<:Real}
     end
 end
 
+
+"""
+    SimulationResult
+
+Container for a simulation solution and its associated model metadata.
+
+# Fields
+- `solution::Eq.SciMLBase.AbstractSolution`: Solution object from the solver
+- `system::PortHamSystem{T}`: Assembled system that was simulated
+- `graph::NetworkGraph{T}`: Network metadata used for assembly
+"""
 struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
     solution::S
     system::PortHamSystem{T}

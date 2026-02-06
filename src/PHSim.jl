@@ -1,4 +1,12 @@
 
+"""
+PHSim
+
+Port-Hamiltonian network simulation library.
+
+This module re-exports the core types, assembly utilities, YAML config loader,
+and solver/plotting helpers defined across the source files.
+"""
 module PHSim
 
 # Include component/source files so the entire library is exported from this

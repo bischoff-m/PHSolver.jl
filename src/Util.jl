@@ -1,15 +1,15 @@
 
 
 """
-    compute_hamiltonian(system::PortHamSystem, x::Vector)
+    compute_hamiltonian(system::PortHamSystem, x::AbstractVector)
 
 Compute the Hamiltonian of a port-Hamiltonian system.
 
-H(x) = 0.5 * x^T * Q * x
+\$H(x) = 0.5 * x^T Q x\$
 
 # Arguments
 - `system::PortHamSystem`: The PHS
-- `x::Vector`: State vector
+- `x::AbstractVector`: State vector
 
 # Returns
 - Total energy
