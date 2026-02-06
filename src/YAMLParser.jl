@@ -26,7 +26,6 @@ function validate_config(config_dict::Dict)
     end
 end
 
-# DONE
 function read_config(filepath::String)::RootConfig
     # Load YAML file
     yaml_dict = YAML.load_file(filepath)

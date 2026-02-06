@@ -14,7 +14,7 @@ function run_example(example::String)
     # Run complete simulation workflow
     result = PHSim.simulate_file(config_file)
     plt = PHSim.plot_result(result, title=result.graph.name)
-    display(plt)
+
     savefig(plt, output_dir * "/$(example).png")
     Term.tprintln()
 end

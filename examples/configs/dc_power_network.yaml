@@ -73,3 +73,4 @@ network:
 simulation:
   time_span: [0.0, 1.0]
   solver: "IDA"
+  stepsize: 0.001

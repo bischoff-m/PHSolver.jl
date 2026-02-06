@@ -6,12 +6,23 @@ import TerminalLoggers: TerminalLogger
 import ProgressLogging
 global_logger(TerminalLogger(right_justify=120))
 
+function nonlinear_resistance!(x::AbstractVector{T}, R::AbstractMatrix{T}) where {T<:Real}
+    # Example nonlinear resistance function
+    current = abs(x[5])
+    # println(current)
+    return if current > 1.0 || current < 0.001
+        R[5, 5] = T(3.0)
+    else
+        R[5, 5] = T(10.0)
+    end
+end
+
 function get_problem(dynamics::SimDynamics{T}, sim_config::SimulationConfig) where {T<:Real}
     system = dynamics.system
     # Get matrices
     Q = system.mass
     J = system.interaction
-    R = system.dissipation
+    R = copy(system.dissipation)
     B = system.input
 
     # Compute initial derivatives
@@ -30,6 +41,7 @@ function get_problem(dynamics::SimDynamics{T}, sim_config::SimulationConfig) whe
     # Define DAE residual function
     # residual = Q * dx - (J - R) * x - B * u(t)
     function dae_residual!(out, dx, x, p, t)
+        nonlinear_resistance!(x, R)
         u_t = dynamics.input_func(t)
         out .= Q * dx - (J - R) * x - B * u_t
     end
@@ -65,12 +77,44 @@ function solve_phs(
     return sol
 end
 
+function solve_phs_realtime(
+    dynamics::SimDynamics{T};
+    sim_config::SimulationConfig=SimulationConfigDefault,
+) where {T<:Real}
+    prob = get_problem(dynamics, sim_config)
+    solver = get_dae_solver(sim_config.solver)
+
+    dt = isnothing(sim_config.timestep) ? 1 / 2^4 : sim_config.timestep
+
+    integrator = Eq.init(prob, solver;
+        initializealg=Eq.BrownFullBasicInit(),
+        dt=dt,
+    )
+
+    t_final = sim_config.time_span[2]
+    while integrator.t < t_final
+        Eq.step!(integrator, dt, true)
+        plot_result(
+            SimulationResult(
+                integrator.sol,
+                dynamics.system,
+                NetworkGraph("Live Plot", OrderedDict{String,PHSNode{T}}(), Connection[], ExternalInput[]));
+            title="t = $(round(integrator.t, digits=2)) s"
+        )
+        # Wait for 0.01 seconds to allow plot to update
+        sleep(0.1)
+    end
+
+    # Return result
+    return integrator.sol
+end
+
 supported_solvers = Dict(
-    "default" => Sundials.IDA,
-    "IDA" => Sundials.IDA,
-    "DFBDF" => Eq.DFBDF,
-    "DABDF2" => Eq.DABDF2,
-    "DImplicitEuler" => Eq.DImplicitEuler,
+    "default" => Sundials.IDA(),
+    "IDA" => Sundials.IDA(),
+    "DFBDF" => Eq.DFBDF(),
+    "DABDF2" => Eq.DABDF2(),
+    "DImplicitEuler" => Eq.DImplicitEuler(),
 )
 
 """
@@ -98,18 +142,12 @@ function get_dae_solver(solver_name::Union{Nothing,String})
     key = isnothing(solver_name) ? "default" : solver_name
 
     if haskey(supported_solvers, key)
-        return supported_solvers[key]()
+        return supported_solvers[key]
     end
 
     fallback = supported_solvers["default"]
     @warn "Unknown solver '$solver_name', using $fallback as default"
     return fallback()
-end
-
-struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
-    solution::S
-    system::PortHamSystem{T}
-    graph::NetworkGraph{T}
 end
 
 function simulate_config(config::RootConfig)
@@ -129,7 +167,7 @@ function simulate_config(config::RootConfig)
     Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
 
     # Solve
-    sol = solve_phs(sim_input, sim_config=sim_config)
+    sol = solve_phs_realtime(sim_input, sim_config=sim_config)
     Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
     return SimulationResult(sol, sim_input.system, graph)

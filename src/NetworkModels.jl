@@ -1,7 +1,7 @@
 using LinearAlgebra
 using OrderedCollections
 using StructTypes
-
+import OrdinaryDiffEq as Eq
 
 """
     PHSNode
@@ -60,7 +60,7 @@ struct NetworkGraph{T<:Real}
         external_inputs::AbstractVector{ExternalInput},
     ) where {T<:Real}
         # Calculate total state dimension
-        total_state_dim = sum(node.state_dim for node in values(nodes))
+        total_state_dim = sum((node.state_dim for node in values(nodes)); init=0)
 
         new{T}(
             name,
@@ -70,4 +70,10 @@ struct NetworkGraph{T<:Real}
             total_state_dim,
         )
     end
+end
+
+struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
+    solution::S
+    system::PortHamSystem{T}
+    graph::NetworkGraph{T}
 end

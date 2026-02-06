@@ -22,6 +22,6 @@ function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=noth
 
     energy = compute_energy(sol, result.system)
     plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot, title=isnothing(title) ? result.graph.name : title)
-
+    display(plt)
     return plt
 end
