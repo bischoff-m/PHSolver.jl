@@ -14,19 +14,15 @@ network:
           - [0.0, 1.0]
           - [-1.0, 0.0]
 
-        R:
-          - [0.0, 0.0] # No damping
-          - [0.0, 0.0]
+        # No damping (diagonal)
+        R: [0.0, 0.0]
 
-        Q:
-          - [9.81, 0.0] # m = 1, g = 9.81, l = 1
-          - [0.0, 1.0]
+        # Mass matrix (diagonal)
+        Q: [9.81, 1.0] # m = 1, g = 9.81, l = 1
 
-        B:
-          - [0.0]
-          - [1.0]
+        B: [0.0, 1.0]
 
-      initial_state: [0.1745, 0.0] # Initial angle (rad) and angular momentum
+        x0: [0.1745, 0.0] # Initial angle (rad) and angular momentum
 
     # PI Controller subsystem
     - id: "controller"
@@ -35,19 +31,15 @@ network:
           - [0.0, 1.0]
           - [-1.0, 0.0]
 
-        R:
-          - [0.0, 0.0]
-          - [0.0, 20.0] # Proportional gain (Kp)
+        # Damping / gain matrix (diagonal)
+        R: [0.0, 20.0] # Proportional gain (Kp)
 
-        Q:
-          - [8.0, 0.0] # Integral gain (kI)
-          - [0.0, 0.1] # Derivative gain (1/kD)
+        # Storage matrix (diagonal)
+        Q: [8.0, 0.1] # Integral gain (kI), Derivative gain (1/kD)
 
-        B:
-          - [0.0]
-          - [1.0]
+        B: [0.0, 1.0]
 
-      initial_state: [0.0, 0.0] # Controller starts with zero integral and proportional states
+        x0: [0.0, 0.0] # Controller starts with zero integral and proportional states
 
   connections:
     - from: "pendulum"

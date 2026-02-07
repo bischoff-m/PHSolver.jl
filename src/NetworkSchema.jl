@@ -7,17 +7,42 @@ These structs define the expected structure and types for validated network
 configurations parsed from YAML.
 """
 
-struct SystemComponent
+struct Component
     id::String
-    dissipation::Union{Nothing,Real}
-    energy::Union{Nothing,Real}
-    x0::Union{Nothing,Real}
+    dissipation::Real
+    mass::Real
+    x0::Real
+
+    function Component(
+        id::String,
+        dissipation::Union{Nothing,Real}=0.0,
+        mass::Union{Nothing,Real}=0.0,
+        x0::Union{Nothing,Real}=0.0
+    )
+        new(id, dissipation, mass, x0)
+    end
 end
-StructTypes.StructType(::Type{SystemComponent}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SystemComponent}) = (:dissipation, :energy, :x0,)
+StructTypes.StructType(::Type{Component}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{Component}) = (:dissipation, :mass, :x0,)
+
+struct ComponentConnection
+    from::String
+    to::String
+    weight::Real
+
+    function ComponentConnection(
+        from::String,
+        to::String,
+        weight::Union{Nothing,Real}=1.0
+    )
+        new(from, to, weight)
+    end
+end
+StructTypes.StructType(::Type{ComponentConnection}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{ComponentConnection}) = (:weight,)
 
 """
-    SystemMatrices
+    PhsMatrices
 
 Defines the matrices for a port-Hamiltonian system as parsed from YAML.
 
@@ -25,37 +50,85 @@ Each matrix is represented as a vector of row vectors (as produced by YAML
 array parsing), and is later converted to a dense matrix in the loader.
 
 # Fields
-- `J::AbstractMatrix{Real}`: Interconnection matrix (skew-symmetric)
+- `J::AbstractVector{AbstractVector{Real}}`: Interconnection matrix (skew-symmetric)
 - `R::AbstractVector{Real}`: Dissipation matrix rows
 - `Q::AbstractVector{Real}`: Mass/energy storage matrix rows
 - `B::Union{Nothing, AbstractVector{Real}}`: Input matrix rows (optional)
+- `x0::Union{Nothing, AbstractVector{Real}}`: Initial state values (optional)
 """
-struct SystemMatrices
-    J::AbstractMatrix{Real}
+struct PhsMatrices
+    J::AbstractVector{AbstractVector{Real}}
     R::AbstractVector{Real}
     Q::AbstractVector{Real}
-    B::Union{Nothing,AbstractVector{Real}}
+    B::AbstractVector{Real}
+    x0::AbstractVector{Real}
+
+    function PhsMatrices(
+        J::AbstractVector{AbstractVector{Real}},
+        R::AbstractVector{Real},
+        Q::AbstractVector{Real},
+        B::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J)),
+        x0::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J))
+    )
+        # Preconditions are checked in the PortHamSystem constructor because the
+        # types are not yet converted.
+        new(J, R, Q, B, x0)
+    end
 end
-StructTypes.StructType(::Type{SystemMatrices}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SystemMatrices}) = (:B,)
+StructTypes.StructType(::Type{PhsMatrices}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{PhsMatrices}) = (:B, :x0,)
 
 """
-    System
+    MatrixSystem
 
 Defines a single port-Hamiltonian system in the network configuration.
 
 # Fields
 - `id::String`: Unique identifier for the system
-- `matrices::SystemMatrices`: System matrices (J, R, Q, B)
-- `initial_state::Union{Nothing, AbstractVector{Real}}`: Initial state values (optional)
+- `matrices::PhsMatrices`: System matrices (J, R, Q, B)
+- `ports::Dict{String,Integer}`: Optional mapping of port names to indices
 """
-struct System
+struct MatrixSystem
     id::String
-    matrices::SystemMatrices
-    initial_state::Union{Nothing,AbstractVector{Real}}
+    matrices::PhsMatrices
+    ports::Dict{String,Integer}
+
+    function MatrixSystem(
+        id::String,
+        matrices::PhsMatrices,
+        ports::Union{Nothing,Dict{String,Integer}}=Dict{String,Integer}()
+    )
+        new(id, matrices, ports)
+    end
 end
-StructTypes.StructType(::Type{System}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{System}) = (:initial_state,)
+StructTypes.StructType(::Type{MatrixSystem}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{MatrixSystem}) = (:ports,)
+
+struct ComponentSystem
+    id::String
+    components::AbstractVector{Component}
+    connections::AbstractVector{ComponentConnection}
+    ports::Dict{String,String}
+
+    function ComponentSystem(
+        id::String,
+        components::AbstractVector{Component},
+        connections::AbstractVector{ComponentConnection},
+        ports::Union{Nothing,Dict{String,String}}=Dict{String,String}()
+    )
+        new(id, components, connections, ports)
+    end
+end
+StructTypes.StructType(::Type{ComponentSystem}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{ComponentSystem}) = (:ports,)
+
+
+struct SystemPort
+    system::String
+    port::String
+end
+StructTypes.StructType(::Type{SystemPort}) = StructTypes.Struct()
+
 
 """
     Connection
@@ -65,57 +138,28 @@ Defines an interconnection between two systems.
 # Fields
 - `from::String`: Source system id
 - `to::String`: Target system id
-- `type::Symbol`: Connection type (`:direct`, `:negative_feedback`, `:skew_symmetric`)
+- `type::Symbol`: Edge type (`:direct`, `:negative_feedback`, `:skew_symmetric`)
 - `from_ports::Union{Nothing, AbstractVector{Integer}}`: Optional source ports
 - `to_ports::Union{Nothing, AbstractVector{Integer}}`: Optional target ports
-- `coupling_matrix::Union{Nothing, AbstractMatrix{Real}}`: Coupling matrix for
+- `coupling_matrix::Union{Nothing, AbstractVector{AbstractVector{Real}}}`: Coupling matrix for
     `:skew_symmetric` (optional)
 """
-struct Connection
-    from::String
-    to::String
-    type::Symbol
-    from_ports::Union{Nothing,AbstractVector{Integer}}
-    to_ports::Union{Nothing,AbstractVector{Integer}}
-    coupling_matrix::Union{Nothing,AbstractMatrix{Real}}
+struct NetworkConnection
+    from::SystemPort
+    to::SystemPort
+    weight::Real
 
-    function Connection(
-        from::String,
-        to::String,
-        type::Symbol,
-        from_ports::Union{Nothing,AbstractVector{Integer}}=nothing,
-        to_ports::Union{Nothing,AbstractVector{Integer}}=nothing,
-        coupling_matrix::Union{Nothing,AbstractMatrix{Real}}=nothing
+    function NetworkConnection(
+        from::SystemPort,
+        to::SystemPort,
+        weight::Union{Nothing,Real}=1.0
     )
-        @assert type in [:direct, :negative_feedback, :skew_symmetric] "Invalid connection type: $type"
-
-        if type == :skew_symmetric
-            @assert !isnothing(coupling_matrix) "Skew-symmetric connections require a coupling matrix"
-        end
-
-        new(from, to, type, from_ports, to_ports, coupling_matrix)
+        new(from, to, weight)
     end
 end
-StructTypes.StructType(::Type{Connection}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{Connection}) = (:from_ports, :to_ports, :coupling_matrix,)
+StructTypes.StructType(::Type{NetworkConnection}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{NetworkConnection}) = (:weight,)
 
-"""
-    ExternalInput
-
-Represents an external input to a system in the network.
-
-# Fields
-- `system::String`: ID of target system
-- `indices::Union{Nothing, AbstractVector{Integer}}`: Input indices (nothing = all)
-- `func::String`: Expression for the input function (e.g., "constant(0.0)")
-"""
-struct ExternalInput
-    system::String
-    indices::Union{Nothing,AbstractVector{Integer}}
-    func::String
-end
-StructTypes.StructType(::Type{ExternalInput}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{ExternalInput}) = (:indices,)
 
 """
     NetworkConfig
@@ -124,18 +168,28 @@ Top-level network configuration block.
 
 # Fields
 - `name::Union{Nothing, String}`: Network name (optional)
-- `systems::AbstractVector{System}`: List of systems in the network
-- `connections::Union{Nothing, AbstractVector{Connection}}`: System interconnections (optional)
+- `systems::AbstractVector{Union{MatrixSystem,ComponentSystem}}`: List of systems in the network
+- `connections::Union{Nothing, AbstractVector{NetworkConnection}}`: System interconnections (optional)
 - `external_inputs::Union{Nothing, AbstractVector{ExternalInput}}`: External inputs (optional)
 """
 struct NetworkConfig
-    name::Union{Nothing,String}
-    systems::AbstractVector{System}
-    connections::Union{Nothing,AbstractVector{Connection}}
-    external_inputs::Union{Nothing,AbstractVector{ExternalInput}}
+    name::String
+    systems::AbstractVector{MatrixSystem}
+    # systems::AbstractVector{Union{MatrixSystem,ComponentSystem}}
+    connections::AbstractVector{NetworkConnection}
+    ports::Dict{String,SystemPort}
+
+    function NetworkConfig(
+        name::String,
+        systems::AbstractVector{MatrixSystem},
+        connections::Union{Nothing,AbstractVector{NetworkConnection}}=NetworkConnection[],
+        ports::Union{Nothing,Dict{String,SystemPort}}=Dict{String,SystemPort}()
+    )
+        new(name, systems, connections, ports)
+    end
 end
 StructTypes.StructType(::Type{NetworkConfig}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{NetworkConfig}) = (:name, :connections, :external_inputs)
+StructTypes.omitempties(::Type{NetworkConfig}) = (:connections, :ports,)
 
 """
     SimulationConfig
@@ -149,12 +203,19 @@ Defines simulation parameters.
 """
 mutable struct SimulationConfig
     time_span::AbstractVector{Real}
-    solver::Union{Nothing,String}
-    timestep::Union{Nothing,Real}
+    solver::String
+    timestep::Real
+
+    function SimulationConfig(
+        time_span::AbstractVector{Real}=[0.0, 1.0],
+        solver::Union{Nothing,String}="IDA",
+        timestep::Union{Nothing,Real}=0.01
+    )
+        new(time_span, solver, timestep)
+    end
 end
 StructTypes.StructType(::Type{SimulationConfig}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{SimulationConfig}) = (:solver, :timestep)
-SimulationConfigDefault = SimulationConfig([0.0, 1.0], nothing, nothing)
 
 """
     RootConfig

@@ -26,3 +26,4 @@ end
 
 # Generate schema when script is run directly
 generate_schema()
+nothing

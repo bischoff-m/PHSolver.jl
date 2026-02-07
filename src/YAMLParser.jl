@@ -67,24 +67,24 @@ function load_network(config::NetworkConfig, ::Type{T}=Float64) where {T<:Real}
     edges = if !isnothing(config.connections)
         config.connections
     else
-        Connection[]
+        NetworkConnection[]
     end
 
     # Parse external inputs
-    external_inputs = ExternalInput[]
-    if !isnothing(config.external_inputs)
-        for input_schema in config.external_inputs
-            system = input_schema.system
-            indices = input_schema.indices
-            function_expr = input_schema.func
+    # external_inputs = ExternalInput[]
+    # if !isnothing(config.external_inputs)
+    #     for input_schema in config.external_inputs
+    #         system = input_schema.system
+    #         indices = input_schema.indices
+    #         function_expr = input_schema.func
 
-            ext_input = ExternalInput(system, indices, function_expr)
-            push!(external_inputs, ext_input)
-        end
-    end
+    #         ext_input = ExternalInput(system, indices, function_expr)
+    #         push!(external_inputs, ext_input)
+    #     end
+    # end
 
     # Create network graph
-    return NetworkGraph(name, nodes, edges, external_inputs)
+    return NetworkGraph(name, nodes, edges)
 end
 
 """
@@ -99,7 +99,7 @@ Create network nodes from validated configuration objects.
 # Returns
 - `OrderedDict{String, PHSNode{T}}`: Dictionary of network nodes
 """
-function create_network_nodes_from_schema(systems_schema::AbstractVector{System}, ::Type{T}) where {T<:Real}
+function create_network_nodes_from_schema(systems_schema::AbstractVector{MatrixSystem}, ::Type{T}) where {T<:Real}
     nodes = OrderedDict{String,PHSNode{T}}()
     offset = 0
 

@@ -30,8 +30,7 @@ export input_dimension
 
 # Export network types
 export PHSNode
-export Connection
-export ExternalInput
+export NetworkConnection
 export NetworkGraph
 
 # Export interconnection functions

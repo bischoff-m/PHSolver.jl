@@ -42,22 +42,19 @@ This is used during assembly; the assembled result is a single `PortHamSystem`.
 # Fields
 - `name::String`: Network name
 - `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
-- `edges::AbstractVector{Connection}`: All interconnections
-- `external_inputs::AbstractVector{ExternalInput}`: External inputs to the network
+- `edges::AbstractVector{NetworkConnection}`: All interconnections
 - `total_state_dim::Int`: Total dimension of the global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
     nodes::OrderedDict{String,PHSNode{T}}
-    edges::AbstractVector{Connection}
-    external_inputs::AbstractVector{ExternalInput}
+    edges::AbstractVector{NetworkConnection}
     total_state_dim::Int
 
     function NetworkGraph(
         name::String,
         nodes::OrderedDict{String,PHSNode{T}},
-        edges::AbstractVector{Connection},
-        external_inputs::AbstractVector{ExternalInput},
+        edges::AbstractVector{NetworkConnection},
     ) where {T<:Real}
         # Calculate total state dimension
         total_state_dim = sum((node.state_dim for node in values(nodes)); init=0)
@@ -66,7 +63,6 @@ struct NetworkGraph{T<:Real}
             name,
             nodes,
             edges,
-            external_inputs,
             total_state_dim,
         )
     end

@@ -19,7 +19,7 @@ function run_example(example::String)
     Term.tprintln()
 end
 
-# run_example("pendulum")
-# run_example("coupled_masses")
-# run_example("sine_oscillator")
+run_example("pendulum")
+run_example("coupled_masses")
+run_example("sine_oscillator")
 run_example("dc_power_network")

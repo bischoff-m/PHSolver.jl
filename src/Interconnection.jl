@@ -77,7 +77,7 @@ function apply_skew_symmetric_connection!(
     B2::AbstractMatrix{T},
     range1::UnitRange{Int},
     range2::UnitRange{Int},
-    edge::Connection,
+    edge::NetworkConnection,
 ) where {T<:Real}
     K = edge.coupling_matrix
     @assert !isnothing(K) "Skew-symmetric connection requires coupling matrix"
@@ -100,7 +100,7 @@ Supported types: `:direct`, `:negative_feedback`, `:skew_symmetric`.
 """
 function apply_connection!(
     interaction::AbstractMatrix{T},
-    edge::Connection,
+    edge::NetworkConnection,
     source::PHSNode,
     target::PHSNode,
 ) where {T<:Real}

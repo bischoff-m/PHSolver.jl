@@ -61,7 +61,7 @@ function get_problem(
     # Define DAE residual function
     # residual = Q * dx - (J - R) * x - B * u(t)
     function dae_residual!(out, dx, x, p, t)
-        nonlinear_resistance!(x, R)
+        # nonlinear_resistance!(x, R)
         u_t = dynamics.input_func(t)
         out .= Q * dx - (J - R) * x - B * u_t
     end
@@ -134,11 +134,11 @@ function solve_phs_realtime(
             SimulationResult(
                 integrator.sol,
                 dynamics.system,
-                NetworkGraph("Live Plot", OrderedDict{String,PHSNode{T}}(), Connection[], ExternalInput[]));
+                NetworkGraph("Live Plot", OrderedDict{String,PHSNode{T}}(), NetworkConnection[]));
             title="t = $(round(integrator.t, digits=2)) s"
         )
         # Wait for 0.01 seconds to allow plot to update
-        sleep(0.1)
+        # sleep(0.1)
     end
 
     # Return result
@@ -214,7 +214,9 @@ function simulate_config(config::RootConfig)
     Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
 
     # Solve
-    sol = solve_phs_realtime(sim_input, sim_config=sim_config)
+    sol = solve_phs(sim_input, sim_config=sim_config)
+    plot_result(SimulationResult(sol, sim_input.system, graph), title="Final Result")
+    # sol = solve_phs_realtime(sim_input, sim_config=sim_config)
     Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
     return SimulationResult(sol, sim_input.system, graph)

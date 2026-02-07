@@ -20,20 +20,14 @@ network:
           - [0.0, 1.0]
           - [-1.0, 0.0]
 
-        # R matrix (damping)
-        R:
-          - [0.5, 0.0] # Damping coefficient
-          - [0.0, 0.0]
+        # R matrix diagonal (damping)
+        R: [0.5, 0.0] # Damping coefficient
 
-        # Q matrix (mass and spring)
-        Q:
-          - [1.0, 0.0] # Mass m1 = 1.0
-          - [0.0, 2.0] # Spring k1 = 2.0
+        # Q matrix diagonal (mass and spring)
+        Q: [1.0, 2.0] # Mass m1 = 1.0, Spring k1 = 2.0
 
         # B matrix (input on momentum)
-        B:
-          - [1.0]
-          - [0.0]
+        B: [1.0, 0.0]
 
       initial_state: [0.5, 1.0] # Initial momentum and position
 
@@ -45,17 +39,14 @@ network:
           - [0.0, 1.0]
           - [-1.0, 0.0]
 
-        R:
-          - [0.3, 0.0] # Damping coefficient
-          - [0.0, 0.0]
+        # R matrix diagonal (damping)
+        R: [0.3, 0.0] # Damping coefficient
 
-        Q:
-          - [1.5, 0.0] # Mass m2 = 1.5
-          - [0.0, 1.0] # Spring k2 = 1.0
+        # Q matrix diagonal (mass and spring)
+        Q: [1.5, 1.0] # Mass m2 = 1.5, Spring k2 = 1.0
 
-        B:
-          - [1.0]
-          - [0.0]
+        # B matrix (input on momentum)
+        B: [1.0, 0.0]
 
       initial_state: [-0.3, -0.5] # Initial momentum and position
 
