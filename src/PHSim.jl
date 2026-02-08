@@ -42,7 +42,8 @@ export compute_hamiltonian
 export parse_external_function
 
 # Export YAML parser functions
-export load_network
+export network_from_config
+export validate_config
 export read_config
 
 # Export solver functions

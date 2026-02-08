@@ -86,7 +86,7 @@ fixed interval via `saveat`.
 """
 function solve_phs(
     dynamics::SimDynamics{T};
-    sim_config::SimulationConfig=SimulationConfigDefault,
+    sim_config::SimulationConfig,
 ) where {T<:Real}
     # Get problem and solver
     prob = get_problem(dynamics, sim_config)
@@ -106,7 +106,7 @@ function solve_phs(
 end
 
 """
-    solve_phs_realtime(dynamics::SimDynamics; sim_config=SimulationConfigDefault)
+    solve_phs_realtime(dynamics::SimDynamics; sim_config)
 
 Solve the DAE while plotting the state trajectories in (near) real time.
 
@@ -115,7 +115,7 @@ step. Useful for interactive exploration.
 """
 function solve_phs_realtime(
     dynamics::SimDynamics{T};
-    sim_config::SimulationConfig=SimulationConfigDefault,
+    sim_config::SimulationConfig,
 ) where {T<:Real}
     prob = get_problem(dynamics, sim_config)
     solver = get_dae_solver(sim_config.solver)

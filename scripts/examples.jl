@@ -4,12 +4,13 @@ import .PHSim
 using Plots
 import Term
 
-output_dir = joinpath(@__DIR__, "output.local")
+examples_dir = joinpath(@__DIR__, "../examples")
+output_dir = joinpath(examples_dir, "output.local")
 isdir(output_dir) || mkdir(output_dir)
 
 function run_example(example::String)
+    config_file = joinpath(examples_dir, "configs", "$(example).yaml")
     Term.tprintln("Running example: {cyan}$(example){/cyan}")
-    config_file = joinpath(@__DIR__, "configs", "$(example).yaml")
 
     # Run complete simulation workflow
     result = PHSim.simulate_file(config_file)
