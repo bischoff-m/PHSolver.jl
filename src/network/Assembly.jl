@@ -31,7 +31,7 @@ end
 
 
 """
-    build_initial_state(graph::NetworkGraph)
+    build_initial_state(network::Network{T}) where {T<:Real}
 
 Build the initial state vector and differential-variable mask.
 
@@ -40,14 +40,14 @@ matrix (nonzero entries are treated as differential). Algebraic variables are
 initialized to zero.
 
 # Arguments
-- `graph::NetworkGraph`: Network graph metadata
+- `network::Network{T}`: Network metadata
 
 # Returns
 - `x0::Vector`: Initial state vector
 - `differential_vars::AbstractVector{Bool}`: `true` for differential variables
 """
-function build_initial_state(graph::NetworkGraph{T}) where {T<:Real}
-    n = graph.total_state_dim
+function build_initial_state(network::Network{T}) where {T<:Real}
+    n = network.total_state_dim
 
     # Build complete initial state vector
     x0 = zeros(T, n)
@@ -55,7 +55,7 @@ function build_initial_state(graph::NetworkGraph{T}) where {T<:Real}
     differential_vars = falses(n)
 
     # Set differential variables from node initial conditions
-    for node in values(graph.nodes)
+    for node in values(network.nodes)
         node_mass = node.system.mass
 
         # Identify differential variables in this node
@@ -82,7 +82,7 @@ end
 
 
 """
-    build_network(graph::NetworkGraph)
+    build_network(network::Network{T}) where {T<:Real}
 
 Assemble a port-Hamiltonian network into a single system with dynamics.
 
@@ -95,29 +95,29 @@ The assembled system satisfies \$Q \\dot{x} = (J - R) x + B u(t)\$, where
 `J` is skew-symmetric, `R` is symmetric PSD, and `Q` is diagonal PSD.
 
 # Arguments
-- `graph::NetworkGraph`: Network graph metadata
+- `network::Network{T}`: Network metadata
 
 # Returns
 - `SimDynamics`: Assembled network dynamics with initial conditions
 """
-function build_network(graph::NetworkGraph{T}) where {T<:Real}
+function build_network(network::Network{T}) where {T<:Real}
     # Create block diagonal matrices from individual systems
-    J = build_block_diagonal(graph.nodes, sys -> sys.interaction)
-    R = build_block_diagonal(graph.nodes, sys -> sys.dissipation)
-    Q = build_block_diagonal(graph.nodes, sys -> sys.mass)
-    B = build_block_diagonal(graph.nodes, sys -> sys.input)
+    J = build_block_diagonal(network.nodes, sys -> sys.interaction)
+    R = build_block_diagonal(network.nodes, sys -> sys.dissipation)
+    Q = build_block_diagonal(network.nodes, sys -> sys.mass)
+    B = build_block_diagonal(network.nodes, sys -> sys.input)
 
     # Apply interconnections to J
-    for connection in graph.connections
-        source = graph.nodes[connection.from.system]
-        target = graph.nodes[connection.to.system]
+    for connection in network.connections
+        source = network.nodes[connection.from.system]
+        target = network.nodes[connection.to.system]
         apply_connection!(J, connection, source, target)
     end
 
     # Create the assembled PortHamSystem
     network_phs = PortHamSystem(J, R, Q, B)
-    x0, differential_vars = build_initial_state(graph)
-    input_func = build_input_func(graph, B)
+    x0, differential_vars = build_initial_state(network)
+    input_func = build_input_func(network, B)
 
     return SimDynamics(network_phs, x0, differential_vars, input_func)
 end

@@ -1,6 +1,5 @@
 using LinearAlgebra
 using OrderedCollections
-using StructTypes
 import OrdinaryDiffEq as Eq
 
 """
@@ -36,7 +35,7 @@ end
 
 
 """
-    NetworkGraph
+    Network
 
 Metadata for a network of interconnected port-Hamiltonian systems.
 This is used during assembly; the assembled result is a single `PortHamSystem`.
@@ -47,13 +46,13 @@ This is used during assembly; the assembled result is a single `PortHamSystem`.
 - `connections::AbstractVector{NetworkConnection}`: All interconnections
 - `total_state_dim::Int`: Total dimension of the global state vector
 """
-struct NetworkGraph{T<:Real}
+struct Network{T<:Real}
     name::String
     nodes::OrderedDict{String,PHSNode{T}}
     connections::AbstractVector{NetworkConnection}
     total_state_dim::Int
 
-    function NetworkGraph(
+    function Network(
         name::String,
         nodes::OrderedDict{String,PHSNode{T}},
         connections::AbstractVector{NetworkConnection},
@@ -79,10 +78,10 @@ Container for a simulation solution and its associated model metadata.
 # Fields
 - `solution::Eq.SciMLBase.AbstractSolution`: Solution object from the solver
 - `system::PortHamSystem{T}`: Assembled system that was simulated
-- `graph::NetworkGraph{T}`: Network metadata used for assembly
+- `network::Network{T}`: Network metadata used for assembly
 """
 struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
     solution::S
     system::PortHamSystem{T}
-    graph::NetworkGraph{T}
+    network::Network{T}
 end

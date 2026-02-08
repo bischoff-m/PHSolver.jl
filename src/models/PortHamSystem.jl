@@ -1,15 +1,6 @@
 using LinearAlgebra
 
 """
-    isskewsym(A::AbstractMatrix)
-
-Check whether a matrix is (approximately) skew-symmetric.
-"""
-function isskewsym(A::AbstractMatrix{<:Real})
-    return A ≈ -transpose(A)
-end
-
-"""
     PortHamSystem
 
 Port-Hamiltonian system with matrices \$(J, R, Q, B)\$.
@@ -57,7 +48,7 @@ struct PortHamSystem{T<:Real}
         @assert all(eigvals(Matrix(dissipation)) .>= -1e-10) "Dissipation matrix must be positive semi-definite"
         @assert isdiag(mass) "Mass matrix must be diagonal"
         @assert all(diag(mass) .>= -1e-10) "Mass matrix must be positive semi-definite"
-        @assert isskewsym(interaction) "Interconnection matrix must be skew-symmetric"
+        @assert interaction ≈ -transpose(interaction) "Interconnection matrix must be skew-symmetric"
 
         new{T}(interaction, dissipation, mass, input)
     end
@@ -76,34 +67,3 @@ state_dimension(sys::PortHamSystem) = size(sys.mass, 1)
 Return the input dimension of the system.
 """
 input_dimension(sys::PortHamSystem) = size(sys.input, 2)
-
-"""
-    SimDynamics
-
-Simulation-ready dynamics container for a port-Hamiltonian system.
-
-# Fields
-- `system::PortHamSystem{T}`: Assembled system
-- `x0::AbstractVector{T}`: Initial state
-- `differential_vars::AbstractVector{Bool}`: Mask for differential variables
-- `input_func::Function`: Input function `u(t)`
-"""
-struct SimDynamics{T<:Real}
-    system::PortHamSystem{T}
-    x0::AbstractVector{T}
-    differential_vars::AbstractVector{Bool}
-    input_func::Function
-
-    function SimDynamics(
-        system::PortHamSystem{T},
-        x0::AbstractVector{T},
-        differential_vars::AbstractVector{Bool},
-        input_func::Function,
-    ) where {T<:Real}
-        n = state_dimension(system)
-        @assert length(x0) == n "Initial state vector x0 must have length $n"
-        @assert length(differential_vars) == n "Differential vars vector must have length $n"
-
-        new{T}(system, x0, differential_vars, input_func)
-    end
-end

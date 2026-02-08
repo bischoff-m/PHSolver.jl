@@ -10,7 +10,7 @@ The Hamiltonian is plotted as a dotted line labeled `H`.
 # Arguments
 - `result::SimulationResult`: Simulation result to plot
 - `tmax`: Optional maximum time to display
-- `title`: Optional plot title (defaults to `result.graph.name`)
+- `title`: Optional plot title (defaults to `result.network.name`)
 
 # Returns
 - The `Plots.jl` plot object
@@ -36,7 +36,7 @@ function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=noth
     end
 
     energy = compute_energy(sol, result.system)
-    plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot, title=isnothing(title) ? result.graph.name : title)
+    plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot, title=isnothing(title) ? result.network.name : title)
     display(plt)
     return plt
 end

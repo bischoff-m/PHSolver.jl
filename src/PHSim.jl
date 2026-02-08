@@ -11,16 +11,30 @@ module PHSim
 
 # Include component/source files so the entire library is exported from this
 # single module. Files included here should NOT declare their own `module`.
-include("NetworkSchema.jl")
-include("PortHamSystem.jl")
-include("NetworkModels.jl")
-include("Interconnection.jl")
-include("NetworkAssembly.jl")
-include("YAMLParser.jl")
-include("NetworkSolver.jl")
+include("schema/DictSchema.jl")
+include("schema/ComponentSchema.jl")
+include("schema/SystemSchema.jl")
+include("schema/NetworkSchema.jl")
+include("schema/RootSchema.jl")
+
+include("models/PortHamSystem.jl")
+include("models/SimDynamics.jl")
+
+include("network/Models.jl")
+include("network/InputFunction.jl")
+include("network/Interconnection.jl")
+include("network/Assembly.jl")
+
+include("simulation/GetProblem.jl")
+include("simulation/GetSolver.jl")
+include("simulation/SolvePHS.jl")
+include("simulation/SimulateConfig.jl")
+
+include("config/ParseConfig.jl")
+include("config/ParseNetwork.jl")
+
 include("Plots.jl")
 include("Util.jl")
-include("InputFunction.jl")
 
 
 # Export primary types and convenience functions
@@ -31,7 +45,7 @@ export input_dimension
 # Export network types
 export PHSNode
 export NetworkConnection
-export NetworkGraph
+export Network
 
 # Export interconnection functions
 export apply_connection!

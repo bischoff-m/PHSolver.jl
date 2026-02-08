@@ -53,7 +53,7 @@ end
 
 
 """
-    build_input_func(graph::NetworkGraph, input_matrix::AbstractMatrix)
+    build_input_func(network::Network{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
 
 Create a global input function `u(t)` from the network configuration.
 
@@ -63,18 +63,18 @@ by the block-diagonal input matrix. For now, per-port indices in
 is written into the first `input_dimension(system)` entries for that node.
 
 # Arguments
-- `graph::NetworkGraph`: Network graph with external input specifications
-- `input_matrix::AbstractMatrix`: Global input matrix for sizing
+- `network::Network{T}`: Network metadata with external input specifications
+- `input_matrix::AbstractMatrix{T}`: Global input matrix for sizing
 
 # Returns
 - A function `u(t)` that returns the global input vector at time `t`
 """
-function build_input_func(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
+function build_input_func(network::Network{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
     n_inputs = size(input_matrix, 2)
 
     # Parse all input function expressions
     input_funcs = OrderedDict{String,Function}()
-    # for ext_input in graph.external_inputs
+    # for ext_input in network.external_inputs
     #     input_funcs[ext_input.system] = parse_external_function(ext_input.func)
     # end
 
@@ -83,7 +83,7 @@ function build_input_func(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T
         u = zeros(T, n_inputs)
 
         input_offset = 0
-        for (node_id, node) in graph.nodes
+        for (node_id, node) in network.nodes
             node_input_dim = input_dimension(node.system)
 
             # Check if this node has external input
