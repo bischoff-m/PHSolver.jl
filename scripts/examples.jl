@@ -14,13 +14,13 @@ function run_example(example::String)
 
     # Run complete simulation workflow
     result = PHSim.simulate_file(config_file)
-    plt = PHSim.plot_result(result, title=result.graph.name)
+    plt = PHSim.plot_result(result, title=result.network.name)
 
     savefig(plt, output_dir * "/$(example).png")
     Term.tprintln()
 end
 
-# run_example("pendulum")
-# run_example("coupled_masses")
-# run_example("sine_oscillator")
+run_example("pendulum")
+run_example("coupled_masses")
+run_example("sine_oscillator")
 run_example("dc_power_network")
