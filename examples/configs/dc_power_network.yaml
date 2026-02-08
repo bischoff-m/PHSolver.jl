@@ -31,7 +31,7 @@ network:
           x0: 1.8257418583505536
         - id: V1
           dissipation: 0
-          mass: 0.1
+          mass: 0.01
           x0: -5.659799465085671
         - id: V2
           dissipation: 0
@@ -45,7 +45,6 @@ network:
           dissipation: 3
           mass: 0
           x0: 0
-
       connections:
         - from: V1
           to: IL
@@ -59,11 +58,13 @@ network:
         - from: IR
           to: V2
           weight: 1
+      ports:
+        p1: IG
 
-  # external_inputs:
-  #   - system: "dc_network"
-  #     func: "constant(0)"
-  #     indices: [3] # Input applied to IG equation
+  ports:
+    port1:
+      system: "dc_network"
+      port: "p1"
 
 # Simulation configuration
 simulation:
