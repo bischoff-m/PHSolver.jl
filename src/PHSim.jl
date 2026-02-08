@@ -62,6 +62,8 @@ export read_config
 
 # Export solver functions
 export solve_phs
+export init_solver
+export step_solver!
 export simulate_file
 export supported_solvers
 export simulate_config

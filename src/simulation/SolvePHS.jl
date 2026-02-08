@@ -1,6 +1,38 @@
 import OrdinaryDiffEq as Eq
 
 """
+    init_solver(dynamics::SimDynamics; sim_config::SimulationConfig)
+
+Initialize a DAE integrator for stepping the solver externally.
+
+Returns `(integrator, dt)` where `dt` is the step size used by default.
+"""
+function init_solver(
+    dynamics::SimDynamics{T};
+    sim_config::SimulationConfig,
+) where {T<:Real}
+    prob = get_problem(dynamics, sim_config)
+    solver = get_dae_solver(sim_config.solver)
+
+    integrator = Eq.init(prob, solver;
+        initializealg=Eq.BrownFullBasicInit(),
+        dt=sim_config.timestep,
+    )
+
+    return integrator
+end
+
+"""
+    step_solver!(integrator, dt)
+
+Advance the integrator by one step and return `(t, u)`.
+"""
+function step_solver!(integrator, dt::Real)
+    Eq.step!(integrator, dt, true)
+    return integrator.t, integrator.u
+end
+
+"""
     solve_phs(dynamics::SimDynamics; sim_config=SimulationConfigDefault)
 
 Solve the assembled DAE and return the SciML solution object.
@@ -41,19 +73,11 @@ function solve_phs_realtime(
     dynamics::SimDynamics{T};
     sim_config::SimulationConfig,
 ) where {T<:Real}
-    prob = get_problem(dynamics, sim_config)
-    solver = get_dae_solver(sim_config.solver)
-
-    dt = isnothing(sim_config.timestep) ? 1 / 2^4 : sim_config.timestep
-
-    integrator = Eq.init(prob, solver;
-        initializealg=Eq.BrownFullBasicInit(),
-        dt=dt,
-    )
+    integrator = init_solver(dynamics; sim_config=sim_config)
 
     t_final = sim_config.time_span[2]
     while integrator.t < t_final
-        Eq.step!(integrator, dt, true)
+        step_solver!(integrator, sim_config.timestep)
         # TODO: This was just temporary and needs to be done on the outside
         plot_result(
             SimulationResult(
@@ -62,8 +86,6 @@ function solve_phs_realtime(
                 Network("Live Plot", OrderedDict{String,PHSNode{T}}(), NetworkConnection[]));
             title="t = $(round(integrator.t, digits=2)) s"
         )
-        # Wait for 0.01 seconds to allow plot to update
-        # sleep(0.1)
     end
 
     # Return result
