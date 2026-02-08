@@ -19,6 +19,7 @@ struct PHSNode{T<:Real}
     id::String
     system::PortHamSystem{T}
     initial_state::AbstractVector{T}
+    ports::Dict{String,Int}
     state_offset::Int
     state_dim::Int
 
@@ -26,9 +27,10 @@ struct PHSNode{T<:Real}
         id::String,
         system::PortHamSystem{T},
         initial_state::AbstractVector{T},
+        ports::Dict{String,Int},
         state_offset::Int=0,
     ) where {T<:Real}
-        new{T}(id, system, initial_state, state_offset, state_dimension(system))
+        new{T}(id, system, initial_state, ports, state_offset, state_dimension(system))
     end
 end
 
@@ -42,19 +44,19 @@ This is used during assembly; the assembled result is a single `PortHamSystem`.
 # Fields
 - `name::String`: Network name
 - `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
-- `edges::AbstractVector{NetworkConnection}`: All interconnections
+- `connections::AbstractVector{NetworkConnection}`: All interconnections
 - `total_state_dim::Int`: Total dimension of the global state vector
 """
 struct NetworkGraph{T<:Real}
     name::String
     nodes::OrderedDict{String,PHSNode{T}}
-    edges::AbstractVector{NetworkConnection}
+    connections::AbstractVector{NetworkConnection}
     total_state_dim::Int
 
     function NetworkGraph(
         name::String,
         nodes::OrderedDict{String,PHSNode{T}},
-        edges::AbstractVector{NetworkConnection},
+        connections::AbstractVector{NetworkConnection},
     ) where {T<:Real}
         # Calculate total state dimension
         total_state_dim = sum((node.state_dim for node in values(nodes)); init=0)
@@ -62,7 +64,7 @@ struct NetworkGraph{T<:Real}
         new{T}(
             name,
             nodes,
-            edges,
+            connections,
             total_state_dim,
         )
     end

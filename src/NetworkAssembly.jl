@@ -1,5 +1,6 @@
 using LinearAlgebra
 using OrderedCollections
+using SparseArrays
 
 
 """
@@ -23,9 +24,8 @@ function build_block_diagonal(
     nodes::OrderedDict{String,PHSNode{T}},
     matrix_getter::Function,
 ) where {T<:Real}
-    # Extract matrices in insertion order
+    # Create block diagonal matrix from node matrices
     matrices = [sparse(matrix_getter(node.system)) for node in values(nodes)]
-
     return blockdiag(matrices...)
 end
 
@@ -108,17 +108,16 @@ function build_network(graph::NetworkGraph{T}) where {T<:Real}
     B = build_block_diagonal(graph.nodes, sys -> sys.input)
 
     # Apply interconnections to J
-    for edge in graph.edges
-        source = graph.nodes[edge.from]
-        target = graph.nodes[edge.to]
-        apply_connection!(J, edge, source, target)
+    for connection in graph.connections
+        source = graph.nodes[connection.from.system]
+        target = graph.nodes[connection.to.system]
+        apply_connection!(J, connection, source, target)
     end
-
 
     # Create the assembled PortHamSystem
     network_phs = PortHamSystem(J, R, Q, B)
     x0, differential_vars = build_initial_state(graph)
-    u_func = build_input_func(graph, B)
+    input_func = build_input_func(graph, B)
 
-    return SimDynamics(network_phs, x0, differential_vars, u_func)
+    return SimDynamics(network_phs, x0, differential_vars, input_func)
 end

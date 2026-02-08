@@ -3,7 +3,7 @@
 # Minimal undamped harmonic oscillator (2D port-Hamiltonian system)
 #
 # Dynamics (with Q = I, R = 0):
-#   ẋ = J x
+#   xdot = J x
 #   J = [ 0  1;
 #        -1  0]
 #
@@ -16,22 +16,20 @@ network:
 
   systems:
     - id: "oscillator"
-      matrices:
-        # Skew-symmetric interconnection
-        J:
-          - [0.0, 1.0]
-          - [-1.0, 0.0]
-
-        # No damping (diagonal)
-        R: [0.0, 0.0]
-
-        # Unit mass matrix (diagonal, PSD)
-        Q: [1.0, 1.0]
-
-      # Both states are differential since diag(Q) is nonzero.
-      # Choose x1(0)=0, x2(0)=1 so x1(t) becomes a sine wave.
-      initial_state: [0.0, 1.0]
+      components:
+        - id: x1
+          dissipation: 0
+          mass: 1
+          x0: 0
+        - id: x2
+          dissipation: 0
+          mass: 1
+          x0: 1
+      connections:
+        - from: x1
+          to: x2
+          weight: 1
 
 simulation:
-  time_span: [0.0, 10]
+  time_span: [0, 10]
   solver: "IDA"

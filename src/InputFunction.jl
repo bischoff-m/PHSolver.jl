@@ -74,9 +74,9 @@ function build_input_func(graph::NetworkGraph{T}, input_matrix::AbstractMatrix{T
 
     # Parse all input function expressions
     input_funcs = OrderedDict{String,Function}()
-    for ext_input in graph.external_inputs
-        input_funcs[ext_input.system] = parse_external_function(ext_input.func)
-    end
+    # for ext_input in graph.external_inputs
+    #     input_funcs[ext_input.system] = parse_external_function(ext_input.func)
+    # end
 
     # Create input function
     function input_function(t::Real)

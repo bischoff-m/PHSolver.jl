@@ -13,6 +13,26 @@
         "simulation"
     ],
     "$defs": {
+        "Main.PHSim.Component": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "dissipation": {
+                    "type": "number"
+                },
+                "mass": {
+                    "type": "number"
+                },
+                "x0": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
         "Main.PHSim.SystemPort": {
             "type": "object",
             "properties": {
@@ -28,6 +48,37 @@
                 "port"
             ]
         },
+        "Main.PHSim.ComponentSystem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Main.PHSim.Component"
+                    }
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Main.PHSim.ComponentConnection"
+                    }
+                },
+                "ports": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "components",
+                "connections"
+            ]
+        },
         "Main.PHSim.NetworkConfig": {
             "type": "object",
             "properties": {
@@ -37,7 +88,7 @@
                 "systems": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.PHSim.MatrixSystem"
+                        "$ref": "#/$defs/Main.PHSim.ComponentSystem"
                     }
                 },
                 "connections": {
@@ -48,119 +99,14 @@
                 },
                 "ports": {
                     "type": "object",
-                    "properties": {
-                        "slots": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        },
-                        "keys": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "vals": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/$defs/Main.PHSim.SystemPort"
-                            }
-                        },
-                        "ndel": {
-                            "type": "integer"
-                        },
-                        "count": {
-                            "type": "integer"
-                        },
-                        "age": {
-                            "type": "integer"
-                        },
-                        "idxfloor": {
-                            "type": "integer"
-                        },
-                        "maxprobe": {
-                            "type": "integer"
-                        }
-                    },
-                    "required": [
-                        "slots",
-                        "keys",
-                        "vals",
-                        "ndel",
-                        "count",
-                        "age",
-                        "idxfloor",
-                        "maxprobe"
-                    ]
+                    "additionalProperties": {
+                        "$ref": "#/$defs/Main.PHSim.SystemPort"
+                    }
                 }
             },
             "required": [
                 "name",
                 "systems"
-            ]
-        },
-        "Main.PHSim.MatrixSystem": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "matrices": {
-                    "$ref": "#/$defs/Main.PHSim.PhsMatrices"
-                },
-                "ports": {
-                    "type": "object",
-                    "properties": {
-                        "slots": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        },
-                        "keys": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "vals": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        },
-                        "ndel": {
-                            "type": "integer"
-                        },
-                        "count": {
-                            "type": "integer"
-                        },
-                        "age": {
-                            "type": "integer"
-                        },
-                        "idxfloor": {
-                            "type": "integer"
-                        },
-                        "maxprobe": {
-                            "type": "integer"
-                        }
-                    },
-                    "required": [
-                        "slots",
-                        "keys",
-                        "vals",
-                        "ndel",
-                        "count",
-                        "age",
-                        "idxfloor",
-                        "maxprobe"
-                    ]
-                }
-            },
-            "required": [
-                "id",
-                "matrices"
             ]
         },
         "Main.PHSim.SimulationConfig": {
@@ -183,49 +129,6 @@
                 "time_span"
             ]
         },
-        "Main.PHSim.PhsMatrices": {
-            "type": "object",
-            "properties": {
-                "J": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "number"
-                        }
-                    }
-                },
-                "R": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "Q": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "B": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "x0": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                }
-            },
-            "required": [
-                "J",
-                "R",
-                "Q"
-            ]
-        },
         "Main.PHSim.NetworkConnection": {
             "type": "object",
             "properties": {
@@ -234,6 +137,24 @@
                 },
                 "to": {
                     "$ref": "#/$defs/Main.PHSim.SystemPort"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "from",
+                "to"
+            ]
+        },
+        "Main.PHSim.ComponentConnection": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
                 },
                 "weight": {
                     "type": "number"

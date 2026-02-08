@@ -1,5 +1,24 @@
 import JSONSchemaGenerator, StructTypes, JSON3
 
+JSONSchemaGenerator._json_type(::Type{<:AbstractDict}) = :dict
+
+function JSONSchemaGenerator._generate_json_type_def(
+    ::Val{:dict},
+    julia_type::Type{<:AbstractDict},
+    settings::JSONSchemaGenerator.SchemaSettings,
+)
+    value_type = Base.valtype(julia_type)
+    item_type = if settings.use_references && value_type in settings.reference_types
+        JSONSchemaGenerator._json_reference(value_type, settings)
+    else
+        JSONSchemaGenerator._generate_json_type_def(value_type, settings)
+    end
+    return settings.dict_type{String,Any}(
+        "type" => "object",
+        "additionalProperties" => item_type,
+    )
+end
+
 """
 Schema definitions for network configuration YAML files.
 
@@ -15,10 +34,13 @@ struct Component
 
     function Component(
         id::String,
-        dissipation::Union{Nothing,Real}=0.0,
-        mass::Union{Nothing,Real}=0.0,
-        x0::Union{Nothing,Real}=0.0
+        dissipation::Union{Nothing,Real},
+        mass::Union{Nothing,Real},
+        x0::Union{Nothing,Real}
     )
+        dissipation = something(dissipation, 0.0)
+        mass = something(mass, 0.0)
+        x0 = something(x0, 0.0)
         new(id, dissipation, mass, x0)
     end
 end
@@ -33,76 +55,80 @@ struct ComponentConnection
     function ComponentConnection(
         from::String,
         to::String,
-        weight::Union{Nothing,Real}=1.0
+        weight::Union{Nothing,Real}
     )
+        weight = something(weight, 1.0)
         new(from, to, weight)
     end
 end
 StructTypes.StructType(::Type{ComponentConnection}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ComponentConnection}) = (:weight,)
 
-"""
-    PhsMatrices
+# """
+#     PhsMatrices
 
-Defines the matrices for a port-Hamiltonian system as parsed from YAML.
+# Defines the matrices for a port-Hamiltonian system as parsed from YAML.
 
-Each matrix is represented as a vector of row vectors (as produced by YAML
-array parsing), and is later converted to a dense matrix in the loader.
+# Each matrix is represented as a vector of row vectors (as produced by YAML
+# array parsing), and is later converted to a dense matrix in the loader.
 
-# Fields
-- `J::AbstractVector{AbstractVector{Real}}`: Interconnection matrix (skew-symmetric)
-- `R::AbstractVector{Real}`: Dissipation matrix rows
-- `Q::AbstractVector{Real}`: Mass/energy storage matrix rows
-- `B::Union{Nothing, AbstractVector{Real}}`: Input matrix rows (optional)
-- `x0::Union{Nothing, AbstractVector{Real}}`: Initial state values (optional)
-"""
-struct PhsMatrices
-    J::AbstractVector{AbstractVector{Real}}
-    R::AbstractVector{Real}
-    Q::AbstractVector{Real}
-    B::AbstractVector{Real}
-    x0::AbstractVector{Real}
+# # Fields
+# - `J::AbstractVector{AbstractVector{Real}}`: Interconnection matrix (skew-symmetric)
+# - `R::AbstractVector{Real}`: Dissipation matrix rows
+# - `Q::AbstractVector{Real}`: Mass/energy storage matrix rows
+# - `B::Union{Nothing, AbstractVector{Real}}`: Input matrix rows (optional)
+# - `x0::Union{Nothing, AbstractVector{Real}}`: Initial state values (optional)
+# """
+# struct PhsMatrices
+#     J::AbstractVector{AbstractVector{Real}}
+#     R::AbstractVector{Real}
+#     Q::AbstractVector{Real}
+#     B::AbstractVector{Real}
+#     x0::AbstractVector{Real}
 
-    function PhsMatrices(
-        J::AbstractVector{AbstractVector{Real}},
-        R::AbstractVector{Real},
-        Q::AbstractVector{Real},
-        B::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J)),
-        x0::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J))
-    )
-        # Preconditions are checked in the PortHamSystem constructor because the
-        # types are not yet converted.
-        new(J, R, Q, B, x0)
-    end
-end
-StructTypes.StructType(::Type{PhsMatrices}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{PhsMatrices}) = (:B, :x0,)
+#     function PhsMatrices(
+#         J::AbstractVector{AbstractVector{Real}},
+#         R::AbstractVector{Real},
+#         Q::AbstractVector{Real},
+#         B::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J)),
+#         x0::Union{Nothing,AbstractVector{Real}}=zeros(Real, length(J))
+#     )
+#         # Preconditions are checked in the PortHamSystem constructor because the
+#         # types are not yet converted.
+#         new(J, R, Q, B, x0)
+#     end
+# end
+# StructTypes.StructType(::Type{PhsMatrices}) = StructTypes.Struct()
+# StructTypes.omitempties(::Type{PhsMatrices}) = (:B, :x0,)
 
-"""
-    MatrixSystem
+# """
+#     MatrixSystem
 
-Defines a single port-Hamiltonian system in the network configuration.
+# Defines a single port-Hamiltonian system in the network configuration.
 
-# Fields
-- `id::String`: Unique identifier for the system
-- `matrices::PhsMatrices`: System matrices (J, R, Q, B)
-- `ports::Dict{String,Integer}`: Optional mapping of port names to indices
-"""
-struct MatrixSystem
-    id::String
-    matrices::PhsMatrices
-    ports::Dict{String,Integer}
+# # Fields
+# - `id::String`: Unique identifier for the system
+# - `matrices::PhsMatrices`: System matrices (J, R, Q, B)
+# - `ports::Dict{String,Integer}`: Optional mapping of port names to indices
+# """
+# struct MatrixSystem
+#     id::String
+#     matrices::PhsMatrices
+#     ports::Dict{String,Integer}
 
-    function MatrixSystem(
-        id::String,
-        matrices::PhsMatrices,
-        ports::Union{Nothing,Dict{String,Integer}}=Dict{String,Integer}()
-    )
-        new(id, matrices, ports)
-    end
-end
-StructTypes.StructType(::Type{MatrixSystem}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{MatrixSystem}) = (:ports,)
+#     function MatrixSystem(
+#         id::String,
+#         matrices::PhsMatrices,
+#         ports::Union{Nothing,Dict{String,Integer}}=Dict{String,Integer}()
+#     )
+#         new(id, matrices, ports)
+#     end
+# end
+# StructTypes.StructType(::Type{MatrixSystem}) = StructTypes.Struct()
+# StructTypes.omitempties(::Type{MatrixSystem}) = (:ports,)
+
+# struct StringDict <: AbstractDict{String,String} end
+# StructTypes.StructType(::Type{StringDict}) = StructTypes.DictType()
 
 struct ComponentSystem
     id::String
@@ -114,14 +140,14 @@ struct ComponentSystem
         id::String,
         components::AbstractVector{Component},
         connections::AbstractVector{ComponentConnection},
-        ports::Union{Nothing,Dict{String,String}}=Dict{String,String}()
+        ports::Union{Nothing,Dict{String,String}}
     )
+        ports = something(ports, Dict{String,String}())
         new(id, components, connections, ports)
     end
 end
 StructTypes.StructType(::Type{ComponentSystem}) = StructTypes.Struct()
 StructTypes.omitempties(::Type{ComponentSystem}) = (:ports,)
-
 
 struct SystemPort
     system::String
@@ -152,8 +178,9 @@ struct NetworkConnection
     function NetworkConnection(
         from::SystemPort,
         to::SystemPort,
-        weight::Union{Nothing,Real}=1.0
+        weight::Union{Nothing,Real}
     )
+        weight = something(weight, 1.0)
         new(from, to, weight)
     end
 end
@@ -168,23 +195,24 @@ Top-level network configuration block.
 
 # Fields
 - `name::Union{Nothing, String}`: Network name (optional)
-- `systems::AbstractVector{Union{MatrixSystem,ComponentSystem}}`: List of systems in the network
+- `systems::AbstractVector{ComponentSystem}`: List of systems in the network
 - `connections::Union{Nothing, AbstractVector{NetworkConnection}}`: System interconnections (optional)
 - `external_inputs::Union{Nothing, AbstractVector{ExternalInput}}`: External inputs (optional)
 """
 struct NetworkConfig
     name::String
-    systems::AbstractVector{MatrixSystem}
-    # systems::AbstractVector{Union{MatrixSystem,ComponentSystem}}
+    systems::AbstractVector{ComponentSystem}
     connections::AbstractVector{NetworkConnection}
     ports::Dict{String,SystemPort}
 
     function NetworkConfig(
         name::String,
-        systems::AbstractVector{MatrixSystem},
-        connections::Union{Nothing,AbstractVector{NetworkConnection}}=NetworkConnection[],
-        ports::Union{Nothing,Dict{String,SystemPort}}=Dict{String,SystemPort}()
+        systems::AbstractVector{ComponentSystem},
+        connections::Union{Nothing,AbstractVector{NetworkConnection}},
+        ports::Union{Nothing,Dict{String,SystemPort}}
     )
+        connections = something(connections, NetworkConnection[])
+        ports = something(ports, Dict{String,SystemPort}())
         new(name, systems, connections, ports)
     end
 end
@@ -207,10 +235,13 @@ mutable struct SimulationConfig
     timestep::Real
 
     function SimulationConfig(
-        time_span::AbstractVector{Real}=[0.0, 1.0],
-        solver::Union{Nothing,String}="IDA",
-        timestep::Union{Nothing,Real}=0.01
+        time_span::Union{Nothing,AbstractVector{Real}},
+        solver::Union{Nothing,String},
+        timestep::Union{Nothing,Real}
     )
+        time_span = something(time_span, [0.0, 1.0])
+        solver = something(solver, "IDA")
+        timestep = something(timestep, 0.01)
         new(time_span, solver, timestep)
     end
 end

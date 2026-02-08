@@ -9,61 +9,69 @@
 
 network:
   name: "Coupled Mass-Spring-Damper"
-
   systems:
     # First mass-spring-damper subsystem
-    - id: "mass1"
-      matrices:
-        # State: [p1, q1] (momentum, position)
-        # J matrix (skew-symmetric)
-        J:
-          - [0.0, 1.0]
-          - [-1.0, 0.0]
-
-        # R matrix diagonal (damping)
-        R: [0.5, 0.0] # Damping coefficient
-
-        # Q matrix diagonal (mass and spring)
-        Q: [1.0, 2.0] # Mass m1 = 1.0, Spring k1 = 2.0
-
-        # B matrix (input on momentum)
-        B: [1.0, 0.0]
-
-      initial_state: [0.5, 1.0] # Initial momentum and position
+    - id: mass1
+      components:
+        - id: momentum
+          dissipation: 0.5
+          mass: 1
+          x0: 0.5
+        - id: position
+          dissipation: 0
+          mass: 2
+          x0: 1
+      connections:
+        - from: momentum
+          to: position
+          weight: 1
+      ports:
+        p1: momentum
 
     # Second mass-damper subsystem
-    - id: "mass2"
-      matrices:
-        # State: [p2, q2] (momentum, position)
-        J:
-          - [0.0, 1.0]
-          - [-1.0, 0.0]
-
-        # R matrix diagonal (damping)
-        R: [0.3, 0.0] # Damping coefficient
-
-        # Q matrix diagonal (mass and spring)
-        Q: [1.5, 1.0] # Mass m2 = 1.5, Spring k2 = 1.0
-
-        # B matrix (input on momentum)
-        B: [1.0, 0.0]
-
-      initial_state: [-0.3, -0.5] # Initial momentum and position
+    - id: mass2
+      components:
+        - id: momentum
+          dissipation: 0.3
+          mass: 1.5
+          x0: -0.3
+        - id: position
+          dissipation: 0
+          mass: 1
+          x0: -0.5
+      connections:
+        - from: momentum
+          to: position
+          weight: 1
+      ports:
+        p1: momentum
 
   # Interconnect the two masses through their outputs (velocities)
   connections:
-    - from: "mass1"
-      from_ports: [1]
-      to: "mass2"
-      to_ports: [1]
-      type: "negative_feedback" # Standard feedback coupling
+    - from:
+        system: mass1
+        port: p1
+      to:
+        system: mass2
+        port: p1
+      weight: -1
 
-    - from: "mass2"
-      from_ports: [1]
-      to: "mass1"
-      to_ports: [1]
-      type: "negative_feedback"
+    - from:
+        system: mass2
+        port: p1
+      to:
+        system: mass1
+        port: p1
+      weight: -1
+
+  ports:
+    port1:
+      system: mass1
+      port: p1
+    port2:
+      system: mass2
+      port: p1
 
 simulation:
-  time_span: [0.0, 10.0]
-  solver: "IDA"
+  time_span: [0, 10]
+  solver: IDA

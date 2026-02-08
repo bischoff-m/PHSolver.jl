@@ -9,51 +9,57 @@ network:
 
   systems:
     - id: "pendulum"
-      matrices:
-        J:
-          - [0.0, 1.0]
-          - [-1.0, 0.0]
-
-        # No damping (diagonal)
-        R: [0.0, 0.0]
-
-        # Mass matrix (diagonal)
-        Q: [9.81, 1.0] # m = 1, g = 9.81, l = 1
-
-        B: [0.0, 1.0]
-
-        x0: [0.1745, 0.0] # Initial angle (rad) and angular momentum
+      components:
+        - id: angle
+          dissipation: 0
+          mass: 9.81
+          x0: 0.1745
+        - id: momentum
+          dissipation: 0
+          mass: 1
+          x0: 0
+      connections:
+        - from: angle
+          to: momentum
+          weight: 1
+      ports:
+        p1: momentum
 
     # PI Controller subsystem
     - id: "controller"
-      matrices:
-        J:
-          - [0.0, 1.0]
-          - [-1.0, 0.0]
-
-        # Damping / gain matrix (diagonal)
-        R: [0.0, 20.0] # Proportional gain (Kp)
-
-        # Storage matrix (diagonal)
-        Q: [8.0, 0.1] # Integral gain (kI), Derivative gain (1/kD)
-
-        B: [0.0, 1.0]
-
-        x0: [0.0, 0.0] # Controller starts with zero integral and proportional states
+      components:
+        - id: integral
+          dissipation: 0
+          mass: 8
+          x0: 0
+        - id: proportional
+          dissipation: 20
+          mass: 0.1
+          x0: 0
+      connections:
+        - from: integral
+          to: proportional
+          weight: 1
+      ports:
+        p1: proportional
 
   connections:
-    - from: "pendulum"
-      from_ports: [1]
-      to: "controller"
-      to_ports: [1]
-      type: "negative_feedback"
-    - from: "controller"
-      from_ports: [1]
-      to: "pendulum"
-      to_ports: [1]
-      type: "direct"
+    - from:
+        system: pendulum
+        port: p1
+      to:
+        system: controller
+        port: p1
+      weight: -1
+    - from:
+        system: controller
+        port: p1
+      to:
+        system: pendulum
+        port: p1
+      weight: 1
 
 simulation:
-  time_span: [0.0, 50.0]
+  time_span: [0, 50]
   timestep: 0.1
   solver: "IDA"

@@ -199,12 +199,8 @@ graph metadata.
 """
 function simulate_config(config::RootConfig)
     # Load network
-    graph = load_network(config.network, Float64)
-    Term.tprintln("  {bold green}✓{/bold green} Loaded network {cyan}$(graph.name){/cyan}")
-
-    # Load configuration
+    graph = network_from_config(config.network, Float64)
     sim_config = config.simulation
-    sim_config = isnothing(sim_config) ? SimulationConfigDefault : sim_config
     Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
 
     # Assemble network
@@ -215,7 +211,6 @@ function simulate_config(config::RootConfig)
 
     # Solve
     sol = solve_phs(sim_input, sim_config=sim_config)
-    plot_result(SimulationResult(sol, sim_input.system, graph), title="Final Result")
     # sol = solve_phs_realtime(sim_input, sim_config=sim_config)
     Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
