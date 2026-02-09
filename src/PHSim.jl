@@ -34,6 +34,7 @@ include("config/ParseConfig.jl")
 include("config/ParseNetwork.jl")
 
 include("Plots.jl")
+include("plots/NetworkPlot.jl")
 include("Util.jl")
 
 
@@ -74,6 +75,7 @@ export compute_energy
 
 # Export plots
 export plot_result
+export graphviz_network
 
 export RootConfig
 
