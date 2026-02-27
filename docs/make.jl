@@ -19,5 +19,5 @@ makedocs(
     ],
 )
 deploydocs(
-    repo="github.com/bischoff-m/hamilton-sim.git",
+    repo="github.com/bischoff-m/PHSolver.git",
 )
