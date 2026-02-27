@@ -1,13 +1,13 @@
 
 """
-PHSim
+PHSolver
 
 Port-Hamiltonian network simulation library.
 
 This module re-exports the core types, assembly utilities, YAML config loader,
 and solver/plotting helpers defined across the source files.
 """
-module PHSim
+module PHSolver
 
 # Include component/source files so the entire library is exported from this
 # single module. Files included here should NOT declare their own `module`.
@@ -33,8 +33,9 @@ include("simulation/SimulateConfig.jl")
 include("config/ParseConfig.jl")
 include("config/ParseNetwork.jl")
 
-include("Plots.jl")
+include("plots/Plots.jl")
 include("plots/NetworkPlot.jl")
+
 include("Util.jl")
 
 

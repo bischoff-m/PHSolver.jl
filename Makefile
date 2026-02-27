@@ -35,7 +35,7 @@ test-verbose:
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
 examples:
-	julia --project=. examples/main.jl
+	julia --project=. scripts/examples.jl
 
 schema:
 	julia --project=. scripts/update_schema.jl

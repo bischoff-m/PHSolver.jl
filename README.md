@@ -1,5 +1,5 @@
-# PHSim.jl
+# PHSolver.jl
 
-Port-Hamiltonian Simulator in Julia
+Port-Hamiltonian Solver in Julia
 
 Solver for (networks of) electric components described by port-Hamiltonian systems.

@@ -2,10 +2,10 @@
     "type": "object",
     "properties": {
         "network": {
-            "$ref": "#/$defs/Main.PHSim.NetworkConfig"
+            "$ref": "#/$defs/Main.PHSolver.NetworkConfig"
         },
         "simulation": {
-            "$ref": "#/$defs/Main.PHSim.SimulationConfig"
+            "$ref": "#/$defs/Main.PHSolver.SimulationConfig"
         }
     },
     "required": [
@@ -13,7 +13,7 @@
         "simulation"
     ],
     "$defs": {
-        "Main.PHSim.Component": {
+        "Main.PHSolver.Component": {
             "type": "object",
             "properties": {
                 "id": {
@@ -33,7 +33,7 @@
                 "id"
             ]
         },
-        "Main.PHSim.SystemPort": {
+        "Main.PHSolver.SystemPort": {
             "type": "object",
             "properties": {
                 "system": {
@@ -48,7 +48,7 @@
                 "port"
             ]
         },
-        "Main.PHSim.ComponentSystem": {
+        "Main.PHSolver.ComponentSystem": {
             "type": "object",
             "properties": {
                 "id": {
@@ -57,13 +57,13 @@
                 "components": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.PHSim.Component"
+                        "$ref": "#/$defs/Main.PHSolver.Component"
                     }
                 },
                 "connections": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.PHSim.ComponentConnection"
+                        "$ref": "#/$defs/Main.PHSolver.ComponentConnection"
                     }
                 },
                 "ports": {
@@ -79,7 +79,7 @@
                 "connections"
             ]
         },
-        "Main.PHSim.NetworkConfig": {
+        "Main.PHSolver.NetworkConfig": {
             "type": "object",
             "properties": {
                 "name": {
@@ -88,19 +88,19 @@
                 "systems": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.PHSim.ComponentSystem"
+                        "$ref": "#/$defs/Main.PHSolver.ComponentSystem"
                     }
                 },
                 "connections": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/Main.PHSim.NetworkConnection"
+                        "$ref": "#/$defs/Main.PHSolver.NetworkConnection"
                     }
                 },
                 "ports": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/$defs/Main.PHSim.SystemPort"
+                        "$ref": "#/$defs/Main.PHSolver.SystemPort"
                     }
                 }
             },
@@ -109,7 +109,7 @@
                 "systems"
             ]
         },
-        "Main.PHSim.SimulationConfig": {
+        "Main.PHSolver.SimulationConfig": {
             "type": "object",
             "properties": {
                 "time_span": {
@@ -129,14 +129,14 @@
                 "time_span"
             ]
         },
-        "Main.PHSim.NetworkConnection": {
+        "Main.PHSolver.NetworkConnection": {
             "type": "object",
             "properties": {
                 "from": {
-                    "$ref": "#/$defs/Main.PHSim.SystemPort"
+                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
                 },
                 "to": {
-                    "$ref": "#/$defs/Main.PHSim.SystemPort"
+                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
                 },
                 "weight": {
                     "type": "number"
@@ -147,7 +147,7 @@
                 "to"
             ]
         },
-        "Main.PHSim.ComponentConnection": {
+        "Main.PHSolver.ComponentConnection": {
             "type": "object",
             "properties": {
                 "from": {

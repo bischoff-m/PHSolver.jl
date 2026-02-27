@@ -1635,7 +1635,7 @@ deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.44.0+1"
 
-[[deps.PHSim]]
+[[deps.PHSolver]]
 deps = ["IJulia", "JSON3", "JSONSchema", "JSONSchemaGenerator", "JuliaFormatter", "LaTeXStrings", "LinearAlgebra", "Logging", "OrderedCollections", "OrdinaryDiffEq", "Plots", "ProgressLogging", "SparseArrays", "StructTypes", "Sundials", "Term", "TerminalLoggers", "Test", "YAML"]
 path = "."
 uuid = "403392ac-400e-4968-aac6-7f11f909412e"

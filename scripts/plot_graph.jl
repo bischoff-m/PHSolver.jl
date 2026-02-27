@@ -1,12 +1,12 @@
 
-include("../src/PHSim.jl")
+include("../src/PHSolver.jl")
 
-import .PHSim
+import .PHSolver
 using ShowGraphviz
 
 function plot_network(example::String)
-    config = PHSim.read_config("examples/configs/$example.yaml")
-    dot = PHSim.graphviz_network(config)
+    config = PHSolver.read_config("examples/configs/$example.yaml")
+    dot = PHSolver.graphviz_network(config)
     display(ShowGraphviz.DOT(dot))
 
     examples_dir = joinpath(@__DIR__, "../examples")

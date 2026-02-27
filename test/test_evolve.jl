@@ -7,7 +7,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 end
 
 using Test
-using PHSim: PortHamSystem, HamiltonState, evolve_step
+using PHSolver: PortHamSystem, HamiltonState, evolve_step
 
 @testset "evolve single step" begin
     # small valid PH system (n=2, m=1)

@@ -1,6 +1,6 @@
 using Test
 
-using PHSim
+using PHSolver
 
 @testset "PortHamSystem construction" begin
     # small valid PH system (n=2, m=1)

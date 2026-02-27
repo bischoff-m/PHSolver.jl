@@ -1,6 +1,6 @@
-include("../src/PHSim.jl")
+include("../src/PHSolver.jl")
 
-import .PHSim
+import .PHSolver
 import JSONSchemaGenerator, JSON3
 
 """
@@ -13,7 +13,7 @@ Generate and write the JSON schema to a file.
 """
 function generate_schema(output_file::String="schemas/network.schema.json")
     # Generate schema with references for cleaner structure
-    schema_dict = JSONSchemaGenerator.schema(PHSim.RootConfig, use_references=true)
+    schema_dict = JSONSchemaGenerator.schema(PHSolver.RootConfig, use_references=true)
 
     # Write to file with pretty formatting
     open(output_file, "w") do io
