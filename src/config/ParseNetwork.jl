@@ -30,10 +30,10 @@ function network_from_config(config::NetworkConfig, ::Type{T}) where {T<:Real}
         end
 
         # Build input matrix
-        B = zeros(T, n, 1)
+        B = zeros(T, n, n)
         for (_, comp_id) in sys_schema.ports
             comp_idx = comp_map[comp_id]
-            B[comp_idx, 1] = 1.0
+            B[comp_idx, comp_idx] = 1.0
         end
 
         R = Diagonal([c.dissipation for c in sys_schema.components])

@@ -37,7 +37,7 @@ function get_problem(
     Q = dynamics.system.mass
     J = dynamics.system.interaction
     R = copy(dynamics.system.dissipation)
-    B = diagm(dynamics.system.input[:, 1])
+    B = dynamics.system.input
 
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
