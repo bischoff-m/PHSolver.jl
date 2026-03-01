@@ -33,56 +33,31 @@ end
 """
     build_initial_state(network::Network{T}) where {T<:Real}
 
-Build the initial state vector and differential-variable mask.
-
-Differential variables are inferred from the diagonal of each node's mass
-matrix (nonzero entries are treated as differential). Algebraic variables are
-initialized to zero.
+Build the initial state vector. This concatenates the initial states of each
+node at the correct offsets to form the full initial state vector for the
+assembled system.
 
 # Arguments
 - `network::Network{T}`: Network metadata
 
 # Returns
 - `x0::Vector`: Initial state vector
-- `differential_vars::AbstractVector{Bool}`: `true` for differential variables
 """
 function build_initial_state(network::Network{T}) where {T<:Real}
-    n = network.total_state_dim
+    x0 = zeros(T, network.total_state_dim)
 
-    # Build complete initial state vector
-    x0 = zeros(T, n)
-    # Identify differential and algebraic variables in global system
-    differential_vars = falses(n)
-
-    # Set differential variables from node initial conditions
+    # Fill in initial states for each node at the correct offsets
     for node in values(network.nodes)
-        node_mass = node.system.mass
-
-        # Identify differential variables in this node
-        node_diff_vars = [node_mass[i, i] != 0.0 for i in axes(node_mass, 1)]
-        diff_idx = 1
-        for (i, is_diff) in enumerate(node_diff_vars)
-            global_idx = node.state_offset + i
-            differential_vars[global_idx] = is_diff
-            !is_diff && continue
-
-            if diff_idx <= length(node.initial_state)
-                x0[global_idx] = node.initial_state[diff_idx]
-            end
-            diff_idx += 1
-        end
+        idx_range = node.state_offset .+ (1:node.state_dim)
+        x0[idx_range] .= node.initial_state
     end
 
-    # TODO: Algebraic variables remain zero unless computed elsewhere
-    # For now, we initialize algebraic variables to zero
-    # A more sophisticated approach would solve the algebraic constraints
-
-    return x0, Vector{Bool}(differential_vars)
+    return x0
 end
 
 
 """
-    build_network(network::Network{T}) where {T<:Real}
+    dynamics_from_network(network::Network{T}) where {T<:Real}
 
 Assemble a port-Hamiltonian network into a single system with dynamics.
 
@@ -100,7 +75,7 @@ The assembled system satisfies \$Q \\dot{x} = (J - R) x + B u(t)\$, where
 # Returns
 - `SimDynamics`: Assembled network dynamics with initial conditions
 """
-function build_network(network::Network{T}) where {T<:Real}
+function dynamics_from_network(network::Network{T}) where {T<:Real}
     # Create block diagonal matrices from individual systems
     J = build_block_diagonal(network.nodes, sys -> sys.interaction)
     R = build_block_diagonal(network.nodes, sys -> sys.dissipation)
@@ -116,8 +91,8 @@ function build_network(network::Network{T}) where {T<:Real}
 
     # Create the assembled PortHamSystem
     network_phs = PortHamSystem(J, R, Q, B)
-    x0, differential_vars = build_initial_state(network)
+    x0 = build_initial_state(network)
     input_func = build_input_func(network, B)
 
-    return SimDynamics(network_phs, x0, differential_vars, input_func)
+    return SimDynamics(network_phs, x0, input_func)
 end

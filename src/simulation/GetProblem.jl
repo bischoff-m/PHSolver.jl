@@ -37,7 +37,7 @@ function get_problem(
     Q = dynamics.system.mass
     J = dynamics.system.interaction
     R = copy(dynamics.system.dissipation)
-    B = dynamics.system.input
+    B = diagm(dynamics.system.input[:, 1])
 
     # Compute initial derivatives
     # Q * dx = (J - R) * x + B * u(0)
@@ -45,17 +45,18 @@ function get_problem(
     u0 = dynamics.input_func(sim_config.time_span[1])
     rhs = (J - R) * dynamics.x0 + B * u0
 
+    # Differential variables (non-zero entries in Q)
+    differential_vars = [Q[i, i] != 0.0 for i in axes(Q, 1)]
+
     # Fill in derivatives for differential variables
     for i in eachindex(dx0)
-        if dynamics.differential_vars[i]
+        if differential_vars[i]
             dx0[i] = rhs[i] / Q[i, i]
         end
     end
 
-    # Define DAE residual function
-    # residual = Q * dx - (J - R) * x - B * u(t)
+    # Define DAE residual function (out = 0 at solution)
     function dae_residual!(out, dx, x, p, t)
-        # nonlinear_resistance!(x, R)
         u_t = dynamics.input_func(t)
         out .= Q * dx - (J - R) * x - B * u_t
     end
@@ -66,6 +67,6 @@ function get_problem(
         dx0,
         dynamics.x0,
         sim_config.time_span;
-        differential_vars=dynamics.differential_vars
+        differential_vars=differential_vars
     )
 end

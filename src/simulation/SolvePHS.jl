@@ -78,7 +78,7 @@ function solve_phs_realtime(
     t_final = sim_config.time_span[2]
     while integrator.t < t_final
         step_solver!(integrator, sim_config.timestep)
-        # TODO: This was just temporary and needs to be done on the outside
+        # TODO: This is just temporary and needs to be done on the outside
         plot_result(
             SimulationResult(
                 integrator.sol,

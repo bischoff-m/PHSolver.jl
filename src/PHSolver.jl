@@ -53,7 +53,7 @@ export Network
 export apply_connection!
 
 # Export network assembly functions
-export build_network
+export dynamics_from_network
 export compute_hamiltonian
 export parse_external_function
 

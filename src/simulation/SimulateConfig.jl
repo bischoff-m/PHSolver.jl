@@ -18,7 +18,7 @@ function simulate_config(config::RootConfig)
     Term.tprintln("  {bold green}✓{/bold green} Configuration: t=$(sim_config.time_span), solver={cyan}$(sim_config.solver){/cyan}")
 
     # Assemble network
-    sim_input = build_network(network)
+    sim_input = dynamics_from_network(network)
     n_nodes = length(network.nodes)
     n_states = length(sim_input.x0)
     Term.tprintln("  {bold green}✓{/bold green} Assembled {cyan}$n_nodes{/cyan} nodes → {cyan}$n_states{/cyan} state variables")
