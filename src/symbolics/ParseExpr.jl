@@ -55,7 +55,7 @@ Set([:x, :y])
 """
 function parse_expr(expr)
     expr = remove_blocks(expr)
-    parsed = Sym.parse_expr_to_symbolic(expr, Sym)
+    parsed = Sym.parse_expr_to_symbolic(expr, Base)
 
     # Get all variables appearing in the expression
     vars = Sym.get_variables(parsed)

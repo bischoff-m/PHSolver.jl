@@ -11,7 +11,7 @@
 #         # = 16
 #         "b = 2.0",
 #         "l = sqrt(a)",
-#         "h(x, a) = expr(x) + x * f / a + a * expr(l)",
+#         "h(x, a) = atan(x) + x * f / a + a * expr(l)",
 #         "i(j, k) = h(j, k) + l + h(j, l)",
 #         "j(x) = expr(2.0 * expr(x / 2.0))"
 #     ])
