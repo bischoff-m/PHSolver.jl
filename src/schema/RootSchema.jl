@@ -47,6 +47,7 @@ Root-level configuration object.
 - `simulation::SimulationConfig`: Simulation configuration
 """
 struct RootConfig
+    definitions::String
     network::NetworkConfig
     simulation::SimulationConfig
 end

@@ -1,6 +1,9 @@
 {
     "type": "object",
     "properties": {
+        "definitions": {
+            "type": "string"
+        },
         "network": {
             "$ref": "#/$defs/Main.PHSolver.NetworkConfig"
         },
@@ -9,28 +12,27 @@
         }
     },
     "required": [
+        "definitions",
         "network",
         "simulation"
     ],
     "$defs": {
-        "Main.PHSolver.Component": {
+        "Main.PHSolver.ComponentConnection": {
             "type": "object",
             "properties": {
-                "id": {
+                "from": {
                     "type": "string"
                 },
-                "dissipation": {
-                    "type": "number"
+                "to": {
+                    "type": "string"
                 },
-                "mass": {
-                    "type": "number"
-                },
-                "x0": {
+                "weight": {
                     "type": "number"
                 }
             },
             "required": [
-                "id"
+                "from",
+                "to"
             ]
         },
         "Main.PHSolver.SystemPort": {
@@ -48,7 +50,55 @@
                 "port"
             ]
         },
-        "Main.PHSolver.ComponentSystem": {
+        "Main.PHSolver.NetworkConnection": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
+                },
+                "to": {
+                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "from",
+                "to"
+            ]
+        },
+        "Main.PHSolver.NetworkConfig": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "systems": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Main.PHSolver.System"
+                    }
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Main.PHSolver.NetworkConnection"
+                    }
+                },
+                "ports": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/$defs/Main.PHSolver.SystemPort"
+                    }
+                }
+            },
+            "required": [
+                "name",
+                "systems"
+            ]
+        },
+        "Main.PHSolver.System": {
             "type": "object",
             "properties": {
                 "id": {
@@ -79,36 +129,6 @@
                 "connections"
             ]
         },
-        "Main.PHSolver.NetworkConfig": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "systems": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Main.PHSolver.ComponentSystem"
-                    }
-                },
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Main.PHSolver.NetworkConnection"
-                    }
-                },
-                "ports": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/$defs/Main.PHSolver.SystemPort"
-                    }
-                }
-            },
-            "required": [
-                "name",
-                "systems"
-            ]
-        },
         "Main.PHSolver.SimulationConfig": {
             "type": "object",
             "properties": {
@@ -129,40 +149,24 @@
                 "time_span"
             ]
         },
-        "Main.PHSolver.NetworkConnection": {
+        "Main.PHSolver.Component": {
             "type": "object",
             "properties": {
-                "from": {
-                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
+                "id": {
+                    "type": "string"
                 },
-                "to": {
-                    "$ref": "#/$defs/Main.PHSolver.SystemPort"
+                "dissipation": {
+                    "type": "number"
                 },
-                "weight": {
+                "mass": {
+                    "type": "number"
+                },
+                "x0": {
                     "type": "number"
                 }
             },
             "required": [
-                "from",
-                "to"
-            ]
-        },
-        "Main.PHSolver.ComponentConnection": {
-            "type": "object",
-            "properties": {
-                "from": {
-                    "type": "string"
-                },
-                "to": {
-                    "type": "string"
-                },
-                "weight": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "from",
-                "to"
+                "id"
             ]
         }
     }

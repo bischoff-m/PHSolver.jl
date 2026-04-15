@@ -119,3 +119,16 @@ function parse_defs(exprs::Vector{String})
 
     return definitions
 end
+
+function parse_defs(text::String)
+    # Remove multiline comments
+    cleaned = replace(text, r"\"\"\".*\"\"\""s => "")
+    lines = split(cleaned, '\n')
+    lines = strip.(lines)
+    # Remove single-line comments
+    lines = filter(line -> !startswith(line, "#"), lines)
+    lines = filter(line -> !isempty(line), lines)
+    lines = String.(lines)
+
+    return parse_defs(lines)
+end
