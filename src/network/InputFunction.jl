@@ -69,7 +69,7 @@ is written into the first `input_dimension(system)` entries for that node.
 # Returns
 - A function `u(t)` that returns the global input vector at time `t`
 """
-function build_input_func(network::Network{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
+function build_input_func(graph::PhsGraph{T}, input_matrix::AbstractMatrix{T}) where {T<:Real}
     n_inputs = size(input_matrix, 2)
 
     # Parse all input function expressions
@@ -83,7 +83,7 @@ function build_input_func(network::Network{T}, input_matrix::AbstractMatrix{T}) 
         u = zeros(T, n_inputs)
 
         input_offset = 0
-        for (node_id, node) in network.nodes
+        for (node_id, node) in graph.nodes
             node_input_dim = input_dimension(node.system)
 
             # Check if this node has external input

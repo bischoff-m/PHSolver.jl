@@ -1,9 +1,10 @@
 using LinearAlgebra
 using OrderedCollections
 import OrdinaryDiffEq as Eq
+import Graphs
 
 """
-    PHSNode
+    PhsNode
 
 Represents a single port-Hamiltonian system within a network.
 
@@ -14,7 +15,7 @@ Represents a single port-Hamiltonian system within a network.
 - `state_offset::Int`: Starting index in global state vector
 - `state_dim::Int`: Dimension of this system's state
 """
-struct PHSNode{T<:Real}
+struct PhsNodeOld{T<:Real}
     id::String
     system::PortHamSystem{T}
     initial_state::AbstractVector{T}
@@ -22,7 +23,7 @@ struct PHSNode{T<:Real}
     state_offset::Int
     state_dim::Int
 
-    function PHSNode(
+    function PhsNodeOld(
         id::String,
         system::PortHamSystem{T},
         initial_state::AbstractVector{T},
@@ -33,6 +34,11 @@ struct PHSNode{T<:Real}
     end
 end
 
+# struct PhsNode{T<:Real}
+#     id::String
+
+
+
 
 """
     Network
@@ -42,29 +48,20 @@ This is used during assembly; the assembled result is a single `PortHamSystem`.
 
 # Fields
 - `name::String`: Network name
-- `nodes::OrderedDict{String, PHSNode}`: All PHS nodes indexed by ID
+- `nodes::OrderedDict{String, PhsNode}`: All PHS nodes indexed by ID
 - `connections::AbstractVector{NetworkConnection}`: All interconnections
 - `total_state_dim::Int`: Total dimension of the global state vector
 """
-struct Network{T<:Real}
-    name::String
-    nodes::OrderedDict{String,PHSNode{T}}
-    connections::AbstractVector{NetworkConnection}
-    total_state_dim::Int
+# TODO: Use a DiGraph for connections
+struct PhsGraph{T<:Real}
+    graph::Graphs.DiGraph
+    nodes::OrderedDict{String,PhsNodeOld{T}}
 
-    function Network(
-        name::String,
-        nodes::OrderedDict{String,PHSNode{T}},
-        connections::AbstractVector{NetworkConnection},
+    function PhsGraph(
+        nodes::OrderedDict{String,PhsNodeOld{T}},
     ) where {T<:Real}
-        # Calculate total state dimension
-        total_state_dim = sum((node.state_dim for node in values(nodes)); init=0)
-
         new{T}(
-            name,
-            nodes,
-            connections,
-            total_state_dim,
+            nodes
         )
     end
 end
@@ -78,10 +75,13 @@ Container for a simulation solution and its associated model metadata.
 # Fields
 - `solution::Eq.SciMLBase.AbstractSolution`: Solution object from the solver
 - `system::PortHamSystem{T}`: Assembled system that was simulated
-- `network::Network{T}`: Network metadata used for assembly
+- `graph::PhsGraph{T}`: Network metadata used for assembly
 """
 struct SimulationResult{T,S<:Eq.SciMLBase.AbstractSolution}
     solution::S
     system::PortHamSystem{T}
-    network::Network{T}
+    graph::PhsGraph{T}
 end
+
+# struct PhsNetwork{T<:Real}
+

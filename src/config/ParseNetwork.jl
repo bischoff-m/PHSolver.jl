@@ -12,8 +12,8 @@ Create network nodes from validated configuration objects.
 # Returns
 - `Network{T}`: Network metadata ready for assembly
 """
-function network_from_config(config::NetworkConfig, ::Type{T}) where {T<:Real}
-    nodes = OrderedDict{String,PHSNode{T}}()
+function network_from_config(config, ::Type{T}) where {T<:Real}
+    nodes = OrderedDict{String,PhsNodeOld{T}}()
     offset = 0
 
     for sys_schema in config.systems
@@ -42,10 +42,10 @@ function network_from_config(config::NetworkConfig, ::Type{T}) where {T<:Real}
 
         system = PortHamSystem(J, R, Q, B)
         ports = Dict(port => comp_map[comp_id] for (port, comp_id) in sys_schema.ports)
-        node = PHSNode(sys_schema.id, system, initial_state, ports, offset)
+        node = PhsNodeOld(sys_schema.id, system, initial_state, ports, offset)
         nodes[sys_schema.id] = node
         offset += node.state_dim
     end
 
-    return Network(config.name, nodes, config.connections)
+    return PhsGraph(nodes)
 end

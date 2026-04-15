@@ -83,7 +83,7 @@ function solve_phs_realtime(
             SimulationResult(
                 integrator.sol,
                 dynamics.system,
-                Network("Live Plot", OrderedDict{String,PHSNode{T}}(), NetworkConnection[])
+                Network("Live Plot", OrderedDict{String,PhsNodeOld{T}}(), NetworkConnection[])
             );
             title="t = $(round(integrator.t, digits=2)) s"
         )

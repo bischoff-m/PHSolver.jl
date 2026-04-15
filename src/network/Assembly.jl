@@ -5,14 +5,14 @@ using SparseArrays
 
 """
     build_block_diagonal(
-        nodes::OrderedDict{String, PHSNode},
+        nodes::OrderedDict{String, PhsNode},
         matrix_getter::Function
     )
 
 Assemble a sparse block-diagonal matrix from the per-node matrices.
 
 # Arguments
-- `nodes`: Ordered dictionary of `PHSNode` objects
+- `nodes`: Ordered dictionary of `PhsNode` objects
 - `matrix_getter`: Function that takes a `PortHamSystem` and returns the
   desired matrix (e.g., `sys -> sys.interaction`)
 
@@ -21,7 +21,7 @@ Assemble a sparse block-diagonal matrix from the per-node matrices.
   node, in the order they were defined in the configuration
 """
 function build_block_diagonal(
-    nodes::OrderedDict{String,PHSNode{T}},
+    nodes::OrderedDict{String,PhsNodeOld{T}},
     matrix_getter::Function,
 ) where {T<:Real}
     # Create block diagonal matrix from node matrices
@@ -43,7 +43,7 @@ assembled system.
 # Returns
 - `x0::Vector`: Initial state vector
 """
-function build_initial_state(network::Network{T}) where {T<:Real}
+function build_initial_state(network) where {T<:Real}
     x0 = zeros(T, network.total_state_dim)
 
     # Fill in initial states for each node at the correct offsets
@@ -57,7 +57,7 @@ end
 
 
 """
-    dynamics_from_network(network::Network{T}) where {T<:Real}
+    dynamics_from_network(network) where {T<:Real}
 
 Assemble a port-Hamiltonian network into a single system with dynamics.
 
@@ -70,12 +70,12 @@ The assembled system satisfies \$Q \\dot{x} = (J - R) x + B u(t)\$, where
 `J` is skew-symmetric, `R` is symmetric PSD, and `Q` is diagonal PSD.
 
 # Arguments
-- `network::Network{T}`: Network metadata
+- `network`: Network metadata
 
 # Returns
 - `SimDynamics`: Assembled network dynamics with initial conditions
 """
-function dynamics_from_network(network::Network{T}) where {T<:Real}
+function dynamics_from_network(network) where {T<:Real}
     # Create block diagonal matrices from individual systems
     J = build_block_diagonal(network.nodes, sys -> sys.interaction)
     R = build_block_diagonal(network.nodes, sys -> sys.dissipation)

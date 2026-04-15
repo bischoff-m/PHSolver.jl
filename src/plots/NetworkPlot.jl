@@ -14,11 +14,11 @@ Connections are shown as directed edges labeled with the connection weight.
 # Returns
 - `String`: Graphviz DOT graph
 """
-function graphviz_network(config::RootConfig; rankdir::String="LR")
+function graphviz_network(config; rankdir::String="LR")
     network = config.network
     io = IOBuffer()
 
-    systems_by_id = Dict{String,System}()
+    systems_by_id = Dict{String,SystemConfig}()
     component_ids_by_system = Dict{String,Set{String}}()
     for sys in network.systems
         systems_by_id[sys.id] = sys
@@ -120,7 +120,7 @@ function port_node_key(system_id::AbstractString, port_name::AbstractString)
 end
 
 function resolve_port_node_id(
-    system::System,
+    system::SystemConfig,
     port_name::AbstractString,
     component_ids_by_system::Dict{String,Set{String}},
     extra_ports::Dict{String,Set{String}}

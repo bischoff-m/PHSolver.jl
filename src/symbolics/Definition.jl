@@ -76,7 +76,7 @@ end
 
 
 """
-    parse_defs(exprs::Vector{String}) -> Dict{Symbol,Union{Definition,Nothing}}
+    parse_definitions(exprs::Vector{String}) -> Dict{Symbol,Union{Definition,Nothing}}
 
 Given a vector of strings representing equations or assignments, parse each
 one and return a dictionary mapping symbols to their `Definition`. Symbols that
@@ -89,17 +89,22 @@ The input strings are parsed with `Meta.parse` and then fed to
 # Examples
 
 ```jldoctest
-julia> parse_defs(["f(x)=a*x"])
+julia> parse_definitions(["f(x)=a*x"])
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function parse_defs(exprs::Vector{String})
+function parse_definitions(exprs::AbstractVector{<:AbstractString})
     definitions = Dict{Symbol,Union{Definition,Nothing}}()
 
     # Parse each expression into a Definition
-    for line in exprs
+    for raw_line in exprs
+        # Convert to plain String to ensure Meta.parse works
+        line = String(raw_line)
+        isempty(line) && continue
+
         # Results in type Expr, which is a Julia expression tree
         parsed = Meta.parse(line)
+        isnothing(parsed) && error("Failed to parse line. Skipping: $line")
 
         # Parse Expr into a Definition struct
         definition = expr_to_definition(parsed)
@@ -118,4 +123,32 @@ function parse_defs(exprs::Vector{String})
     end
 
     return definitions
+end
+
+"""
+    parse_definitions(text::String) -> Dict{Symbol,Union{Definition,Nothing}}
+
+Convenience method to parse a multi-line string of definitions, where each line
+is an equation or assignment. Lines starting with `#` are treated as comments
+and ignored, as are empty lines and multiline comments.
+
+# Examples
+
+```jldoctest
+julia> text = "a = 10\n# This is a comment\nf(x) = a*x"
+julia> parse_definitions(text)
+Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
+```
+"""
+function parse_definitions(text::String)
+    # Remove multiline comments
+    cleaned = replace(text, r"\"\"\".*\"\"\""s => "")
+    lines = split(cleaned, '\n')
+    lines = strip.(lines)
+    # Remove single-line comments
+    lines = filter(line -> !startswith(line, "#"), lines)
+    lines = filter(line -> !isempty(line), lines)
+    lines = String.(lines)
+
+    return parse_definitions(lines)
 end

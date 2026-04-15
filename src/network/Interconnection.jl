@@ -2,8 +2,8 @@
     apply_connection!(
         interaction::AbstractMatrix,
         connection::NetworkConnection,
-        source::PHSNode,
-        target::PHSNode
+        source::PhsNode,
+        target::PhsNode
     )
 
 Apply a connection between two system ports by updating the interconnection
@@ -14,9 +14,9 @@ connection weight determines the magnitude of the skew-symmetric update.
 """
 function apply_connection!(
     interaction::AbstractMatrix{T},
-    connection::NetworkConnection,
-    source::PHSNode,
-    target::PHSNode,
+    connection,
+    source::PhsNodeOld,
+    target::PhsNodeOld,
 ) where {T<:Real}
     source_port = get(source.ports, connection.from.port, nothing)
     target_port = get(target.ports, connection.to.port, nothing)

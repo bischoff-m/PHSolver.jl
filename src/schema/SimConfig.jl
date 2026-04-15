@@ -35,19 +35,4 @@ struct SimulationConfig
     end
 end
 StructTypes.StructType(::Type{SimulationConfig}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SimulationConfig}) = (:solver, :timestep)
-
-"""
-    RootConfig
-
-Root-level configuration object.
-
-# Fields
-- `network::NetworkConfig`: Network configuration
-- `simulation::SimulationConfig`: Simulation configuration
-"""
-struct RootConfig
-    network::NetworkConfig
-    simulation::SimulationConfig
-end
-StructTypes.StructType(::Type{RootConfig}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SimulationConfig}) = (:time_span, :solver, :timestep)

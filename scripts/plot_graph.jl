@@ -1,7 +1,6 @@
 
 include("../src/PHSolver.jl")
 
-import .PHSolver
 using ShowGraphviz
 
 function plot_network(example::String)

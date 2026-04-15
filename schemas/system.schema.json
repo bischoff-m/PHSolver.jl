@@ -1,0 +1,103 @@
+{
+    "$ref": "#/$defs/Main.PHSolver.SystemConfigSchema",
+    "$defs": {
+        "Main.PHSolver.Component": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "dissipation": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                },
+                "mass": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                },
+                "x0": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "additionalProperties": false
+        },
+        "Main.PHSolver.SystemConfigSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Main.PHSolver.Connection"
+                    }
+                },
+                "ports": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "systems": {
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/Main.PHSolver.SystemConfigSchema"
+                            },
+                            {
+                                "$ref": "#/$defs/Main.PHSolver.Component"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                },
+                "definitions": {
+                    "type": "string"
+                },
+                "signals": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "additionalProperties": false
+        },
+        "Main.PHSolver.Connection": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                }
+            },
+            "required": [
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

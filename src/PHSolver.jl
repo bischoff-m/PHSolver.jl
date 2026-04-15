@@ -13,9 +13,11 @@ module PHSolver
 # single module. Files included here should NOT declare their own `module`.
 include("schema/DictSchema.jl")
 include("schema/ComponentSchema.jl")
-include("schema/SystemSchema.jl")
-include("schema/NetworkSchema.jl")
-include("schema/RootSchema.jl")
+export Component, Connection
+include("schema/SystemConfig.jl")
+export SystemConfig, SystemConfigSchema, make_system_schema
+include("schema/SimConfig.jl")
+export SimulationConfig
 
 include("models/PortHamSystem.jl")
 include("models/SimDynamics.jl")
@@ -45,9 +47,7 @@ export state_dimension
 export input_dimension
 
 # Export network types
-export PHSNode
-export NetworkConnection
-export Network
+export PhsNodeOld
 
 # Export interconnection functions
 export apply_connection!
@@ -77,7 +77,7 @@ export parse_expr
 
 include("symbolics/Definition.jl")
 export Definition
-export parse_defs
+export parse_definitions
 export expr_to_definition
 
 include("symbolics/DefinitionGraph.jl")
@@ -97,7 +97,5 @@ export compute_energy
 # Export plots
 export plot_result
 export graphviz_network
-
-export RootConfig
 
 end

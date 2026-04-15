@@ -1,6 +1,49 @@
 import Symbolics as Sym
 import SymbolicUtils as SymUtils
 
+# Resolve dependencies in the RHS by substituting definitions for each
+# symbol
+# TODO: Not used yet (I probably wanted to substitute this for the `rewrite`
+# function below)
+function rewrite(expr::Sym.Num, context::Dict{Symbol,Definition}, verbose=false)
+    Sym.isvariable(expr) || error(
+        "Expected a variable or function call, got $expr of type $(typeof(expr))")
+    expr_old = expr
+    # Input is of the form, e.g. f, g(2t), h(2x, a)
+    sym = Sym.tosymbol(Sym.iscall(expr) ? Sym.operation(expr) : expr)
+
+    # Only consider RHS symbols
+    # (skip "+", "*", ..., and variables in the LHS)
+    # sym in def.rhs_vars || return expr
+
+    haskey(context, sym) || return expr
+    u_def = context[sym]
+
+    # Skip free parameters
+    if isnothing(u_def)
+        return expr
+    end
+
+    # Substitute definition into the expression
+    if !Sym.iscall(expr)
+        expr = Sym.substitute(expr, Dict(expr => u_def.eq.rhs); fold=Val(false))
+    else
+        # Check for correct number of arguments
+        args = Sym.arguments(expr)
+        lhs_args = Sym.arguments(u_def.eq.lhs)
+        length(args) != length(lhs_args) && error(
+            "Argument count mismatch for symbol $(u_def.eq.lhs): " *
+            "expected $(length(lhs_args)), got $(length(args)) in call $expr")
+
+        # Substitute arguments into the definition
+        expr = Sym.substitute(u_def.eq.rhs, Dict(lhs_args .=> args); fold=Val(false))
+    end
+
+    verbose && println("Replace: - | $expr_old\n" *
+                       "         + | $expr")
+    return expr
+end
+
 """
     resolve_parameters!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=false)
 
@@ -74,7 +117,7 @@ function resolve_parameters!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose
 
             # Substitute definition into the expression
             if !Sym.iscall(u)
-                u = Sym.substitute(u, Dict(u => u_def.eq.rhs))
+                u = Sym.substitute(u, Dict(u => u_def.eq.rhs); fold=Val(false))
             else
                 # Check for correct number of arguments
                 args = Sym.arguments(u)
@@ -84,7 +127,7 @@ function resolve_parameters!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose
                     "expected $(length(lhs_args)), got $(length(args)) in call $u")
 
                 # Substitute arguments into the definition
-                u = Sym.substitute(u_def.eq.rhs, Dict(lhs_args .=> args))
+                u = Sym.substitute(u_def.eq.rhs, Dict(lhs_args .=> args); fold=Val(false))
             end
 
             # Add transitive dependencies for free parameters
