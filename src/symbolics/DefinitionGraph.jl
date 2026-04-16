@@ -1,5 +1,7 @@
 import Graphs
 
+Definitions = Dict{Symbol,Union{Definition,Nothing}}
+
 """
     DefinitionGraph()
 
@@ -30,13 +32,13 @@ DefinitionGraph with 2 vertices and 1 edges
 struct DefinitionGraph
     graph::Graphs.DiGraph
     symbol_to_vertex::Dict{Symbol,Int}
-    definitions::Dict{Symbol,Union{Definition,Nothing}}
+    definitions::Definitions
 
     function DefinitionGraph()
         new(
             Graphs.DiGraph(0),
             Dict{Symbol,Int}(),
-            Dict{Symbol,Union{Definition,Nothing}}()
+            Definitions()
         )
     end
 
@@ -142,7 +144,7 @@ end
 
 """
     add_defs!(graph::DefinitionGraph,
-              defs::Dict{Symbol,Union{Definition,Nothing}})
+              defs::Definitions)
 
 Add a batch of definitions to `graph`, creating vertices and edges as
 necessary.  Dependencies (`rhs_vars`) generate edges from the dependency to the
@@ -157,7 +159,7 @@ julia> g = DefinitionGraph();
 julia> add_defs!(g, PHSolver.parse_defs(["a=1", "b(a)=2a"]))
 ```
 """
-function add_defs!(graph::DefinitionGraph, defs::Dict{Symbol,Union{Definition,Nothing}})
+function add_defs!(graph::DefinitionGraph, defs::Definitions)
     for (sym, def) in defs
         # Add new vertex for the symbol
         add_vertex!(graph, sym, def)
@@ -181,5 +183,42 @@ function add_defs!(graph::DefinitionGraph, defs::Dict{Symbol,Union{Definition,No
             println("Cycle in definition dependencies after adding definitions: ", cycle_syms)
         end
         error("Cannot add definitions due to cyclic dependencies")
+    end
+end
+
+"""
+    reconcile_dependency_edges!(graph::DefinitionGraph, sym::Symbol,
+        old_deps::Set{Symbol}, new_deps::Set{Symbol})
+
+Update the dependency edges for a symbol in the graph based on changes in its
+dependencies.
+
+# Examples
+```jldoctest
+julia> g = DefinitionGraph();
+julia> add_defs!(g, PHSolver.parse_defs(["a=1", "b(a)=2a"]));
+julia> @show g
+DefinitionGraph with 2 vertices and 1 edges
+  Vertex 1: a = 1
+  Vertex 2: b(a) = 2a | deps: [a]
+    Edges: [1]
+julia> reconcile_dependency_edges!(g, :b, Set([:a]), Set([:c]))
+julia> @show g
+DefinitionGraph with 2 vertices and 1 edges
+  Vertex 1: a = 1
+  Vertex 2: b(a) = 2a | deps: [c]
+    Edges: [1]
+```
+"""
+function reconcile_dependency_edges!(graph::DefinitionGraph, sym::Symbol,
+    old_deps::Set{Symbol}, new_deps::Set{Symbol})
+    removed = setdiff(old_deps, new_deps)
+    added = setdiff(new_deps, old_deps)
+
+    for dep in removed
+        rem_edge!(graph, dep, sym)
+    end
+    for dep in added
+        add_edge!(graph, dep, sym)
     end
 end

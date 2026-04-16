@@ -78,7 +78,7 @@ export parse_expr
 include("symbolics/Definition.jl")
 export Definition
 export parse_definitions
-export expr_to_definition
+export parse_definition
 
 include("symbolics/DefinitionGraph.jl")
 export DefinitionGraph
@@ -89,7 +89,7 @@ export rem_edge!
 export add_defs!
 
 include("symbolics/Resolve.jl")
-export resolve_parameters!
+export resolve_graph!
 
 # Export utility functions
 export compute_energy

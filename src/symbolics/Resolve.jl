@@ -3,26 +3,24 @@ import SymbolicUtils as SymUtils
 
 # Resolve dependencies in the RHS by substituting definitions for each
 # symbol
-# TODO: Not used yet (I probably wanted to substitute this for the `rewrite`
-# function below)
-function rewrite(expr::Sym.Num, context::Dict{Symbol,Definition}, verbose=false)
-    Sym.isvariable(expr) || error(
-        "Expected a variable or function call, got $expr of type $(typeof(expr))")
+function rewrite(
+    expr,
+    context::Definitions,
+    keep::Union{Nothing,Set{Symbol}}=nothing,
+    verbose::Bool=false
+)
     expr_old = expr
     # Input is of the form, e.g. f, g(2t), h(2x, a)
     sym = Sym.tosymbol(Sym.iscall(expr) ? Sym.operation(expr) : expr)
 
-    # Only consider RHS symbols
-    # (skip "+", "*", ..., and variables in the LHS)
-    # sym in def.rhs_vars || return expr
+    # Only rewrite symbols relevant to the current definition.
+    isnothing(keep) || sym in keep || return expr
 
     haskey(context, sym) || return expr
     u_def = context[sym]
 
     # Skip free parameters
-    if isnothing(u_def)
-        return expr
-    end
+    isnothing(u_def) && return expr
 
     # Substitute definition into the expression
     if !Sym.iscall(expr)
@@ -43,6 +41,52 @@ function rewrite(expr::Sym.Num, context::Dict{Symbol,Definition}, verbose=false)
                        "         + | $expr")
     return expr
 end
+
+function resolve_definition(def::Definition, given::Definitions; keep=Set{Symbol}(), verbose=false)
+    sym = def.symbol
+    verbose && println(
+        "\n\nResolving parameters for symbol: ",
+        isnothing(def) ? sym : def.eq)
+
+    # Return constants
+    isempty(def.rhs_vars) && return def
+
+    # Walk the expression tree and resolve dependencies in the RHS by
+    # substituting definitions for each symbol
+    function rewrite_wrapper(u)
+        rewrite(u, given, keep, verbose)
+    end
+    rewriter = SymUtils.Postwalk(rewrite_wrapper)
+    rhs = rewriter(def.eq.rhs)
+
+    # Check for remaining unresolved symbols
+    rhs_vars = Set{Symbol}(Sym.tosymbol.(Sym.get_variables(rhs)))
+
+    # Symbols present in `given` but mapped to `nothing` are free parameters.
+    # Mark them before unresolved-symbol validation.
+    free_params = Set{Symbol}()
+    for v in rhs_vars
+        v in def.lhs_vars && continue
+        # TODO: Is this correct?
+        haskey(given, v) || continue
+        isnothing(given[v]) || continue
+        push!(free_params, v)
+    end
+
+    unresolved = setdiff(rhs_vars, union(free_params, def.lhs_vars))
+    isempty(unresolved) || error(
+        "Unresolved symbols in expression for $sym: $unresolved. " *
+        "Could not substitute definitions for these symbols, and they are " *
+        "not marked as free parameters or defined on the LHS.")
+
+    # Update definition with the resolved expression and no dependencies
+    rhs = Sym.simplify(rhs)
+    eq = Sym.Equation(def.eq.lhs, rhs)
+    verbose && println("Final expression: ", eq)
+
+    return Definition(sym, def.lhs_vars, free_params, eq)
+end
+
 
 """
     resolve_parameters!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=false)
@@ -77,87 +121,17 @@ DefinitionGraph with 2 vertices and 0 edges
   Vertex 2: f(x) = 3 * x
 ```
 """
-function resolve_parameters!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=false)
+function resolve_graph!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=false)
     order = traverse_order(graph)
 
     # Traverse in topological order, starting with constants (no dependencies)
     for sym in order
         def = graph.definitions[sym]
-        verbose && println(
-            "\n\nResolving parameters for symbol: ",
-            isnothing(def) ? sym : def.eq)
-        # Skip free parameters and vars with no dependencies (e.g. constants)
         (sym in keep || isnothing(def) || isempty(def.rhs_vars)) && continue
 
-        free_params = Set{Symbol}()
-
-        # Resolve dependencies in the RHS by substituting definitions for each
-        # symbol
-        function rewrite(u)
-            u_old = u
-            # Input is of the form, e.g. f, g(2t), h(2x, a)
-            u_sym = Sym.tosymbol(Sym.iscall(u) ? Sym.operation(u) : u)
-
-            # Only consider RHS symbols
-            # (skip "+", "*", ..., and variables in the LHS)
-            u_sym in def.rhs_vars || return u
-
-            haskey(graph.definitions, u_sym) || error(
-                "Symbol $u_sym in expression $u cannot be resolved. " *
-                "`resolve_parameters!` assumes that all symbols are " *
-                "defined in the graph, even if they are free parameters " *
-                "(= nothing).")
-            u_def = graph.definitions[u_sym]
-
-            # Skip free parameters
-            if isnothing(u_def)
-                push!(free_params, u_sym)
-                return u
-            end
-
-            # Substitute definition into the expression
-            if !Sym.iscall(u)
-                u = Sym.substitute(u, Dict(u => u_def.eq.rhs); fold=Val(false))
-            else
-                # Check for correct number of arguments
-                args = Sym.arguments(u)
-                lhs_args = Sym.arguments(u_def.eq.lhs)
-                length(args) != length(lhs_args) && error(
-                    "Argument count mismatch for symbol $(u_def.eq.lhs): " *
-                    "expected $(length(lhs_args)), got $(length(args)) in call $u")
-
-                # Substitute arguments into the definition
-                u = Sym.substitute(u_def.eq.rhs, Dict(lhs_args .=> args); fold=Val(false))
-            end
-
-            # Add transitive dependencies for free parameters
-            for dep in u_def.rhs_vars
-                push!(free_params, dep)
-                add_edge!(graph, dep, sym)
-            end
-
-            # Remove resolved dependency edge from graph
-            rem_edge!(graph, u_sym, sym)
-
-            verbose && println("Replace: - | $u_old\n" *
-                               "         + | $u")
-            return u
-        end
-        rewriter = SymUtils.Postwalk(rewrite)
-        rhs = rewriter(def.eq.rhs)
-
-        rhs_vars = Set{Symbol}(Sym.tosymbol.(Sym.get_variables(rhs)))
-        unresolved = setdiff(rhs_vars, union(free_params, def.lhs_vars))
-        isempty(unresolved) || error(
-            "Unresolved symbols in expression for $sym: $unresolved. " *
-            "Could not substitute definitions for these symbols, and they are " *
-            "not marked as free parameters or defined on the LHS.")
-        rhs = Sym.simplify(rhs)
-
-        # Update definition with the resolved expression and no dependencies
-        eq = Sym.Equation(def.eq.lhs, rhs)
-        graph.definitions[sym] = Definition(sym, def.lhs_vars, free_params, eq)
-
-        verbose && println("Final expression: ", eq)
+        old_deps = copy(def.rhs_vars)
+        resolved_def = resolve_definition(def, graph.definitions; keep=def.rhs_vars, verbose=verbose)
+        reconcile_dependency_edges!(graph, sym, old_deps, resolved_def.rhs_vars)
+        graph.definitions[sym] = resolved_def
     end
 end

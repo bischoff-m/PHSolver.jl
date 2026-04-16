@@ -22,3 +22,4 @@ end
 
 run_example("dc_power_network")
 # run_example("DGU")
+nothing

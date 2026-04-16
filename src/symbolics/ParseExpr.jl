@@ -54,7 +54,11 @@ Set([:x, :y])
 ```
 """
 function parse_expr(expr)
+    # Remove `begin ... end`/`:block` wrappers and line-number metadata that
+    # `Meta.parse` may insert
     expr = remove_blocks(expr)
+
+    # Normalization and constants (e.g. π)
     parsed = Sym.parse_expr_to_symbolic(expr, Base)
 
     # Get all variables appearing in the expression

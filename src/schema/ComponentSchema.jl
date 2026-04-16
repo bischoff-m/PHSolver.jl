@@ -76,11 +76,11 @@ struct Component
         id::String,
         dissipation::Union{Nothing,SymbolType},
         mass::Union{Nothing,SymbolType},
-        x0::Union{Nothing,SymbolType}
+        # Need at least one required field to avoid ambiguity with SystemConfig
+        x0::SymbolType
     )
         dissipation = something(dissipation, 0.0)
         mass = something(mass, 0.0)
-        x0 = something(x0, 0.0)
         new(id, dissipation, mass, x0)
     end
 end

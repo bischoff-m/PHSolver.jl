@@ -3,34 +3,67 @@ import Logging: global_logger
 import TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger(right_justify=120))
 
-# struct PhsNodeNew
-#     id::String
-#     systems::Graphs.DiGraph
-#     definitions::DefinitionGraph
-# end
+struct StateFunction
+    func::Function
+    dependencies::Vector{Symbol}
+    result_ref::Ref{Float64}
+end
 
-function iter_config(config::Component, context=Dict{Symbol,Definition}())
+FloatOrRef = Union{Float64,Ref{Float64}}
+
+struct PhsState
+    dissipation::Vector{FloatOrRef}
+    mass::Vector{FloatOrRef}
+    x0::Vector{FloatOrRef}
+    id_to_index::Dict{String,Int}
+    functions::Vector{StateFunction}
+    namespace::Dict{String,Any}
+
+    function PhsState()
+        new(
+            Vector{FloatOrRef}(),
+            Vector{FloatOrRef}(),
+            Vector{FloatOrRef}(),
+            Dict{String,Int}(),
+            Vector{StateFunction}(),
+            Dict{String,Any}()
+        )
+    end
+end
+
+function iter_config!(config::Component, state::PhsState, name_stack=String[])
     # Build dict of dissipation, mass, and initial state -> definitions
     # Parse expr to symbolic
     # Find RHS dependencies
     # Apply substitutions for given dependencies
     # Build function with remaining dependencies as arguments (in order)
     # Create Ref, function, and dependencies tuple
+    name_stack = push!(name_stack, config.id)
 
+
+    current_id = join(name_stack, ".")
+    println("Component: Processing component: $current_id")
+    state.id_to_index[current_id] = length(state.id_to_index) + 1
     # Process component definitions
-    for field in (:dissipation, :mass, :x0)
-        value = getfield(config, field)
-        if value isa Number
-        end
-    end
-    return PortHamSystem([[0.0]],)
+    # for field in (:dissipation, :mass, :x0)
+    #     value = getfield(config, field)
+    #     if value isa Number
+    #     end
+    # end
+    # return PortHamSystem([[0.0]],)
+    # @show config
+    pop!(name_stack)
 end
 
 
-function iter_config(config::SystemConfig)
+function iter_config!(config::SystemConfig, state::PhsState, name_stack=String[])
+    name_stack = push!(name_stack, config.id)
+    current_id = join(name_stack, ".")
+    println("System: Processing system: $current_id")
     for sys in config.systems
-        iter_config(sys)
+        iter_config!(sys, state, name_stack)
     end
+    pop!(name_stack)
 end
 
 """
@@ -45,8 +78,27 @@ function simulate_config(config)
 
     # TODO: Construct entire state matrix with refs in on pass over the config
     # Save functions to calculate state and link them with the matrix entries
+    defs = parse_definitions(config.definitions)
+    graph = DefinitionGraph()
+    add_defs!(graph, defs)
+    resolve_graph!(graph; keep=Set([:t]))
 
-    @show config
+
+    expr = :(scale(R_L + L) * R_G + 2t)
+    rhs, rhs_vars = parse_expr(expr)
+    println("RHS: $rhs [vars: $rhs_vars]")
+    def = Definition(:u, rhs)
+    println("Definition: $def")
+    # resolved_def = resolve_definition(def, graph.definitions; verbose=true)
+    # println("Resolved definition: $resolved_def")
+
+
+    # state = PhsState()
+    # iter_config!(config, state)
+    # @show state.id_to_index
+    nothing
+
+    # @show config
     # for sys in iter_config(config)
     #     println("System: $(sys.id) isa $(typeof(sys))")
     # end

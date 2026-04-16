@@ -50,14 +50,18 @@ julia> expr_to_definition(Meta.parse("g(t) = 3t + b"))
 Definition(:g, Set([:t]), Set([:b]), Equation(g(t), 3t + b))
 ```
 """
-function expr_to_definition(expr::Expr)
+function Definition(expr::Expr)
     if expr.head != :(=)
-        error("Expected an assignment expression of the form `f(x) = ...` or `f = ...`")
+        error("Expected an assignment expression of the form " *
+              "`f(x) = ...` or `f = ...`. Got expression: $expr")
     end
+    return Definition(expr.args[1], expr.args[2])
+end
 
+function Definition(lhs, rhs)
     # Parse the LHS and RHS separately
-    lhs, lhs_vars = parse_expr(expr.args[1])
-    rhs, rhs_vars = parse_expr(expr.args[2])
+    lhs, lhs_vars = parse_expr(lhs)
+    rhs, rhs_vars = parse_expr(rhs)
 
     name = Sym.tosymbol(Sym.iscall(lhs) ? lhs.f : lhs.val)
     # Remove name from the set of LHS variables, since it's being defined here
@@ -65,7 +69,7 @@ function expr_to_definition(expr::Expr)
 
     if setdiff(lhs_vars, rhs_vars) != Set{Symbol}()
         error("Variables on the LHS must appear on the RHS. Found: " *
-              "$(setdiff(lhs_vars, rhs_vars)) in expression: $expr")
+              "$(setdiff(lhs_vars, rhs_vars)) in expression: $eq")
     end
 
     # Exclude variables defined on the LHS
@@ -74,17 +78,26 @@ function expr_to_definition(expr::Expr)
     Definition(name, lhs_vars, rhs_vars, Sym.Equation(lhs, rhs))
 end
 
+function Definition(expr::String)
+    # Results in type Expr, which is a Julia expression tree
+    parsed = Meta.parse(expr)
+    isnothing(parsed) && error("Failed to parse line: $expr")
+    return Definition(parsed)
+end
+
+function parse_term(expr::String)
+    parsed = Meta.parse(expr)
+    isnothing(parsed) && error("Failed to parse term: $expr")
+    return parse_expr(parsed)
+end
 
 """
-    parse_definitions(exprs::Vector{String}) -> Dict{Symbol,Union{Definition,Nothing}}
+    parse_definitions(exprs::String...) -> Dict{Symbol,Union{Definition,Nothing}}
 
-Given a vector of strings representing equations or assignments, parse each
-one and return a dictionary mapping symbols to their `Definition`. Symbols that
+Given a vector of strings representing equations or assignments, parse each one
+and return a dictionary mapping symbols to their `Definition`. Symbols that
 appear only on right-hand sides are mapped to `nothing` to indicate free
 parameters.
-
-The input strings are parsed with `Meta.parse` and then fed to
-`expr_to_definition`.
 
 # Examples
 
@@ -93,7 +106,7 @@ julia> parse_definitions(["f(x)=a*x"])
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function parse_definitions(exprs::AbstractVector{<:AbstractString})
+function parse_definitions(exprs::String...)
     definitions = Dict{Symbol,Union{Definition,Nothing}}()
 
     # Parse each expression into a Definition
@@ -102,12 +115,13 @@ function parse_definitions(exprs::AbstractVector{<:AbstractString})
         line = String(raw_line)
         isempty(line) && continue
 
-        # Results in type Expr, which is a Julia expression tree
-        parsed = Meta.parse(line)
-        isnothing(parsed) && error("Failed to parse line. Skipping: $line")
-
         # Parse Expr into a Definition struct
-        definition = expr_to_definition(parsed)
+        definition = Definition(line)
+        if haskey(definitions, definition.symbol)
+            error("Redefinition of symbol $(definition.symbol):\n" *
+                  "Previous definition: $(definitions[definition.symbol])\n" *
+                  "New definition: $definition")
+        end
         definitions[definition.symbol] = definition
     end
 
@@ -150,5 +164,5 @@ function parse_definitions(text::String)
     lines = filter(line -> !isempty(line), lines)
     lines = String.(lines)
 
-    return parse_definitions(lines)
+    return parse_definitions(lines...)
 end
