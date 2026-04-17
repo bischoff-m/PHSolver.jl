@@ -21,6 +21,7 @@ id: dc_network
 # In this example, we define it as a single system
 # (Could be split into multiple interconnected subsystems)
 definitions: |
+  P = 10
   L = 2
   C_1 = 0.01
   C_2 = 0.02

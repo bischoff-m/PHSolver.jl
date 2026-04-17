@@ -50,15 +50,7 @@ julia> expr_to_definition(Meta.parse("g(t) = 3t + b"))
 Definition(:g, Set([:t]), Set([:b]), Equation(g(t), 3t + b))
 ```
 """
-function Definition(expr::Expr)
-    if expr.head != :(=)
-        error("Expected an assignment expression of the form " *
-              "`f(x) = ...` or `f = ...`. Got expression: $expr")
-    end
-    return Definition(expr.args[1], expr.args[2])
-end
-
-function Definition(lhs, rhs)
+function Definition(lhs::Union{Symbol,Expr}, rhs::Union{Number,Symbol,Expr})
     # Parse the LHS and RHS separately
     lhs, lhs_vars = parse_expr(lhs)
     rhs, rhs_vars = parse_expr(rhs)
@@ -69,13 +61,21 @@ function Definition(lhs, rhs)
 
     if setdiff(lhs_vars, rhs_vars) != Set{Symbol}()
         error("Variables on the LHS must appear on the RHS. Found: " *
-              "$(setdiff(lhs_vars, rhs_vars)) in expression: $eq")
+              "$(setdiff(lhs_vars, rhs_vars)) in expression: $lhs = $rhs")
     end
 
     # Exclude variables defined on the LHS
     rhs_vars = setdiff(rhs_vars, lhs_vars)
 
     Definition(name, lhs_vars, rhs_vars, Sym.Equation(lhs, rhs))
+end
+
+function Definition(expr::Expr)
+    if expr.head != :(=)
+        error("Expected an assignment expression of the form " *
+              "`f(x) = ...` or `f = ...`. Got expression: $expr")
+    end
+    return Definition(expr.args[1], expr.args[2])
 end
 
 function Definition(expr::String)
@@ -85,10 +85,10 @@ function Definition(expr::String)
     return Definition(parsed)
 end
 
-function parse_term(expr::String)
+function Definition(sym::Symbol, expr::String)
     parsed = Meta.parse(expr)
     isnothing(parsed) && error("Failed to parse term: $expr")
-    return parse_expr(parsed)
+    return Definition(sym, parsed)
 end
 
 """

@@ -22,7 +22,7 @@ struct SystemConfig
     connections::AbstractVector{Connection}
     ports::Dict{String,String}
     systems::AbstractVector{Union{SystemConfig,Component}}
-    definitions::Union{Nothing,String}
+    definitions::String
     signals::Dict{String,String}
 
     function SystemConfig(
@@ -33,10 +33,11 @@ struct SystemConfig
         definitions::Union{Nothing,String},
         signals::Union{Nothing,Dict{String,String}}
     )
+        systems = something(systems, Union{SystemConfig,Component}[])
         connections = something(connections, Connection[])
         ports = something(ports, Dict{String,String}())
-        systems = something(systems, Union{SystemConfig,Component}[])
         signals = something(signals, Dict{String,String}())
+        definitions = something(definitions, "")
         new(id, connections, ports, systems, definitions, signals)
     end
 end
@@ -57,7 +58,7 @@ struct SystemConfigSchema
     connections::AbstractVector{Connection}
     ports::Dict{String,String}
     systems::Nothing
-    definitions::Union{Nothing,String}
+    definitions::String
     signals::Union{Nothing,Dict{String,String}}
     function SystemConfigSchema(
         id::String,
@@ -70,6 +71,7 @@ struct SystemConfigSchema
         connections = something(connections, Connection[])
         ports = something(ports, Dict{String,String}())
         signals = something(signals, Dict{String,String}())
+        definitions = something(definitions, "")
         new(id, connections, ports, systems, definitions, signals)
     end
 end
@@ -98,7 +100,7 @@ end
 
 function make_system_schema()
     schema_dict = JSONSchemaGenerator.schema(
-        PHSolver.DummySchema;
+        DummySchema;
         use_references=true)
     # Recursively add "additionalProperties": false to all object nodes
     forbid_extras!(schema_dict)

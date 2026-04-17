@@ -6,21 +6,26 @@ import SymbolicUtils as SymUtils
 function rewrite(
     expr,
     context::Definitions,
-    keep::Union{Nothing,Set{Symbol}}=nothing,
+    keep::Set{Symbol}=Set{Symbol}(),
     verbose::Bool=false
 )
     expr_old = expr
     # Input is of the form, e.g. f, g(2t), h(2x, a)
     sym = Sym.tosymbol(Sym.iscall(expr) ? Sym.operation(expr) : expr)
+    verbose && println("Resolving symbol: $sym [keep: $keep]")
 
     # Only rewrite symbols relevant to the current definition.
-    isnothing(keep) || sym in keep || return expr
+    sym in keep && verbose && println("Skipped due to keep set")
+    sym in keep && return expr
 
+    haskey(context, sym) || verbose && println("Skipped due to missing definition")
     haskey(context, sym) || return expr
     u_def = context[sym]
 
     # Skip free parameters
+    isnothing(u_def) && verbose && println("Skipped due to free parameter")
     isnothing(u_def) && return expr
+    verbose && println("Definition found: $u_def")
 
     # Substitute definition into the expression
     if !Sym.iscall(expr)
@@ -42,7 +47,12 @@ function rewrite(
     return expr
 end
 
-function resolve_definition(def::Definition, given::Definitions; keep=Set{Symbol}(), verbose=false)
+function resolve_definition(
+    def::Definition,
+    given::Definitions;
+    keep=Set{Symbol}(),
+    verbose=false
+)
     sym = def.symbol
     verbose && println(
         "\n\nResolving parameters for symbol: ",
@@ -61,17 +71,11 @@ function resolve_definition(def::Definition, given::Definitions; keep=Set{Symbol
 
     # Check for remaining unresolved symbols
     rhs_vars = Set{Symbol}(Sym.tosymbol.(Sym.get_variables(rhs)))
+    verbose && println("RHS: $rhs [vars: $rhs_vars]")
 
-    # Symbols present in `given` but mapped to `nothing` are free parameters.
-    # Mark them before unresolved-symbol validation.
-    free_params = Set{Symbol}()
-    for v in rhs_vars
-        v in def.lhs_vars && continue
-        # TODO: Is this correct?
-        haskey(given, v) || continue
-        isnothing(given[v]) || continue
-        push!(free_params, v)
-    end
+    # Get free parameters
+    free_params = filter(v -> !(v in def.lhs_vars), rhs_vars)
+    verbose && println("Free parameters: $free_params")
 
     unresolved = setdiff(rhs_vars, union(free_params, def.lhs_vars))
     isempty(unresolved) || error(
@@ -130,7 +134,7 @@ function resolve_graph!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=fals
         (sym in keep || isnothing(def) || isempty(def.rhs_vars)) && continue
 
         old_deps = copy(def.rhs_vars)
-        resolved_def = resolve_definition(def, graph.definitions; keep=def.rhs_vars, verbose=verbose)
+        resolved_def = resolve_definition(def, graph.definitions; keep=keep, verbose=verbose)
         reconcile_dependency_edges!(graph, sym, old_deps, resolved_def.rhs_vars)
         graph.definitions[sym] = resolved_def
     end

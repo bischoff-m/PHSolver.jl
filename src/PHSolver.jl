@@ -19,6 +19,27 @@ export SystemConfig, SystemConfigSchema, make_system_schema
 include("schema/SimConfig.jl")
 export SimulationConfig
 
+
+# Export symbolic utilities
+include("symbolics/ParseExpr.jl")
+export parse_expr
+
+include("symbolics/Definition.jl")
+export Definition
+export parse_definitions
+
+include("symbolics/DefinitionGraph.jl")
+export DefinitionGraph
+export traverse_order
+export add_vertex!
+export add_edge!
+export rem_edge!
+export add_defs!
+
+include("symbolics/Resolve.jl")
+export resolve_graph!
+
+
 include("models/PortHamSystem.jl")
 include("models/SimDynamics.jl")
 
@@ -70,26 +91,6 @@ export simulate_file
 export supported_solvers
 export simulate_config
 export get_dae_solver
-
-# Export symbolic utilities
-include("symbolics/ParseExpr.jl")
-export parse_expr
-
-include("symbolics/Definition.jl")
-export Definition
-export parse_definitions
-export parse_definition
-
-include("symbolics/DefinitionGraph.jl")
-export DefinitionGraph
-export traverse_order
-export add_vertex!
-export add_edge!
-export rem_edge!
-export add_defs!
-
-include("symbolics/Resolve.jl")
-export resolve_graph!
 
 # Export utility functions
 export compute_energy
