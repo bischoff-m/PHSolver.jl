@@ -34,3 +34,14 @@ Compute the total energy over the solution trajectory.
 function compute_energy(solution, system::PortHamSystem{T}) where {T<:Real}
     return [compute_hamiltonian(system, solution[:, i]) for i in 1:length(solution.t)]
 end
+
+
+
+function pprint(matrix::Union{AbstractMatrix,AbstractVector}; header::Union{Nothing,String}=nothing)
+    isa(matrix, AbstractVector) && (matrix = reshape(matrix, :, 1))
+    matrix = Matrix(matrix)
+    if !isnothing(header)
+        Term.tprintln(Term.highlight(header, :symbol))
+    end
+    Term.tprint(Term.Table(matrix; show_header=false, compact=true))
+end

@@ -35,22 +35,99 @@ end
 
 FloatOrRef = Union{Float64,Ref{Float64}}
 
-struct PhsState
-    dissipation::Vector{FloatOrRef}
-    mass::Vector{FloatOrRef}
-    x0::Vector{FloatOrRef}
+struct CollectResult
+    dissipation::AbstractVector{FloatOrRef}
+    mass::AbstractVector{FloatOrRef}
+    x0::AbstractVector{FloatOrRef}
     id_to_index::Dict{String,Int}
-    functions::Vector{StateFunction}
+    port_to_index::Dict{String,Int}
+    functions::AbstractVector{StateFunction}
 
-    function PhsState()
+    function CollectResult()
         new(
             Vector{FloatOrRef}(),
             Vector{FloatOrRef}(),
             Vector{FloatOrRef}(),
             Dict{String,Int}(),
+            Dict{String,Int}(),
             Vector{StateFunction}()
         )
     end
+end
+
+function pprint(result::CollectResult)
+    Term.tprintln(Term.highlight("CollectResult", :type))
+    Term.tprintln("Number of components: ", length(result.id_to_index))
+    Term.tprintln("Number of functions: ", length(result.functions))
+
+    Term.tprint(Term.Tree(result.id_to_index; title="ID to Index"))
+    Term.tprint(Term.Tree(result.port_to_index; title="Port to Index"))
+    pprint(result.dissipation, header="Dissipation")
+    pprint(result.mass, header="Mass")
+    pprint(result.x0, header="Initial Conditions")
+    println()
+end
+
+
+function get_index(result::CollectResult, id::String)
+    id_map = merge(result.id_to_index, result.port_to_index)
+    haskey(id_map, id) || error("ID not found: $id")
+    return id_map[id]
+end
+
+function has_index(result::CollectResult, id::String)
+    id_map = merge(result.id_to_index, result.port_to_index)
+    return haskey(id_map, id)
+end
+
+
+struct SignedRef
+    ref::Ref{Float64}
+    sign::Float64
+end
+
+Base.getindex(x::SignedRef) = x.sign * x.ref[]
+Base.setindex!(x::SignedRef, v) = (x.ref[] = x.sign * Float64(v))
+
+function Base.show(io::IO, x::SignedRef)
+    if x.sign == -1.0
+        print(io, "-")
+        show(io, x.ref)
+    elseif x.sign == 1.0
+        show(io, x.ref)
+    else
+        print(io, x.sign, "*")
+        show(io, x.ref)
+    end
+end
+
+
+
+struct InteractionResult
+    interaction::AbstractMatrix{Union{Float64,SignedRef}}
+    input::AbstractVector{FloatOrRef}
+
+    function InteractionResult(
+        interaction::AbstractMatrix{Union{Float64,SignedRef}},
+        input::AbstractVector{FloatOrRef}
+    )
+        new(interaction, input)
+    end
+
+    function InteractionResult(n::Int)
+        interaction = Matrix{Union{Float64,SignedRef}}(undef, n, n)
+        input = Vector{FloatOrRef}(undef, n)
+        fill!(interaction, 0.0)
+        fill!(input, 0.0)
+        return new(interaction, input)
+    end
+end
+
+function pprint(result::InteractionResult)
+    Term.tprintln(Term.highlight("InteractionResult", :type))
+    pprint(result.interaction, header="Interaction")
+    pprint(result.input, header="Input")
+    println()
 end
 
 function iter_config!(
@@ -74,7 +151,6 @@ function iter_config!(
 )
     name_stack = push!(name_stack, config.id)
     current_id = join(name_stack, ".")
-    handler(config, current_id)
 
     namespace = Dict{String,Any}()
     for sys in config.systems
@@ -82,24 +158,63 @@ function iter_config!(
         namespace = merge(namespace, subspace)
     end
 
+    handler(config, current_id)
     pop!(name_stack)
     return Dict(config.id => namespace)
 end
 
 function print_namespace(namespace::Dict; prefix="")
-    keys_sorted = sort(collect(keys(namespace)))
-    for (i, key) in enumerate(keys_sorted)
-        val = namespace[key]
-        if i == length(keys_sorted)
-            println(prefix * "└───" * key)
-            isnothing(val) || print_namespace(val; prefix=prefix * "    ")
-        else
-            println(prefix * "├───" * key)
-            isnothing(val) || print_namespace(val; prefix=prefix * "│   ")
+    Term.tprintln(Term.highlight("Namespace", :symbol))
+    function inner(subspace, prefix)
+        keys_sorted = sort(collect(keys(subspace)))
+        for (i, key) in enumerate(keys_sorted)
+            val = subspace[key]
+            color = isnothing(val) ? :number : :code
+            if i == length(keys_sorted)
+                Term.tprintln(
+                    prefix *
+                    Term.highlight("└─ ", :emphasis) *
+                    Term.highlight(key, color)
+                )
+                isnothing(val) || inner(val, prefix * "   ")
+            else
+                Term.tprintln(
+                    Term.highlight(prefix * "├─ ", :emphasis) *
+                    Term.highlight(key, color)
+                )
+                isnothing(val) || inner(val, prefix * "│  ")
+            end
         end
     end
+    inner(namespace, prefix)
+    println()
 end
 
+function encode_symbolic(sym::Symbol, val::Union{Float64,String}, defs::Definitions; keep::Set{Symbol}=Set{Symbol}())
+    if isa(val, Number)
+        return Float64(val)
+    elseif !isa(val, String)
+        error("Unsupported type for $sym: $(typeof(val)). " *
+              "Expected Number or String expression.")
+    end
+
+    # Parse string to symbolic expression
+    def = Definition(sym, val)
+    def = resolve_definition(def, defs; keep=keep)
+
+    # Check if rhs is fully resolved to a constant
+    if isempty(def.rhs_vars)
+        f = Sym.build_function(def.eq.rhs; expression=false)
+        return Float64(f())
+    end
+
+    free_vars = union(def.rhs_vars, def.lhs_vars)
+    if !isempty(setdiff(free_vars, keep))
+        error("Definition $(def.eq) has dependencies that are " *
+              "not fixed variables.")
+    end
+    return StateFunction(def)
+end
 
 """
     simulate_config(config::RootConfig)
@@ -109,108 +224,118 @@ Load, assemble, and solve a network configuration.
 Returns a `SimulationResult` containing the solution, assembled system, and
 network metadata.
 """
-function simulate_config(config)
+function simulate_config(config::SystemConfig; verbose=false)
     fixed_vars = Set([:t])
-    # TODO: Construct entire state matrix with refs in on pass over the config
-    # Save functions to calculate state and link them with the matrix entries
+
     defs = parse_definitions(config.definitions)
     graph = DefinitionGraph()
     add_defs!(graph, defs)
     resolve_graph!(graph; keep=fixed_vars)
+    defs = graph.definitions
 
-
-    # expr = :(scale(R_L + L) * R_G + 2t)
-
-    # def = Definition(:u, expr)
-    # def = resolve_definition(def, graph.definitions; keep=Set([:t]))
-    # println("Resolved definition: $def")
-
-    # func = StateFunction(def)
-    # println("Function result ref: ", func.result_ref)
-    # update!(func, Dict(:t => 5.0))
-    # println("Function result ref: ", func.result_ref)
-
-
-    state = PhsState()
-    idx = 0
-    # Build dict of dissipation, mass, and initial state -> definitions
-    # Parse expr to symbolic
-    # Find RHS dependencies
-    # Apply substitutions for given dependencies
-    # Build function with remaining dependencies as arguments (in order)
-    # Create Ref, function, and dependencies tuple
-    function handler(config, id)
+    result1 = CollectResult()
+    idx = 1
+    function handler1(config, id)
         if isa(config, SystemConfig)
-            println("System handler called for $id")
+            # Add ports as aliases
+            for (port_name, target) in config.ports
+                port_id = id * "." * port_name
+                target_id = id * "." * target
+                result1.port_to_index[port_id] = get_index(result1, target_id)
+            end
+
             return
         elseif !isa(config, Component)
             error("Unknown config type: $(typeof(config)) for id: $id")
         end
 
-        println("Component handler called for $id")
         # Add id to index map
-        state.id_to_index[id] = idx
+        result1.id_to_index[id] = idx
 
         for sym in [:dissipation, :mass, :x0]
             val = getfield(config, sym)
-            container = getfield(state, sym)
-            if typeof(val) <: Number
-                push!(container, val)
-            elseif typeof(val) <: String
-                # Parse string to symbolic expression
-                def = Definition(sym, val)
-                def = resolve_definition(def, graph.definitions; keep=fixed_vars)
-                println("Resolved definition for $id.$sym: $def")
+            id_sym = Symbol(id, ".", sym)
+            encoded = encode_symbolic(id_sym, val, defs; keep=fixed_vars)
 
-                # Check if rhs is a number or an expression with dependencies
-                if isempty(def.rhs_vars)
-                    f = Sym.build_function(def.eq.rhs; expression=false)
-                    push!(container, Float64(f()))
-                else
-                    free_vars = union(def.rhs_vars, def.lhs_vars)
-                    if !isempty(setdiff(free_vars, fixed_vars))
-                        error("Definition $(def.eq) has dependencies that are " *
-                              "not fixed variables.")
-                    end
-                    func = StateFunction(def)
-                    push!(state.functions, func)
-                    push!(container, func.result_ref)
-                end
+            container = getfield(result1, sym)
+            if isa(encoded, StateFunction)
+                push!(result1.functions, encoded)
+                push!(container, encoded.result_ref)
+            elseif isa(encoded, Float64)
+                push!(container, encoded)
             else
-                error("Unsupported type for $id.$sym: $(typeof(val)). " *
-                      "Expected Number or String expression.")
+                error("Unexpected return type from encode_symbolic: $(typeof(encoded))")
+            end
+        end
+        idx += 1
+    end
+    namespace = iter_config!(config, handler1)
+
+    # Parse connections and signals
+    result2 = InteractionResult(length(result1.id_to_index))
+    id_map = result1.id_to_index
+    function handler2(config, id)
+        !isa(config, SystemConfig) && return
+
+        # Parse connections
+        for conn in config.connections
+            ids = Dict("from" => conn.from, "to" => conn.to)
+            ids = Dict(k => id * "." * v for (k, v) in ids)
+
+            for (key, val) in ids
+                haskey(id_map, val) || error("Connection '$key' id not found: $val")
+            end
+            ids = Dict(k => id_map[v] for (k, v) in ids)
+            from = ids["from"]
+            to = ids["to"]
+
+            if result2.interaction[to, from] != 0.0 || result2.interaction[from, to] != 0.0
+                error("Duplicate connection from $from to $to")
+            end
+
+            encoded = encode_symbolic(:weight, conn.weight, defs; keep=fixed_vars)
+            if isa(encoded, StateFunction)
+                push!(result1.functions, encoded)
+                result2.interaction[from, to] = SignedRef(encoded.result_ref, 1.0)
+                result2.interaction[to, from] = SignedRef(encoded.result_ref, -1.0)
+            elseif isa(encoded, Float64)
+                result2.interaction[from, to] = encoded
+                result2.interaction[to, from] = -encoded
+            else
+                error("Unexpected return type from encode_symbolic for " *
+                      "connection weight: $(typeof(encoded))")
             end
         end
 
-        idx += 1
-    end
-    namespace = iter_config!(config, handler)
+        # Parse signals
+        for (signal_name, target) in config.signals
+            signal_id = id * "." * signal_name
+            target_idx = get_index(result1, signal_id)
+            encoded = encode_symbolic(:signal, target, defs; keep=fixed_vars)
 
-    @show state.id_to_index
-    @show state.dissipation
-    @show state.mass
-    @show state.x0
-    @show state.functions
-    # println(namespace)
-    # namespace = Dict(
-    #     "DGU_example" => Dict(
-    #         "controller_d" => Dict(
-    #             "dissipation" => state.dissipation[1],
-    #             "mass" => state.mass[1],
-    #             "x0" => state.x0[1]
-    #         )
-    #     )
-    # )
-    print_namespace(namespace)
+            if isa(encoded, StateFunction)
+                push!(result1.functions, encoded)
+                result2.input[target_idx] = encoded.result_ref
+            elseif isa(encoded, Float64)
+                result2.input[target_idx] = encoded
+            else
+                error("Unexpected return type from encode_symbolic for " *
+                      "signal $signal_id: $(typeof(encoded))")
+            end
+        end
+
+
+    end
+    iter_config!(config, handler2)
+
+    if verbose
+        print_namespace(namespace)
+        pprint(result1)
+        pprint(result2)
+    end
+
     nothing
 
-    # @show config
-    # for sys in iter_config(config)
-    #     println("System: $(sys.id) isa $(typeof(sys))")
-    # end
-
-    # TODO: Construct PhsNodeNew instances and save in a tree
-    # https://github.com/JuliaCollections/AbstractTrees.jl/tree/master
 
     # Load network
     # network = network_from_config(config.network, Float64)
@@ -242,33 +367,8 @@ Complete workflow: read config, assemble the network, and solve it.
 # Returns
 - `SimulationResult`: Struct containing system, solution, and network metadata
 """
-function simulate_file(config_path::String)
+function simulate_file(config_path::String; verbose=false)
     config = read_config(config_path)
     println("Loaded configuration from: $config_path")
-    return simulate_config(config)
+    return simulate_config(config, verbose=verbose)
 end
-# function simulate_file(config_path::String)
-#     config = read_config(config_path)
-#     println("Loaded configuration from: $config_path")
-#     # return simulate_config(config)
-#     println("Definitions: ", config.definitions)
-#     # Split lines
-#     lines = split(config.definitions, '\n')
-#     defs = parse_definitions(lines)
-
-
-#     graph = DefinitionGraph()
-#     add_defs!(graph, defs)
-#     @show graph
-
-#     resolve_parameters!(graph; keep=Set([:t]), verbose=false)
-#     println()
-#     @show graph
-
-#     u = Sym.value(graph.definitions[:u].eq.rhs)
-#     println("u before evaluation: $u")
-#     # u = Sym.evaluate(u, Dict("P" => 10.0, "t" => 5.0))
-#     u = Sym.evaluate(u, Dict(Sym.variable(:P) => 10.0, Sym.variable(:t) => 50000.0))
-#     println("u = $u")
-#     nothing
-# end

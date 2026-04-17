@@ -9,9 +9,9 @@ isdir(output_dir) || mkdir(output_dir)
 
 function run_example(example::String)
     config_file = joinpath(examples_dir, "configs", "$(example).yaml")
-    Term.tprintln("Running example: {cyan}$(example){/cyan}")
+    Term.tprintln("Running example: ", Term.highlight(example, :emphasis))
 
-    result = PHSolver.simulate_file(config_file)
+    result = PHSolver.simulate_file(config_file; verbose=true)
     # plt = PHSolver.plot_result(result, title=result.network.name)
 
     # image_path = joinpath(output_dir, "$(example).png")
