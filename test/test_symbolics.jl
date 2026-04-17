@@ -55,14 +55,14 @@ defs = PHSolver.parse_definitions(
     "b = 2.0",
     "l = sqrt(a)",
     "h(x, a) = atan(x) + x * f / a + a * expr(l)",
-    "i(j, k) = h(j, k) + l + h(j, l)",
+    "i(j, k) = h(j(x), k) + l + h(j(x), l)",
     "j(x) = expr(2.0 * expr(x / 2.0))"
 )
 
 graph = PHSolver.DefinitionGraph()
 PHSolver.add_defs!(graph, defs)
 
-PHSolver.resolve_graph!(graph; keep=Set([:t]), verbose=false)
+PHSolver.resolve_graph!(graph; keep=Set([:t]), verbose=true)
 @show graph
 
 nothing

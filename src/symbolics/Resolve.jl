@@ -12,33 +12,28 @@ function rewrite(
     expr_old = expr
     # Input is of the form, e.g. f, g(2t), h(2x, a)
     sym = Sym.tosymbol(Sym.iscall(expr) ? Sym.operation(expr) : expr)
-    verbose && println("Resolving symbol: $sym [keep: $keep]")
 
     # Only rewrite symbols relevant to the current definition.
-    sym in keep && verbose && println("Skipped due to keep set")
     sym in keep && return expr
 
-    haskey(context, sym) || verbose && println("Skipped due to missing definition")
     haskey(context, sym) || return expr
     u_def = context[sym]
 
     # Skip free parameters
-    isnothing(u_def) && verbose && println("Skipped due to free parameter")
     isnothing(u_def) && return expr
-    verbose && println("Definition found: $u_def")
+    args = Sym.iscall(expr) ? Sym.arguments(expr) : []
+    n_args = length(args)
+    length(u_def.lhs_vars) != n_args && error(
+        "Argument count mismatch for symbol $(u_def.eq.lhs): " *
+        "expected $(length(u_def.lhs_vars)), got $n_args in call $expr")
+
 
     # Substitute definition into the expression
-    if !Sym.iscall(expr)
+    if n_args == 0
         expr = Sym.substitute(expr, Dict(expr => u_def.eq.rhs); fold=Val(false))
     else
-        # Check for correct number of arguments
-        args = Sym.arguments(expr)
-        lhs_args = Sym.arguments(u_def.eq.lhs)
-        length(args) != length(lhs_args) && error(
-            "Argument count mismatch for symbol $(u_def.eq.lhs): " *
-            "expected $(length(lhs_args)), got $(length(args)) in call $expr")
-
         # Substitute arguments into the definition
+        lhs_args = Sym.arguments(u_def.eq.lhs)
         expr = Sym.substitute(u_def.eq.rhs, Dict(lhs_args .=> args); fold=Val(false))
     end
 
@@ -54,9 +49,7 @@ function resolve_definition(
     verbose=false
 )
     sym = def.symbol
-    verbose && println(
-        "\n\nResolving parameters for symbol: ",
-        isnothing(def) ? sym : def.eq)
+    verbose && println("\n\nResolving ", isnothing(def) ? sym : def.eq)
 
     # Return constants
     isempty(def.rhs_vars) && return def
@@ -71,11 +64,9 @@ function resolve_definition(
 
     # Check for remaining unresolved symbols
     rhs_vars = Set{Symbol}(Sym.tosymbol.(Sym.get_variables(rhs)))
-    verbose && println("RHS: $rhs [vars: $rhs_vars]")
 
     # Get free parameters
     free_params = filter(v -> !(v in def.lhs_vars), rhs_vars)
-    verbose && println("Free parameters: $free_params")
 
     unresolved = setdiff(rhs_vars, union(free_params, def.lhs_vars))
     isempty(unresolved) || error(
@@ -86,7 +77,7 @@ function resolve_definition(
     # Update definition with the resolved expression and no dependencies
     rhs = Sym.simplify(rhs)
     eq = Sym.Equation(def.eq.lhs, rhs)
-    verbose && println("Final expression: ", eq)
+    verbose && println("Final expression: ", eq, " [deps: $free_params]")
 
     return Definition(sym, def.lhs_vars, free_params, eq)
 end

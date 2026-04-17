@@ -9,8 +9,9 @@ and solver/plotting helpers defined across the source files.
 """
 module PHSolver
 
-# Include component/source files so the entire library is exported from this
-# single module. Files included here should NOT declare their own `module`.
+################################################################################
+# Schema
+################################################################################
 include("schema/DictSchema.jl")
 include("schema/ComponentSchema.jl")
 export Component, Connection
@@ -20,7 +21,9 @@ include("schema/SimConfig.jl")
 export SimulationConfig
 
 
-# Export symbolic utilities
+################################################################################
+# Symbolics
+################################################################################
 include("symbolics/ParseExpr.jl")
 export parse_expr
 
@@ -40,9 +43,50 @@ include("symbolics/Resolve.jl")
 export resolve_graph!
 
 
+################################################################################
+# Models
+################################################################################
 include("models/PortHamSystem.jl")
 include("models/SimDynamics.jl")
 
+################################################################################
+# Util
+################################################################################
+include("Util.jl")
+export pprint
+export print_namespace
+export compute_hamiltonian
+export compute_energy
+
+################################################################################
+# State
+################################################################################
+include("state/IterConfig.jl")
+export iter_config!
+
+include("state/StateFunction.jl")
+export StateFunction
+export build_func_or_float
+export evaluate
+export update!
+
+include("state/ComponentResult.jl")
+export ComponentResult
+export get_index
+export has_index
+export FloatOrRef
+
+include("state/InteractionResult.jl")
+export InteractionResult
+export SignedRef
+
+include("state/CollectComponents.jl")
+export collect_components
+
+include("state/CollectInteractions.jl")
+export collect_interactions!
+
+################################################################################
 include("network/Models.jl")
 include("network/InputFunction.jl")
 include("network/Interconnection.jl")
@@ -59,8 +103,6 @@ include("config/ParseNetwork.jl")
 include("plots/Plots.jl")
 include("plots/NetworkPlot.jl")
 
-include("Util.jl")
-
 
 # Export primary types and convenience functions
 export PortHamSystem
@@ -75,7 +117,6 @@ export apply_connection!
 
 # Export network assembly functions
 export dynamics_from_network
-export compute_hamiltonian
 export parse_external_function
 
 # Export YAML parser functions
@@ -91,9 +132,6 @@ export simulate_file
 export supported_solvers
 export simulate_config
 export get_dae_solver
-
-# Export utility functions
-export compute_energy
 
 # Export plots
 export plot_result

@@ -43,5 +43,34 @@ function pprint(matrix::Union{AbstractMatrix,AbstractVector}; header::Union{Noth
     if !isnothing(header)
         Term.tprintln(Term.highlight(header, :symbol))
     end
-    Term.tprint(Term.Table(matrix; show_header=false, compact=true))
+    Term.tprint(Term.Table(matrix; show_header=false, compact=true, box=:ROUNDED))
+end
+
+Namespace = Dict{String,Any}
+
+function print_namespace(namespace::Namespace; prefix="")
+    Term.tprintln(Term.highlight("Namespace", :symbol))
+    function inner(subspace, prefix)
+        keys_sorted = sort(collect(keys(subspace)))
+        for (i, key) in enumerate(keys_sorted)
+            val = subspace[key]
+            color = isnothing(val) ? :number : :code
+            if i == length(keys_sorted)
+                Term.tprintln(
+                    prefix *
+                    Term.highlight("└─ ", :emphasis) *
+                    Term.highlight(key, color)
+                )
+                isnothing(val) || inner(val, prefix * "   ")
+            else
+                Term.tprintln(
+                    Term.highlight(prefix * "├─ ", :emphasis) *
+                    Term.highlight(key, color)
+                )
+                isnothing(val) || inner(val, prefix * "│  ")
+            end
+        end
+    end
+    inner(namespace, prefix)
+    println()
 end
