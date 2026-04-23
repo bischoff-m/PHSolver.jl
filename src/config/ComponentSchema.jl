@@ -14,29 +14,29 @@ Defines a component (state variable) within a system.
 # Fields
 - `id::String`: Component identifier
 - `dissipation::String`: Dissipation value (defaults to "0.0")
-- `mass::String`: Mass/energy storage value (defaults to "0.0")
+- `mass::String`: Mass value (reciprocal of energy storage value in Q) (defaults to "0.0")
 - `input::String`: Input coefficient (defaults to "1.0")
 - `x0::String`: Initial state value (defaults to "0.0")
 """
 struct Component
     id::String
+    x0::SymbolType
     dissipation::SymbolType
     mass::SymbolType
     input::SymbolType
-    x0::SymbolType
 
     function Component(
         id::String,
-        dissipation::Union{Nothing,SymbolType},
-        mass::Union{Nothing,SymbolType},
-        input::Union{Nothing,SymbolType},
         # Need at least one required field to avoid ambiguity with SystemConfig
-        x0::SymbolType
+        x0::SymbolType,
+        dissipation::Union{Nothing,SymbolType}=nothing,
+        mass::Union{Nothing,SymbolType}=nothing,
+        input::Union{Nothing,SymbolType}=nothing
     )
         dissipation = something(dissipation, 0.0)
         mass = something(mass, 0.0)
         input = something(input, 1.0)
-        new(id, dissipation, mass, input, x0)
+        new(id, x0, dissipation, mass, input)
     end
 end
 StructTypes.StructType(::Type{Component}) = StructTypes.Struct()

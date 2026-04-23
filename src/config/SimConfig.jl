@@ -16,23 +16,23 @@ Defines simulation parameters.
 # Fields
 - `time_span::AbstractVector{Real}`: Start and end time `[t0, tf]`
 - `solver::String`: Solver name (defaults to "IDA")
-- `timestep::Real`: Fixed timestep (defaults to 0.01)
+- `output_interval::Real`: Output interval (defaults to 0.01)
 """
-struct SimulationConfig
-    time_span::AbstractVector{Real}
+struct SimConfig
+    time_span::AbstractVector{<:Real}
     solver::String
-    timestep::Real
+    output_interval::Real
 
-    function SimulationConfig(
-        time_span::Union{Nothing,AbstractVector{Real}},
-        solver::Union{Nothing,String},
-        timestep::Union{Nothing,Real}
+    function SimConfig(
+        time_span::Union{Nothing,AbstractVector{<:Real}}=nothing,
+        solver::Union{Nothing,String}=nothing,
+        output_interval::Union{Nothing,Real}=nothing
     )
         time_span = something(time_span, [0.0, 1.0])
         solver = something(solver, "IDA")
-        timestep = something(timestep, 0.01)
-        new(time_span, solver, timestep)
+        output_interval = something(output_interval, 0.01)
+        new(time_span, solver, output_interval)
     end
 end
-StructTypes.StructType(::Type{SimulationConfig}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SimulationConfig}) = (:time_span, :solver, :timestep)
+StructTypes.StructType(::Type{SimConfig}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SimConfig}) = (:time_span, :solver, :output_interval)

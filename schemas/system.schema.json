@@ -1,28 +1,6 @@
 {
     "$ref": "#/$defs/Main.PHSolver.SystemConfigSchema",
     "$defs": {
-        "Main.PHSolver.Connection": {
-            "type": "object",
-            "properties": {
-                "from": {
-                    "type": "string"
-                },
-                "to": {
-                    "type": "string"
-                },
-                "weight": {
-                    "type": [
-                        "number",
-                        "string"
-                    ]
-                }
-            },
-            "required": [
-                "from",
-                "to"
-            ],
-            "additionalProperties": false
-        },
         "Main.PHSolver.SystemConfigSchema": {
             "type": "object",
             "properties": {
@@ -69,11 +47,39 @@
             ],
             "additionalProperties": false
         },
+        "Main.PHSolver.Connection": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                }
+            },
+            "required": [
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        },
         "Main.PHSolver.Component": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "string"
+                },
+                "x0": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
                 },
                 "dissipation": {
                     "type": [
@@ -88,12 +94,6 @@
                     ]
                 },
                 "input": {
-                    "type": [
-                        "number",
-                        "string"
-                    ]
-                },
-                "x0": {
                     "type": [
                         "number",
                         "string"

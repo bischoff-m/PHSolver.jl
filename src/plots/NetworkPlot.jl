@@ -4,7 +4,7 @@
 Generate a Graphviz DOT representation of a network configuration.
 
 Each system is rendered as a cluster containing component nodes. Components
-are boxes labeled with their id and values for R (dissipation), Q (mass), and x0.
+are boxes labeled with their id and values for R (dissipation), E (mass), and x0.
 Connections are shown as directed edges labeled with the connection weight.
 
 # Arguments

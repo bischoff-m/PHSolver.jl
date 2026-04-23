@@ -29,19 +29,22 @@ definitions: |
   R_G = 6
   R_R = 3
   scale(P) = sqrt(P / R_R)
+  u_star(P) = scale(P) * (R_R + R_L + R_G)
+signals:
+  power_input: u_star(power) * (atan(30 * (t - 0.5)) / pi + 0.5)
 systems:
   - id: IL
     dissipation: R_L
     mass: L
-    x0: scale(power)
+    x0: 0
   - id: V1
     dissipation: 0
     mass: C_1
-    x0: (-R_R - R_L) * scale(power)
+    x0: 0
   - id: V2
     dissipation: 0
     mass: C_2
-    x0: -R_R * scale(power)
+    x0: 0
   - id: IG
     dissipation: R_G
     mass: 0
@@ -59,3 +62,5 @@ connections:
     to: V1
   - from: IR
     to: V2
+ports:
+  power_input: IG

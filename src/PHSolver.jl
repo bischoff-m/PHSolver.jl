@@ -21,8 +21,12 @@ export Component, Connection
 include("config/SystemConfig.jl")
 export SystemConfig, SystemConfigSchema, make_system_schema
 
+include("config/ParseConfig.jl")
+export validate_config
+export read_config
+
 include("config/SimConfig.jl")
-export SimulationConfig
+export SimConfig
 
 include("config/MakeSchema.jl")
 export make_system_schema
@@ -57,7 +61,6 @@ export process_definitions
 # Models
 ################################################################################
 include("models/PortHamSystem.jl")
-include("models/SimDynamics.jl")
 
 ################################################################################
 # Util
@@ -95,8 +98,8 @@ export collect_components!
 include("system/CollectInteractions.jl")
 export collect_interactions!
 
-include("system/CollectSystem.jl")
-export collect_system
+include("system/MakeSystem.jl")
+export make_system
 
 
 ################################################################################
@@ -106,20 +109,25 @@ include("state/PhsState.jl")
 export PhsState
 
 
+################################################################################
+# PhsSimulation
+################################################################################
+include("simulation/PhsSimulation.jl")
+export PhsSimulation
+
+include("simulation/SolveTimespan.jl")
+export solve_timespan
+
+include("simulation/SolveRealtime.jl")
+export solve_realtime
+
 
 ################################################################################
-include("network/Models.jl")
-include("network/InputFunction.jl")
-include("network/Interconnection.jl")
-include("network/Assembly.jl")
 
 include("simulation/GetProblem.jl")
 include("simulation/GetSolver.jl")
 include("simulation/SolvePhs.jl")
 include("simulation/SimulateConfig.jl")
-
-include("config/ParseConfig.jl")
-include("config/ParseNetwork.jl")
 
 include("plots/Plots.jl")
 include("plots/NetworkPlot.jl")
@@ -130,20 +138,7 @@ export PortHamSystem
 export state_dimension
 export input_dimension
 
-# Export network types
-export PhsNodeOld
-
-# Export interconnection functions
-export apply_connection!
-
-# Export network assembly functions
-export dynamics_from_network
-export parse_external_function
-
 # Export YAML parser functions
-export network_from_config
-export validate_config
-export read_config
 
 # Export solver functions
 export solve_phs

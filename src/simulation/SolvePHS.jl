@@ -9,14 +9,14 @@ Returns `(integrator, dt)` where `dt` is the step size used by default.
 """
 function init_solver(
     dynamics::SimDynamics{T};
-    sim_config::SimulationConfig,
+    sim_config::SimConfig,
 ) where {T<:Real}
     prob = get_problem(dynamics, sim_config)
     solver = get_dae_solver(sim_config.solver)
 
     integrator = Eq.init(prob, solver;
         initializealg=Eq.BrownFullBasicInit(),
-        dt=sim_config.timestep,
+        dt=sim_config.output_interval,
     )
 
     return integrator
@@ -37,25 +37,25 @@ end
 
 Solve the assembled DAE and return the SciML solution object.
 
-If `sim_config.timestep` is provided, the solver output is sampled at that
+If `sim_config.output_interval` is provided, the solver output is sampled at that
 fixed interval via `saveat`.
 """
 function solve_phs(
     dynamics::SimDynamics{T};
-    sim_config::SimulationConfig,
+    sim_config::SimConfig,
 ) where {T<:Real}
     # Get problem and solver
     prob = get_problem(dynamics, sim_config)
     solver = get_dae_solver(sim_config.solver)
 
     # Solve with automatic initialization
-    # If timestep is specified, use saveat to control output times
+    # If output_interval is specified, use saveat to control output times
     sol = Eq.solve(prob, solver;
         initializealg=Eq.BrownFullBasicInit(),
         progress=true,
         progress_name="Solver",
-        (isnothing(sim_config.timestep) ? (;) :
-         (saveat=sim_config.timestep,))...
+        (isnothing(sim_config.output_interval) ? (;) :
+         (saveat=sim_config.output_interval,))...
     )
 
     return sol
@@ -71,13 +71,13 @@ step. Useful for interactive exploration.
 """
 function solve_phs_realtime(
     dynamics::SimDynamics{T};
-    sim_config::SimulationConfig,
+    sim_config::SimConfig,
 ) where {T<:Real}
     integrator = init_solver(dynamics; sim_config=sim_config)
 
     t_final = sim_config.time_span[2]
     while integrator.t < t_final
-        step_solver!(integrator, sim_config.timestep)
+        step_solver!(integrator, sim_config.output_interval)
         # TODO: This is just temporary and needs to be done on the outside
         plot_result(
             SimulationResult(

@@ -1,5 +1,14 @@
 using Plots
 
+struct SimulationResult
+    network::PhsSystem
+    system::PhsSystem
+    solution::Any
+    input::Matrix{Float64}
+    signal::Matrix{Float64}
+    ids::Vector{String}
+end
+
 """
     plot_result(result::SimulationResult; tmax=nothing, title=nothing)
 
@@ -15,6 +24,7 @@ The Hamiltonian is plotted as a dotted line labeled `H`.
 # Returns
 - The `Plots.jl` plot object
 """
+# TODO: Remove
 function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=nothing, title::Union{Nothing,String}=nothing)
     sol = result.solution
     n = state_dimension(result.system)
@@ -37,6 +47,43 @@ function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=noth
 
     energy = compute_energy(sol, result.system)
     plot!(plt, sol.t, energy, label="H", lw=2, ls=:dot, title=isnothing(title) ? result.network.name : title)
+    display(plt)
+    return plt
+end
+
+function plot_result(
+    sol,
+    system::PhsSystem,
+    sim_config::SimConfig;
+    title::Union{Nothing,String}=nothing,
+    args...
+)
+    n = length(system.ids)
+    plt = plot(
+        sol.t,
+        sol[1, :],
+        label=system.ids[1],
+        lw=2,
+        xlabel="Time [s]",
+        ylabel="State",
+        args...
+    )
+
+    for i in 2:n
+        plot!(plt, sol.t, sol[i, :], label=system.ids[i], lw=2)
+    end
+
+    # energy = compute_energy(sol, system)
+    # plot!(
+    #     plt,
+    #     sol.t,
+    #     energy,
+    #     label="H",
+    #     lw=2,
+    #     ls=:dot,
+    #     title=isnothing(title) ? "Simulation Result" : title
+    # )
+
     display(plt)
     return plt
 end

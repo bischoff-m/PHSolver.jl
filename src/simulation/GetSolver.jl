@@ -5,11 +5,11 @@ import Sundials
 Dictionary of supported DAE solver names to solver instances.
 """
 supported_solvers = Dict(
-    "default" => Sundials.IDA(),
-    "IDA" => Sundials.IDA(),
-    "DFBDF" => Eq.DFBDF(),
-    "DABDF2" => Eq.DABDF2(),
-    "DImplicitEuler" => Eq.DImplicitEuler(),
+    :default => Sundials.IDA(),
+    :IDA => Sundials.IDA(),
+    :DFBDF => Eq.DFBDF(),
+    :DABDF2 => Eq.DABDF2(),
+    :DImplicitEuler => Eq.DImplicitEuler(),
 )
 
 """
@@ -33,14 +33,14 @@ solver](https://docs.sciml.ai/DiffEqDocs/stable/api/daskr/#daskr) in the future.
 # Returns
 - Solver algorithm
 """
-function get_dae_solver(solver_name::Union{Nothing,String})
-    key = isnothing(solver_name) ? "default" : solver_name
+function get_dae_solver(solver_name::Union{Nothing,String,Symbol})
+    key = isnothing(solver_name) ? :default : Symbol(solver_name)
 
     if haskey(supported_solvers, key)
         return supported_solvers[key]
     end
 
-    fallback = supported_solvers["default"]
+    fallback = supported_solvers[:default]
     @warn "Unknown solver '$solver_name', using $fallback as default"
     return fallback()
 end

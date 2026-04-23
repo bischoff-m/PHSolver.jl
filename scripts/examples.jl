@@ -11,7 +11,7 @@ function run_example(example::String)
     config_file = joinpath(examples_dir, "configs", "$(example).yaml")
     Term.tprintln("Running example:", Term.highlight(example, :emphasis))
 
-    sim = PHSolver.init_simulation(config_file; verbose=true)
+    sim = PHSolver.init_simulation(config_file; verbose=false)
 
     # plt = PHSolver.plot_result(result, title=result.network.name)
 
@@ -21,7 +21,8 @@ function run_example(example::String)
     # Term.tprintln()
 end
 
-run_example("testing")
+# run_example("testing")
 # run_example("dc_power_network")
+run_example("dc_power_network_controlled")
 # run_example("DGU")
 nothing

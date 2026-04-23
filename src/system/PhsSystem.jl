@@ -69,8 +69,8 @@ function pprint(result::PhsSystem)
         result.input,
         result.signal,
         ;
-        header=["id", "x0", "R", "Q", "B", "u"],
-        title="System (x0, R, Q, B, u)",
+        header=["id", "x0", "R", "E", "B", "u"],
+        title="System (x0, R, E, B, u)",
     )
     pprint(
         result.ids,

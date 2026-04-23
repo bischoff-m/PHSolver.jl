@@ -37,7 +37,7 @@ Base.zero(::Type{FloatOrRef}) = 0.0
 tofloat(x::Float64) = x
 tofloat(x::Union{Ref{Float64},AbstractRef}) = x[]
 
-function eval_float_or_ref!(
+function eval_refs!(
     out::AbstractVecOrMat{Float64},
     v::AbstractVecOrMat{<:FloatOrRef}
 )
@@ -48,7 +48,7 @@ function eval_float_or_ref!(
     return out
 end
 
-function eval_float_or_ref!(
+function eval_refs!(
     out::AbstractVector{Float64},
     v::SparseVector{<:FloatOrRef}
 )
@@ -60,7 +60,7 @@ function eval_float_or_ref!(
     return out
 end
 
-function eval_float_or_ref!(
+function eval_refs!(
     out::AbstractMatrix{Float64},
     v::SparseMatrixCSC{<:FloatOrRef}
 )

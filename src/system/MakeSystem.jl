@@ -1,5 +1,5 @@
 
-function collect_system(config::SystemConfig; keep::Set{Symbol}=Set(), verbose=false)
+function make_system(config::SystemConfig; keep::Set{Symbol}=Set(), verbose=false)
     defs = process_definitions(config.definitions)
 
     result = PhsSystem()

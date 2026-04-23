@@ -27,11 +27,11 @@ struct SystemConfig
 
     function SystemConfig(
         id::String,
-        connections::Union{Nothing,AbstractVector{Connection}},
-        ports::Union{Nothing,Dict{String,String}},
-        systems::Union{Nothing,AbstractVector{Union{SystemConfig,Component}}},
-        definitions::Union{Nothing,String},
-        signals::Union{Nothing,Dict{String,String}}
+        connections::Union{Nothing,AbstractVector{Connection}}=nothing,
+        ports::Union{Nothing,Dict{String,String}}=nothing,
+        systems::Union{Nothing,AbstractVector{Union{SystemConfig,Component}}}=nothing,
+        definitions::Union{Nothing,String}=nothing,
+        signals::Union{Nothing,Dict{String,String}}=nothing
     )
         systems = something(systems, Union{SystemConfig,Component}[])
         connections = something(connections, Connection[])

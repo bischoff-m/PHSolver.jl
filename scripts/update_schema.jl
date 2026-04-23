@@ -21,5 +21,4 @@ function write_schema(to=normpath(joinpath(@__DIR__, "..", "schemas", "system.sc
     println("Schema written to: $to")
 end
 
-# Generate schema when script is run directly
 write_schema()

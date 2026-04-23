@@ -29,6 +29,7 @@ definitions: |
   R_G = 6
   R_R = 3
   scale(P) = sqrt(P / R_R)
+  step_func(x, step_at, from, to, gain) = (to - from) / 2 * (1 + tanh(gain * (x - step_at))) + from
 systems:
   - id: IL
     dissipation: R_L
@@ -47,7 +48,7 @@ systems:
     mass: 0
     x0: 0
   - id: IR
-    dissipation: R_R
+    dissipation: R_R * step_func(t, 0.3, 1, 4, 100)
     mass: 0
     x0: 0
 connections:

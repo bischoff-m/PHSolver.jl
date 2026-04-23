@@ -13,10 +13,10 @@ using PHSolver: PortHamSystem, HamiltonState, evolve_step
     # small valid PH system (n=2, m=1)
     J = [0.0 -1.0; 1.0 0.0]
     R = [0.1 0.0; 0.0 0.1]
-    Q = [1.0 0.0; 0.0 1.0]
+    E = [1.0 0.0; 0.0 1.0]
     B = reshape([1.0, 0.0], 2, 1)
 
-    sys = PortHamSystem(J, R, Q, B)
+    sys = PortHamSystem(J, R, E, B)
 
     # initial evolvable
     x0 = [1.0, 0.0]
@@ -29,7 +29,8 @@ using PHSolver: PortHamSystem, HamiltonState, evolve_step
     u = [0.0]
 
     # expected calculations (use initial state before evolve mutates it)
-    dH_dx = Q * x0
+    # TODO: Naming is incorrect
+    dH_dx = E * x0
     expected_xdot = (J - R) * dH_dx + B * u
     expected_x = x0 .+ expected_xdot * dt
     expected_y = transpose(B) * dH_dx

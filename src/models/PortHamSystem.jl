@@ -3,14 +3,15 @@ using LinearAlgebra
 """
     PortHamSystem
 
-Port-Hamiltonian system with matrices \$(J, R, Q, B)\$.
+Port-Hamiltonian system with matrices \$(J, R, E, B)\$.
 
-The system satisfies \$Q \\dot{x} = (J - R) x + B u\$.
+The system satisfies \$E \\dot{x} = (J - R) x + B u\$.
 
 # Fields
 - `interaction`: Interconnection matrix `J` (skew-symmetric)
 - `dissipation`: Dissipation matrix `R` (symmetric PSD)
-- `mass`: Mass/storage matrix `Q` (diagonal PSD)
+- `mass`: Mass matrix `E` (inverse of energy storage matrix Q for the non-zero
+  entries) (diagonal PSD)
 - `input`: Input matrix `B`
 """
 struct PortHamSystem{T<:Real}
