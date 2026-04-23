@@ -1,3 +1,11 @@
+"""
+    DictSchema
+
+Defines how to generate JSON Schema for `AbstractDict` types. This is used for
+the `components` and `connections` fields of `SystemConfig`, which are
+dictionaries mapping component/connection IDs to their definitions.
+"""
+
 import JSONSchemaGenerator
 
 JSONSchemaGenerator._json_type(::Type{<:AbstractDict}) = :dict

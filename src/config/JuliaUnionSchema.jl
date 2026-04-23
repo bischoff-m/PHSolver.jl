@@ -1,7 +1,14 @@
-import StructTypes
-
 # work around JSONSchemaGenerator's lack of Union support
 import JSONSchemaGenerator
+
+# TODO: Regenerate schema to test if this can be deleted
+# map a union value (its runtime type is `Union`) to a custom keyword
+# so we can generate a combined schema instead of treating it as an object.
+# function JSONSchemaGenerator._json_type(julia_type::Union)
+#     return :union
+# end
+
+JSONSchemaGenerator._json_type(::Type{<:Union}) = :union
 
 # when generating schemas we want to allow unions such as Union{String,Number}
 # to translate into a JSON Schema with multiple allowed types.  the package
@@ -19,12 +26,6 @@ function JSONSchemaGenerator._gather_data_types!(data_types::Set{DataType}, juli
         JSONSchemaGenerator._gather_data_types!(data_types, t)
     end
     return nothing
-end
-
-# map a union value (its runtime type is `Union`) to a custom keyword
-# so we can generate a combined schema instead of treating it as an object.
-function JSONSchemaGenerator._json_type(julia_type::Union)
-    return :union
 end
 
 function JSONSchemaGenerator._generate_json_type_def(::Val{:union},
@@ -48,68 +49,3 @@ function JSONSchemaGenerator._generate_json_type_def(::Val{:union},
     end
     return settings.dict_type{String,Any}("type" => types)
 end
-
-
-# Use Float64 rather than abstract Number; JSON3 cannot deserialize into an
-# abstract `Number` because it lacks field info. Float64 covers all numeric
-# literals we expect from YAML.
-SymbolType = Union{String,Float64}
-
-"""
-    Component
-
-Defines a component (state variable) within a system.
-
-# Fields
-- `id::String`: Component identifier
-- `dissipation::String`: Dissipation value (defaults to "0.0")
-- `mass::String`: Mass/energy storage value (defaults to "0.0")
-- `x0::String`: Initial state value (defaults to "0.0")
-"""
-struct Component
-    id::String
-    dissipation::SymbolType
-    mass::SymbolType
-    x0::SymbolType
-
-    function Component(
-        id::String,
-        dissipation::Union{Nothing,SymbolType},
-        mass::Union{Nothing,SymbolType},
-        # Need at least one required field to avoid ambiguity with SystemConfig
-        x0::SymbolType
-    )
-        dissipation = something(dissipation, 0.0)
-        mass = something(mass, 0.0)
-        new(id, dissipation, mass, x0)
-    end
-end
-StructTypes.StructType(::Type{Component}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{Component}) = (:dissipation, :mass, :x0,)
-
-"""
-    Connection
-
-Defines a directed connection between two components within a system.
-
-# Fields
-- `from::String`: Source component id
-- `to::String`: Target component id
-- `weight::String`: Connection weight (defaults to "1.0")
-"""
-struct Connection
-    from::String
-    to::String
-    weight::SymbolType
-
-    function Connection(
-        from::String,
-        to::String,
-        weight::Union{Nothing,SymbolType}
-    )
-        weight = something(weight, 1.0)
-        new(from, to, weight)
-    end
-end
-StructTypes.StructType(::Type{Connection}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{Connection}) = (:weight,)

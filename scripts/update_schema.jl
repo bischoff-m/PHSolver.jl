@@ -2,22 +2,23 @@ include("../src/PHSolver.jl")
 
 import JSONSchemaGenerator, JSON3
 """
-    write_schema(output_file::String="schemas/system.schema.json")
+    write_schema(to::String)
 
 Generate and write the JSON schema to a file.
 
 # Arguments
-- `output_file::String`: Path to output JSON schema file
+- `to::String`: Path to output JSON schema file
 """
-function write_schema(output_file="schemas/system.schema.json")
+function write_schema(to=normpath(joinpath(@__DIR__, "..", "schemas", "system.schema.json")))
     schema = PHSolver.make_system_schema()
 
     # Write to file with pretty formatting
-    open(output_file, "w") do io
+    mkpath(dirname(to))
+    open(to, "w") do io
         JSON3.pretty(io, schema)
     end
 
-    println("Schema written to: $output_file")
+    println("Schema written to: $to")
 end
 
 # Generate schema when script is run directly

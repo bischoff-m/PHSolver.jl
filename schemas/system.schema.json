@@ -1,25 +1,16 @@
 {
     "$ref": "#/$defs/Main.PHSolver.SystemConfigSchema",
     "$defs": {
-        "Main.PHSolver.Component": {
+        "Main.PHSolver.Connection": {
             "type": "object",
             "properties": {
-                "id": {
+                "from": {
                     "type": "string"
                 },
-                "dissipation": {
-                    "type": [
-                        "number",
-                        "string"
-                    ]
+                "to": {
+                    "type": "string"
                 },
-                "mass": {
-                    "type": [
-                        "number",
-                        "string"
-                    ]
-                },
-                "x0": {
+                "weight": {
                     "type": [
                         "number",
                         "string"
@@ -27,7 +18,8 @@
                 }
             },
             "required": [
-                "id"
+                "from",
+                "to"
             ],
             "additionalProperties": false
         },
@@ -77,16 +69,31 @@
             ],
             "additionalProperties": false
         },
-        "Main.PHSolver.Connection": {
+        "Main.PHSolver.Component": {
             "type": "object",
             "properties": {
-                "from": {
+                "id": {
                     "type": "string"
                 },
-                "to": {
-                    "type": "string"
+                "dissipation": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
                 },
-                "weight": {
+                "mass": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                },
+                "input": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                },
+                "x0": {
                     "type": [
                         "number",
                         "string"
@@ -94,8 +101,8 @@
                 }
             },
             "required": [
-                "from",
-                "to"
+                "id",
+                "x0"
             ],
             "additionalProperties": false
         }

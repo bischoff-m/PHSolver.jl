@@ -13,26 +13,13 @@ Load, assemble, and solve a network configuration.
 Returns a `SimulationResult` containing the solution, assembled system, and
 network metadata.
 """
-function simulate_config(config::SystemConfig; verbose=false)
+function init_simulation(config::SystemConfig; verbose=false)
     fixed_vars = Set([:t])
+    result = collect_system(config; keep=fixed_vars, verbose=verbose)
 
-    defs = parse_definitions(config.definitions)
-    graph = DefinitionGraph()
-    add_defs!(graph, defs)
-    resolve_graph!(graph; keep=fixed_vars)
-    defs = graph.definitions
-    result1 = collect_components(config, defs; keep=fixed_vars)
-
-    # Parse connections and signals
-    result2 = collect_interactions!(config, defs, result1; keep=fixed_vars)
-
-    if verbose
-        print_namespace(result1.namespace)
-        pprint(result1)
-        pprint(result2)
-    end
-
-    nothing
+    state = PhsState(result)
+    evolve!(state, Dict(:t => 0.0))
+    pprint(state)
 
 
     # Load network
@@ -52,10 +39,11 @@ function simulate_config(config::SystemConfig; verbose=false)
     # Term.tprintln("  {bold green}✓{/bold green} Solved DAE: {cyan}$(length(sol.t)){/cyan} time points, t_final={cyan}$(round(sol.t[end], digits=2)){/cyan}")
 
     # return SimulationResult(sol, sim_input.system, network)
+    nothing
 end
 
 """
-    simulate_file(config_path::String)
+    init_simulation(config_path::String)
 
 Complete workflow: read config, assemble the network, and solve it.
 
@@ -65,8 +53,11 @@ Complete workflow: read config, assemble the network, and solve it.
 # Returns
 - `SimulationResult`: Struct containing system, solution, and network metadata
 """
-function simulate_file(config_path::String; verbose=false)
+function init_simulation(config_path::String; verbose=false)
     config = read_config(config_path)
-    println("Loaded configuration from: $config_path")
-    return simulate_config(config, verbose=verbose)
+    verbose && Term.tprintln(
+        "Loaded configuration:",
+        Term.highlight(config_path, :emphasis)
+    )
+    return init_simulation(config, verbose=verbose)
 end

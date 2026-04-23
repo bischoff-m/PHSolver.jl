@@ -10,15 +10,22 @@ and solver/plotting helpers defined across the source files.
 module PHSolver
 
 ################################################################################
-# Schema
+# SystemConfig, SimConfig and schema definitions
 ################################################################################
-include("schema/DictSchema.jl")
-include("schema/ComponentSchema.jl")
+include("config/JuliaDictSchema.jl")
+include("config/JuliaUnionSchema.jl")
+
+include("config/ComponentSchema.jl")
 export Component, Connection
-include("schema/SystemConfig.jl")
+
+include("config/SystemConfig.jl")
 export SystemConfig, SystemConfigSchema, make_system_schema
-include("schema/SimConfig.jl")
+
+include("config/SimConfig.jl")
 export SimulationConfig
+
+include("config/MakeSchema.jl")
+export make_system_schema
 
 
 ################################################################################
@@ -29,7 +36,7 @@ export parse_expr
 
 include("symbolics/Definition.jl")
 export Definition
-export parse_definitions
+export definition_from_expr
 
 include("symbolics/DefinitionGraph.jl")
 export DefinitionGraph
@@ -41,6 +48,9 @@ export add_defs!
 
 include("symbolics/Resolve.jl")
 export resolve_graph!
+
+include("symbolics/MakeDefinitions.jl")
+export process_definitions
 
 
 ################################################################################
@@ -59,32 +69,43 @@ export compute_hamiltonian
 export compute_energy
 
 ################################################################################
-# State
+# PhsSystem assembly
 ################################################################################
-include("state/IterConfig.jl")
+include("system/IterConfig.jl")
 export iter_config!
 
-include("state/StateFunction.jl")
-export StateFunction
+include("system/RefFunction.jl")
+export RefFunction
 export build_func_or_float
 export evaluate
-export update!
+export update_ref!
 
-include("state/ComponentResult.jl")
-export ComponentResult
-export get_index
-export has_index
+include("system/RefTypes.jl")
 export FloatOrRef
-
-include("state/InteractionResult.jl")
-export InteractionResult
 export SignedRef
 
-include("state/CollectComponents.jl")
-export collect_components
+include("system/PhsSystem.jl")
+export PhsSystem
+export get_index
+export has_index
 
-include("state/CollectInteractions.jl")
+include("system/CollectComponents.jl")
+export collect_components!
+
+include("system/CollectInteractions.jl")
 export collect_interactions!
+
+include("system/CollectSystem.jl")
+export collect_system
+
+
+################################################################################
+# PhsState
+################################################################################
+include("state/PhsState.jl")
+export PhsState
+
+
 
 ################################################################################
 include("network/Models.jl")
@@ -94,7 +115,7 @@ include("network/Assembly.jl")
 
 include("simulation/GetProblem.jl")
 include("simulation/GetSolver.jl")
-include("simulation/SolvePHS.jl")
+include("simulation/SolvePhs.jl")
 include("simulation/SimulateConfig.jl")
 
 include("config/ParseConfig.jl")
@@ -128,9 +149,9 @@ export read_config
 export solve_phs
 export init_solver
 export step_solver!
-export simulate_file
+export init_simulation
 export supported_solvers
-export simulate_config
+export init_simulation
 export get_dae_solver
 
 # Export plots

@@ -36,15 +36,36 @@ function compute_energy(solution, system::PortHamSystem{T}) where {T<:Real}
 end
 
 
+to_dense(col::AbstractVector) = collect(col)
+to_dense(col::AbstractMatrix) = Matrix(col)
 
-function pprint(matrix::Union{AbstractMatrix,AbstractVector}; header::Union{Nothing,String}=nothing)
-    isa(matrix, AbstractVector) && (matrix = reshape(matrix, :, 1))
-    matrix = Matrix(matrix)
-    if !isnothing(header)
-        Term.tprintln(Term.highlight(header, :symbol))
+function pprint(
+    cols::AbstractVecOrMat...;
+    header::Union{Nothing,Union{Vector,Tuple}}=nothing,
+    title::Union{Nothing,String}=nothing,
+    args...
+)
+    if !isnothing(title)
+        Term.tprintln(Term.highlight(title, :symbol))
     end
-    Term.tprint(Term.Table(matrix; show_header=false, compact=true, box=:ROUNDED))
+    cols = map(to_dense, cols)
+    mat = hcat(cols...)
+    # Round floating point numbers for better display
+    for i in eachindex(mat)
+        if isa(mat[i], AbstractFloat)
+            mat[i] = round(mat[i], sigdigits=5)
+        end
+    end
+    Term.tprint(Term.Table(
+        mat,
+        header=header,
+        show_header=!isnothing(header),
+        columns_justify=[:left; fill(:center, max(length(header) - 1, 0))...],
+        args...,
+    ))
 end
+
+
 
 Namespace = Dict{String,Any}
 

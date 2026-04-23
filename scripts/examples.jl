@@ -9,9 +9,10 @@ isdir(output_dir) || mkdir(output_dir)
 
 function run_example(example::String)
     config_file = joinpath(examples_dir, "configs", "$(example).yaml")
-    Term.tprintln("Running example: ", Term.highlight(example, :emphasis))
+    Term.tprintln("Running example:", Term.highlight(example, :emphasis))
 
-    result = PHSolver.simulate_file(config_file; verbose=true)
+    sim = PHSolver.init_simulation(config_file; verbose=true)
+
     # plt = PHSolver.plot_result(result, title=result.network.name)
 
     # image_path = joinpath(output_dir, "$(example).png")
@@ -20,6 +21,7 @@ function run_example(example::String)
     # Term.tprintln()
 end
 
-run_example("dc_power_network")
+run_example("testing")
+# run_example("dc_power_network")
 # run_example("DGU")
 nothing

@@ -13,16 +13,14 @@ Simulation-ready dynamics container for a port-Hamiltonian system.
 struct SimDynamics{T<:Real}
     system::PortHamSystem{T}
     x0::AbstractVector{T}
-    input_func::Function
 
     function SimDynamics(
         system::PortHamSystem{T},
-        x0::AbstractVector{T},
-        input_func::Function,
+        x0::AbstractVector{T}
     ) where {T<:Real}
         n = state_dimension(system)
         @assert length(x0) == n "Initial state vector x0 must have length $n"
 
-        new{T}(system, x0, input_func)
+        new{T}(system, x0)
     end
 end

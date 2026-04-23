@@ -102,11 +102,11 @@ parameters.
 # Examples
 
 ```jldoctest
-julia> parse_definitions(["f(x)=a*x"])
+julia> definition_from_expr(["f(x)=a*x"])
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function parse_definitions(exprs::String...)
+function definition_from_expr(exprs::String...)
     definitions = Dict{Symbol,Union{Definition,Nothing}}()
 
     # Parse each expression into a Definition
@@ -150,11 +150,11 @@ and ignored, as are empty lines and multiline comments.
 
 ```jldoctest
 julia> text = "a = 10\n# This is a comment\nf(x) = a*x"
-julia> parse_definitions(text)
+julia> definition_from_expr(text)
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function parse_definitions(text::String)
+function definition_from_expr(text::String)
     # Remove multiline comments
     cleaned = replace(text, r"\"\"\".*\"\"\""s => "")
     lines = split(cleaned, '\n')
@@ -164,5 +164,5 @@ function parse_definitions(text::String)
     lines = filter(line -> !isempty(line), lines)
     lines = String.(lines)
 
-    return parse_definitions(lines...)
+    return definition_from_expr(lines...)
 end

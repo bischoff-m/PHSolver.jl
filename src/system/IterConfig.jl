@@ -5,7 +5,7 @@ function iter_config!(
     name_stack=String[]
 )
     name_stack = push!(name_stack, config.id)
-    current_id = join(name_stack, ".")
+    current_id = join(name_stack[2:end], ".")
     handler(config, current_id)
 
     pop!(name_stack)
@@ -19,7 +19,7 @@ function iter_config!(
     name_stack=String[]
 )
     name_stack = push!(name_stack, config.id)
-    current_id = join(name_stack, ".")
+    current_id = join(name_stack[2:end], ".")
 
     namespace = Dict{String,Any}()
     for sys in config.systems

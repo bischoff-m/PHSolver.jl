@@ -1,12 +1,12 @@
 import Symbolics as Sym
 
-struct StateFunction
+struct RefFunction
     func::Function
-    dependencies::Vector{Symbol}
+    dependencies::AbstractVector{Symbol}
     result_ref::Ref{Float64}
 end
 
-function StateFunction(def::Definition)
+function RefFunction(def::Definition)
     # Sort variables alphabetically for consistent function signatures
     vars_set = union(def.rhs_vars, def.lhs_vars)
     vars = sort(collect(vars_set))
@@ -14,10 +14,10 @@ function StateFunction(def::Definition)
 
     # Build the function
     func = Sym.build_function(def.eq.rhs, sym_vars...; expression=false)
-    return StateFunction(func, vars, Ref{Float64}(0.0))
+    return RefFunction(func, vars, Ref{Float64}(0.0))
 end
 
-function evaluate(sf::StateFunction, values::Dict{Symbol,<:Real})
+function evaluate(sf::RefFunction, values::Dict{Symbol,<:Real})
     args = map(sf.dependencies) do sym
         haskey(values, sym) || error("Missing value for dependency: $sym")
         Float64(values[sym])
@@ -25,11 +25,16 @@ function evaluate(sf::StateFunction, values::Dict{Symbol,<:Real})
     return sf.func(args...)
 end
 
-function update!(sf::StateFunction, values::Dict{Symbol,<:Real})
+function update_ref!(sf::RefFunction, values::Dict{Symbol,<:Real})
     sf.result_ref[] = evaluate(sf, values)
 end
 
-function build_func_or_float(sym::Symbol, val::Union{Float64,String}, defs::Definitions; keep::Set{Symbol}=Set{Symbol}())
+function build_func_or_float(
+    sym::Symbol,
+    val::Union{Float64,String},
+    defs::Definitions;
+    keep::Set{Symbol}=Set{Symbol}()
+)
     if isa(val, Number)
         return Float64(val)
     elseif !isa(val, String)
@@ -52,5 +57,5 @@ function build_func_or_float(sym::Symbol, val::Union{Float64,String}, defs::Defi
         error("Definition $(def.eq) has dependencies that are " *
               "not fixed variables.")
     end
-    return StateFunction(def)
+    return RefFunction(def)
 end
