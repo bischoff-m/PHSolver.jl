@@ -7,8 +7,35 @@ function collect_interactions!(
 )
     init_size_dependent_fields!(result)
 
-    function handler(config, id)
-        !isa(config, SystemConfig) && return
+    function handler(config::AbstractSystemConfig, id::String)
+        # Parse component parameters
+        if isa(config, Component)
+            prefix = join(split(id, ".")[1:end-1], ".")
+            siblings = filter(k -> startswith(k, prefix), result.ids)
+            siblings = map(k -> replace(k, r"^" * prefix * "." => ""), siblings)
+            println("$id has siblings: $siblings")
+
+            for sym in [:dissipation, :mass, :input, :x0]
+                val = getfield(config, sym)
+                id_sym = Symbol(build_id(id, string(sym)))
+                encoded = build_func_or_float(id_sym, val, defs; keep=keep)
+
+                container = getfield(result, sym)
+                if isa(encoded, RefFunction)
+                    push!(result.functions, encoded)
+                    push!(container, encoded.result_ref)
+                elseif isa(encoded, AbstractFloat)
+                    push!(container, encoded)
+                else
+                    error("Unexpected return type from build_func_or_float for " *
+                          "$id_sym: $(typeof(encoded))")
+                end
+            end
+
+            return
+        elseif !isa(config, SystemConfig)
+            error("Unknown config type: $(typeof(config)) for id: $id")
+        end
 
         # Parse connections
         for conn in config.connections
@@ -59,4 +86,5 @@ function collect_interactions!(
     end
 
     iter_config!(config, handler)
+    return nothing
 end

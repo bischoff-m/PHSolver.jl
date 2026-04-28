@@ -55,7 +55,8 @@ end
 function snapshot_callback(sim::PhsSimulation; flush_every::Int=1)
     isdir(sim.snapshot_path) || mkpath(sim.snapshot_path)
     csv_path = joinpath(sim.snapshot_path, "snapshots.csv")
-    isfile(csv_path) && error("Snapshot file already exists at $csv_path. Please remove it before running the simulation.")
+    isfile(csv_path) && rm(csv_path)
+    # isfile(csv_path) && error("Snapshot file already exists at $csv_path. Please remove it before running the simulation.")
 
     buffer = init_output(sim.state.system.ids)
     header_written = Ref(false)
@@ -80,7 +81,7 @@ function snapshot_callback(sim::PhsSimulation; flush_every::Int=1)
 end
 
 function solve_timespan(sim::PhsSimulation; verbose=false)
-    cb, finalize! = snapshot_callback(sim)
+    callback, finalize! = snapshot_callback(sim)
     try
         sol = Eq.solve(
             sim.problem,
@@ -88,7 +89,7 @@ function solve_timespan(sim::PhsSimulation; verbose=false)
             initializealg=Eq.BrownFullBasicInit(),
             progress=true,
             progress_name="Simulation",
-            callback=cb
+            callback=callback
         )
         println("Simulation complete: t_final=$(round(sol.t[end], digits=2))")
         return sol

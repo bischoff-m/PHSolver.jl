@@ -93,6 +93,7 @@ export get_index
 export has_index
 
 include("system/CollectComponents.jl")
+export build_id
 export collect_components!
 
 include("system/CollectInteractions.jl")

@@ -43,9 +43,6 @@ systems:
       - from: Vd
         to: Vq
         weight: 0.00785398163
-    ports:
-      # TODO: This is only for testing purposes, remove later
-      power_input: Id
 
       # PI Controller subsystem
   - id: controller_d
@@ -109,7 +106,7 @@ systems:
         weight: 274.8893
 
 connections:
-  - from: dgu.power_input
+  - from: dgu.Id
     to: controller_d.proportional
     weight: -1
   - from: dgu.Iq

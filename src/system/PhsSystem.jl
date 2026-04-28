@@ -2,32 +2,32 @@ import Term
 
 mutable struct PhsSystem
     # Initialized in first pass
-    dissipation::AbstractVector{FloatOrRef}
-    mass::AbstractVector{FloatOrRef}
-    input::AbstractVector{FloatOrRef}
-    x0::AbstractVector{FloatOrRef}
-    functions::AbstractVector{RefFunction}
     ids::AbstractVector{String}
     id_to_index::AbstractDict{String,Int}
     port_to_index::AbstractDict{String,Int}
     namespace::Namespace
     # Initialized in second pass
+    dissipation::AbstractVector{FloatOrRef}
+    mass::AbstractVector{FloatOrRef}
+    input::AbstractVector{FloatOrRef}
+    x0::AbstractVector{FloatOrRef}
     interaction::AbstractMatrix{Union{Float64,SignedRef}}
     signal::AbstractVector{FloatOrRef}
+    functions::AbstractVector{RefFunction}
 
     function PhsSystem()
         new(
-            FloatOrRef[],
-            FloatOrRef[],
-            FloatOrRef[],
-            FloatOrRef[],
-            RefFunction[],
             String[],
             Dict{String,Int}(),
             Dict{String,Int}(),
             Dict{String,Any}(),
+            FloatOrRef[],
+            FloatOrRef[],
+            FloatOrRef[],
+            FloatOrRef[],
             spzeros(Union{Float64,SignedRef}, 0, 0),
             spzeros(FloatOrRef, 0),
+            RefFunction[],
         )
     end
 end
@@ -52,7 +52,7 @@ end
 
 
 function pprint(result::PhsSystem)
-    Term.tprintln(Term.highlight("CollectResult", :type))
+    Term.tprintln(Term.highlight("PhsSystem", :type))
     Term.tprintln("State dimension:", length(result.ids))
     Term.tprintln("Number of functions:", length(result.functions))
     print_namespace(result.namespace)

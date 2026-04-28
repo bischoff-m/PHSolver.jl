@@ -34,7 +34,7 @@ signals:
   power_input: u_star(power) * (atan(30 * (t - 0.5)) / pi + 0.5)
 systems:
   - id: IL
-    dissipation: R_L
+    dissipation: R_L + V1.x
     mass: L
     x0: 0
   - id: V1

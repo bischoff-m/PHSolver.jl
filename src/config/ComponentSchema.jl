@@ -1,6 +1,8 @@
 import StructTypes
 
 
+abstract type AbstractSystemConfig end
+
 # Use Float64 rather than abstract Number; JSON3 cannot deserialize into an
 # abstract `Number` because it lacks field info. Float64 covers all numeric
 # literals we expect from YAML.
@@ -18,7 +20,7 @@ Defines a component (state variable) within a system.
 - `input::String`: Input coefficient (defaults to "1.0")
 - `x0::String`: Initial state value (defaults to "0.0")
 """
-struct Component
+struct Component <: AbstractSystemConfig
     id::String
     x0::SymbolType
     dissipation::SymbolType

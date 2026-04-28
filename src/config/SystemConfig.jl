@@ -1,5 +1,6 @@
 import StructTypes
 
+
 """
     System
 
@@ -17,7 +18,7 @@ optional ports.
 - `definitions::Union{Nothing,String}`: Optional string for user-defined
   functions or definitions that can be referenced in the configuration.
 """
-struct SystemConfig
+struct SystemConfig <: AbstractSystemConfig
     id::String
     connections::AbstractVector{Connection}
     ports::Dict{String,String}

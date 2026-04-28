@@ -4,7 +4,7 @@ function make_system(config::SystemConfig; keep::Set{Symbol}=Set(), verbose=fals
 
     result = PhsSystem()
     # Parse components, ids and ports
-    collect_components!(result, config, defs; keep=keep)
+    collect_components!(result, config)
     # Parse connections and signals
     collect_interactions!(result, config, defs; keep=keep)
 

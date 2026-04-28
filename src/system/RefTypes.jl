@@ -41,7 +41,7 @@ function eval_refs!(
     out::AbstractVecOrMat{Float64},
     v::AbstractVecOrMat{<:FloatOrRef}
 )
-    @assert size(out) == size(v)
+    size(out) != size(v) && error("Size mismatch: size(out) = $(size(out)), size(v) = $(size(v))")
     @inbounds @simd for i in eachindex(v, out)
         out[i] = tofloat(v[i])
     end
@@ -52,7 +52,7 @@ function eval_refs!(
     out::AbstractVector{Float64},
     v::SparseVector{<:FloatOrRef}
 )
-    @assert size(out) == size(v)
+    size(out) != size(v) && error("Size mismatch: size(out) = $(size(out)), size(v) = $(size(v))")
     I, V = findnz(v)
     @inbounds @simd for k in eachindex(V)
         out[I[k]] = tofloat(V[k])
@@ -64,7 +64,7 @@ function eval_refs!(
     out::AbstractMatrix{Float64},
     v::SparseMatrixCSC{<:FloatOrRef}
 )
-    @assert size(out) == size(v)
+    size(out) != size(v) && error("Size mismatch: size(out) = $(size(out)), size(v) = $(size(v))")
     I, J, V = findnz(v)
     @inbounds @simd for k in eachindex(V)
         out[I[k], J[k]] = tofloat(V[k])

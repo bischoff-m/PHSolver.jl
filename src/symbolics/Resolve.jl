@@ -129,4 +129,5 @@ function resolve_graph!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=fals
         reconcile_dependency_edges!(graph, sym, old_deps, resolved_def.rhs_vars)
         graph.definitions[sym] = resolved_def
     end
+    return nothing
 end

@@ -41,20 +41,22 @@ systems:
         dissipation: R_L
         mass: L
         x0: scale(P)
-      - id: V1
-        dissipation: 0
-        mass: C_1
-        x0: (-R_R - R_L) * scale(P)
+      - id: second
+        systems:
+          - id: V1
+            dissipation: 0
+            mass: C_1
+            x0: (-R_R - R_L) * scale(P)
+          - id: V2
+            dissipation: 0
+            mass: C_2
+            x0: -R_R * scale(P)
     connections:
-      - from: V1
+      - from: second.V1
         to: IL
         weight: u(t)
     signals:
-      V1: R_R * scale(P)
-  - id: V2
-    dissipation: 0
-    mass: C_2
-    x0: -R_R * scale(P)
+      second.V1: R_R * scale(P)
   - id: IG
     dissipation: R_G
     mass: 0
@@ -66,11 +68,11 @@ systems:
     x0: 0
 connections:
   - from: first.IL
-    to: V2
+    to: first.second.V2
   - from: IG
-    to: first.V1
+    to: first.second.V1
   - from: IR
-    to: V2
+    to: first.second.V2
 ports:
   power_input: IG
   test: first.IL

@@ -81,13 +81,11 @@ end
 function Definition(expr::String)
     # Results in type Expr, which is a Julia expression tree
     parsed = Meta.parse(expr)
-    isnothing(parsed) && error("Failed to parse line: $expr")
     return Definition(parsed)
 end
 
 function Definition(sym::Symbol, expr::String)
     parsed = Meta.parse(expr)
-    isnothing(parsed) && error("Failed to parse term: $expr")
     return Definition(sym, parsed)
 end
 

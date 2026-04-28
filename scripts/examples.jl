@@ -21,8 +21,9 @@ function run_example(example::String)
     # Term.tprintln()
 end
 
-# run_example("testing")
+run_example("testing")
 # run_example("dc_power_network")
-run_example("dc_power_network_controlled")
+# run_example("dc_power_network_controlled")
+# run_example("dc_power_network_nonlinear_resistance")
 # run_example("DGU")
 nothing

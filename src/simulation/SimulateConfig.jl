@@ -22,7 +22,7 @@ function init_simulation(config::SystemConfig; verbose=false)
     sim_config = SimConfig([0.0, 3.0])
     sim = PhsSimulation(config, sim_config; verbose=verbose)
     sol = solve_timespan(sim; verbose=false)
-    # plot_result(sol, sim.state.system, sim.state.sim_config; title="Simulation Result")
+    plot_result(sol, sim.state.system, sim.state.sim_config; title="Simulation Result")
 
 
     # Load network
