@@ -23,7 +23,7 @@ struct SystemConfig <: AbstractSystemConfig
     connections::AbstractVector{Connection}
     ports::Dict{String,String}
     systems::AbstractVector{Union{SystemConfig,Component}}
-    definitions::String
+    definitions::AbstractVector{String}
     signals::Dict{String,String}
 
     function SystemConfig(
@@ -31,14 +31,14 @@ struct SystemConfig <: AbstractSystemConfig
         connections::Union{Nothing,AbstractVector{Connection}}=nothing,
         ports::Union{Nothing,Dict{String,String}}=nothing,
         systems::Union{Nothing,AbstractVector{Union{SystemConfig,Component}}}=nothing,
-        definitions::Union{Nothing,String}=nothing,
+        definitions::Union{Nothing,AbstractVector{String}}=nothing,
         signals::Union{Nothing,Dict{String,String}}=nothing
     )
         systems = something(systems, Union{SystemConfig,Component}[])
         connections = something(connections, Connection[])
         ports = something(ports, Dict{String,String}())
         signals = something(signals, Dict{String,String}())
-        definitions = something(definitions, "")
+        definitions = something(definitions, String[])
         new(id, connections, ports, systems, definitions, signals)
     end
 end
@@ -59,7 +59,7 @@ struct SystemConfigSchema
     connections::AbstractVector{Connection}
     ports::Dict{String,String}
     systems::Nothing
-    definitions::String
+    definitions::AbstractVector{String}
     signals::Union{Nothing,Dict{String,String}}
 
     function SystemConfigSchema(
@@ -67,13 +67,13 @@ struct SystemConfigSchema
         connections::AbstractVector{Connection},
         ports::Union{Nothing,Dict{String,String}},
         systems::Nothing,
-        definitions::Union{Nothing,String},
+        definitions::Union{Nothing,AbstractVector{String}},
         signals::Union{Nothing,Dict{String,String}}
     )
         connections = something(connections, Connection[])
         ports = something(ports, Dict{String,String}())
         signals = something(signals, Dict{String,String}())
-        definitions = something(definitions, "")
+        definitions = something(definitions, String[])
         new(id, connections, ports, systems, definitions, signals)
     end
 end

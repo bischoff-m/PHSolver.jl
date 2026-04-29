@@ -20,15 +20,15 @@ id: dc_network
 # Combined system representing the full DC power network
 # In this example, we define it as a single system
 # (Could be split into multiple interconnected subsystems)
-definitions: |
-  power = 10
-  L = 2
-  C_1 = 0.01
-  C_2 = 0.02
-  R_L = 0.1
-  R_G = 6
-  R_R = 3
-  scale(P) = sqrt(P / R_R)
+definitions:
+  - power = 10
+  - L = 2
+  - C_1 = 0.01
+  - C_2 = 0.02
+  - R_L = 0.1
+  - R_G = 6
+  - R_R = 3
+  - scale(P) = sqrt(P / R_R)
 systems:
   - id: IL
     dissipation: R_L

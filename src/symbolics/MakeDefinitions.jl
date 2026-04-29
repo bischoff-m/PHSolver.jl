@@ -1,6 +1,7 @@
-function process_definitions(expr::String; keep::Set{Symbol}=Set{Symbol}(), verbose=false)
+function process_definitions(expr::AbstractVector{String}; keep::Set{Symbol}=Set{Symbol}(), verbose=false)
+    isempty(expr) && return Definitions()
     # Parse definitions and resolve dependencies
-    defs = definition_from_expr(expr)
+    defs = exprs_to_definitions(expr...)
     graph = DefinitionGraph()
     add_defs!(graph, defs)
     resolve_graph!(graph; keep=keep, verbose=verbose)

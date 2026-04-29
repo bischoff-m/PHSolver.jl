@@ -100,11 +100,11 @@ parameters.
 # Examples
 
 ```jldoctest
-julia> definition_from_expr(["f(x)=a*x"])
+julia> exprs_to_definitions(["f(x)=a*x"])
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function definition_from_expr(exprs::String...)
+function exprs_to_definitions(exprs::String...)
     definitions = Dict{Symbol,Union{Definition,Nothing}}()
 
     # Parse each expression into a Definition
@@ -148,11 +148,11 @@ and ignored, as are empty lines and multiline comments.
 
 ```jldoctest
 julia> text = "a = 10\n# This is a comment\nf(x) = a*x"
-julia> definition_from_expr(text)
+julia> exprs_to_definitions(text)
 Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
-function definition_from_expr(text::String)
+function exprs_to_definitions(text::String)
     # Remove multiline comments
     cleaned = replace(text, r"\"\"\".*\"\"\""s => "")
     lines = split(cleaned, '\n')
@@ -162,5 +162,16 @@ function definition_from_expr(text::String)
     lines = filter(line -> !isempty(line), lines)
     lines = String.(lines)
 
-    return definition_from_expr(lines...)
+    return exprs_to_definitions(lines...)
+end
+
+
+function prepend_namespace(def::Definition, namespace::String)
+    # Add prefix to symbol and free variables of RHS
+    new_symbol = build_id_sym(namespace, def.symbol)
+    mapping = Dict(var => build_id_sym(namespace, var) for var in def.rhs_vars)
+    mapping[def.symbol] = new_symbol
+
+    new_eq = Sym.substitute(def.eq, Dict(Sym.variable(k) => Sym.variable(v) for (k, v) in mapping))
+    return Definition(new_symbol, def.lhs_vars, Set(values(mapping)), new_eq)
 end

@@ -20,21 +20,21 @@ id: dc_network
 # Combined system representing the full DC power network
 # In this example, we define it as a single system
 # (Could be split into multiple interconnected subsystems)
-definitions: |
-  power = 10
-  L = 2
-  C_1 = 0.01
-  C_2 = 0.02
-  R_L = 0.1
-  R_G = 6
-  R_R = 3
-  scale(P) = sqrt(P / R_R)
-  u_star(P) = scale(P) * (R_R + R_L + R_G)
+definitions:
+  - power = 10
+  - L = 2
+  - C_1 = 0.01
+  - C_2 = 0.02
+  - R_L = 0.1
+  - R_G = 6
+  - R_R = 3
+  - scale(P) = sqrt(P / R_R)
+  - u_star(P) = scale(P) * (R_R + R_L + R_G)
 signals:
   power_input: u_star(power) * (atan(30 * (t - 0.5)) / pi + 0.5)
 systems:
   - id: IL
-    dissipation: R_L + V1.x
+    dissipation: R_L
     mass: L
     x0: 0
   - id: V1

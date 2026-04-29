@@ -7,17 +7,19 @@ function collect_interactions!(
 )
     init_size_dependent_fields!(result)
 
-    function handler(config::AbstractSystemConfig, id::String)
+    function handler(config::AbstractSystemConfig, names::Vector{String})
+        id = build_id(names...)
         # Parse component parameters
         if isa(config, Component)
-            prefix = join(split(id, ".")[1:end-1], ".")
+            # Get sibling component IDs (same prefix)
+            prefix = build_id(names[1:end-1]...)
             siblings = filter(k -> startswith(k, prefix), result.ids)
             siblings = map(k -> replace(k, r"^" * prefix * "." => ""), siblings)
-            println("$id has siblings: $siblings")
+            # println("$id has siblings: $siblings")
 
             for sym in [:dissipation, :mass, :input, :x0]
                 val = getfield(config, sym)
-                id_sym = Symbol(build_id(id, string(sym)))
+                id_sym = build_id_sym(id, sym)
                 encoded = build_func_or_float(id_sym, val, defs; keep=keep)
 
                 container = getfield(result, sym)

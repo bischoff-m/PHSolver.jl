@@ -20,17 +20,17 @@ id: dc_network
 # Combined system representing the full DC power network
 # In this example, we define it as a single system
 # (Could be split into multiple interconnected subsystems)
-definitions: |
-  P = 10
-  L = 2
-  C_1 = 0.01
-  C_2 = 0.02
-  R_L = 0.1
-  R_G = 6
-  R_R = 3
-  scale(P) = sqrt(P / R_R)
-  u_star(P) = scale(P) * (R_R + R_L + R_G)
-  u(t) = u_star(P) * (atan(30 * (t - 0.5)) / pi + 0.5)
+definitions:
+  - P = 10
+  - L = 2
+  - C_1 = 0.01
+  - C_2 = 0.02
+  - R_L = 0.1
+  - haa.aha.R_G = 6
+  - R_R = 3
+  - scale(P) = sqrt(P / R_R)
+  - u_star(P) = scale(P) * (R_R + R_L + haa.aha.R_G)
+  - u(t) = u_star(P) * (atan(30 * (t - 0.5)) / pi + 0.5)
 signals:
   power_input: u(t)
   test: P + 4
@@ -51,6 +51,11 @@ systems:
             dissipation: 0
             mass: C_2
             x0: -R_R * scale(P)
+        definitions:
+          - O_1 = V1 - V2
+          - O_2 = V2
+          - m(P) = 1 / (C_1 * C_2 * P)
+          - la.la = 2 * O_1
     connections:
       - from: second.V1
         to: IL
@@ -58,7 +63,7 @@ systems:
     signals:
       second.V1: R_R * scale(P)
   - id: IG
-    dissipation: R_G
+    dissipation: haa.aha.R_G
     mass: 0
     x0: 0
     input: 3

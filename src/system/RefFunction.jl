@@ -55,8 +55,8 @@ function build_func_or_float(
     free_vars = union(def.rhs_vars, def.lhs_vars)
     unresolved = setdiff(free_vars, keep)
     if !isempty(unresolved)
-        error("Definition $(def.eq) has dependencies that are " *
-              "not fixed variables: $unresolved.")
+        error("Definition $(def.eq) has dependencies that are unresolved " *
+              "and not given as free variables: $unresolved.")
     end
     return RefFunction(def)
 end

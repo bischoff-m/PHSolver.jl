@@ -1,6 +1,28 @@
 {
     "$ref": "#/$defs/Main.PHSolver.SystemConfigSchema",
     "$defs": {
+        "Main.PHSolver.Connection": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                }
+            },
+            "required": [
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        },
         "Main.PHSolver.SystemConfigSchema": {
             "type": "object",
             "properties": {
@@ -33,7 +55,10 @@
                     "type": "array"
                 },
                 "definitions": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "signals": {
                     "type": "object",
@@ -44,28 +69,6 @@
             },
             "required": [
                 "id"
-            ],
-            "additionalProperties": false
-        },
-        "Main.PHSolver.Connection": {
-            "type": "object",
-            "properties": {
-                "from": {
-                    "type": "string"
-                },
-                "to": {
-                    "type": "string"
-                },
-                "weight": {
-                    "type": [
-                        "number",
-                        "string"
-                    ]
-                }
-            },
-            "required": [
-                "from",
-                "to"
             ],
             "additionalProperties": false
         },

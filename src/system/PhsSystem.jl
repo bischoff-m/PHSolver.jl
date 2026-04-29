@@ -6,6 +6,7 @@ mutable struct PhsSystem
     id_to_index::AbstractDict{String,Int}
     port_to_index::AbstractDict{String,Int}
     namespace::Namespace
+    definitions::Definitions
     # Initialized in second pass
     dissipation::AbstractVector{FloatOrRef}
     mass::AbstractVector{FloatOrRef}
@@ -21,6 +22,7 @@ mutable struct PhsSystem
             Dict{String,Int}(),
             Dict{String,Int}(),
             Dict{String,Any}(),
+            Definitions(),
             FloatOrRef[],
             FloatOrRef[],
             FloatOrRef[],

@@ -1,8 +1,7 @@
 import OrdinaryDiffEq as Eq
 import DiffEqCallbacks as EqCB
 import CSV
-import DataFrames
-import OrderedCollections
+import DataFrames as DF
 
 
 
@@ -13,10 +12,10 @@ function init_output(ids::AbstractVector{String})
     append!(cols, Symbol.(ids .* ".u"))
     append!(cols, Symbol.(ids .* ".y"))
 
-    return DataFrames.DataFrame([Float64[] for _ in cols], cols)
+    return DF.DataFrame([Float64[] for _ in cols], cols)
 end
 
-function append_output!(df::DataFrames.DataFrame, state::PhsState, integrator)
+function append_output!(df::DF.DataFrame, state::PhsState, integrator)
     y = dynamics_output(state, integrator.u)
     H = hamiltonian(state, integrator.u)
     row = Float64[
@@ -33,11 +32,11 @@ function append_output!(df::DataFrames.DataFrame, state::PhsState, integrator)
 end
 
 function flush_output!(
-    df::DataFrames.DataFrame,
+    df::DF.DataFrame,
     csv_path::String,
     header_written::Ref{Bool}
 )
-    if DataFrames.nrow(df) == 0
+    if DF.nrow(df) == 0
         return nothing
     end
 
@@ -63,7 +62,7 @@ function snapshot_callback(sim::PhsSimulation; flush_every::Int=1)
 
     function emit_snapshot(integrator)
         append_output!(buffer, sim.state, integrator)
-        if DataFrames.nrow(buffer) >= flush_every
+        if DF.nrow(buffer) >= flush_every
             flush_output!(buffer, csv_path, header_written)
         end
         return nothing

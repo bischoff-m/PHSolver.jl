@@ -37,10 +37,11 @@ export make_system_schema
 ################################################################################
 include("symbolics/ParseExpr.jl")
 export parse_expr
+export preprocess_expr
 
 include("symbolics/Definition.jl")
 export Definition
-export definition_from_expr
+export exprs_to_definitions
 
 include("symbolics/DefinitionGraph.jl")
 export DefinitionGraph

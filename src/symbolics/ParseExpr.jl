@@ -1,37 +1,42 @@
 import Symbolics as Sym
 
-"""
-    remove_blocks(expr)
 
-Strip `begin ... end`/`:block` wrappers and line-number metadata that
-`Meta.parse` may insert, returning an expression suitable for
-`Symbolics.parse_expr_to_symbolic`.
+function preprocess_expr(ex)
+    return ex
+end
 
-# Examples
+function preprocess_expr(ex::Expr)
+    args = ex.args
 
-```jldoctest
-julia> remove_blocks(Meta.parse("begin a = 1 end"))
-:(a = 1)
-```
-"""
-function remove_blocks(expr)
-    # Work on a copy so the original parsed expression remains unchanged.
-    unwrapped = Base.remove_linenums!(deepcopy(expr))
-
-    # Unwrap `begin ... end` / `:block` wrappers until we reach the actual RHS.
-    while unwrapped isa Expr && unwrapped.head == :block
-        # Ignore any remaining line-number nodes in the block body.
-        block_args = [arg for arg in unwrapped.args if !(arg isa LineNumberNode)]
-        # A RHS for this use-case must be a single expression.
-        if length(block_args) != 1
-            error("Expected a single expression in block, got $(length(block_args)) expressions")
+    # Remove line number expressions (see Base.remove_linenums!)
+    if ex.head === :block || ex.head === :quote
+        args = filter(args) do x
+            isa(x, Expr) && x.head === :line && return false
+            isa(x, LineNumberNode) && return false
+            return true
         end
-        # Replace the block with its only contained expression and continue.
-        unwrapped = block_args[1]
     end
 
-    # Return a Symbolics-compatible expression (or literal value).
-    unwrapped
+    # Unwrap blocks
+    if ex.head === :block
+        if length(args) != 1
+            error("Expected a single expression in block, got " *
+                  "$(length(args)) expressions:\n" *
+                  string(dump(Expr(:block, args...))))
+        end
+        return preprocess_expr(args[1])
+    end
+
+    # Parse identifiers (e.g. `my_id.V1.x`)
+    if ex.head === :.
+        return Symbol(ex)
+    end
+
+    # Recursively format children
+    args = map(preprocess_expr, args)
+    new_expr = Expr(ex.head, args...)
+
+    return new_expr
 end
 
 """
@@ -56,9 +61,10 @@ Set([:x, :y])
 function parse_expr(expr)
     # Remove `begin ... end`/`:block` wrappers and line-number metadata that
     # `Meta.parse` may insert
-    expr = remove_blocks(expr)
+    expr = preprocess_expr(expr)
 
     # Normalization and constants (e.g. π)
+    # Returns Sym.Num or Sym.BasicSymbolic
     parsed = Sym.parse_expr_to_symbolic(expr, Base)
 
     # Get all variables appearing in the expression

@@ -11,14 +11,7 @@ function run_example(example::String)
     config_file = joinpath(examples_dir, "configs", "$(example).yaml")
     Term.tprintln("Running example:", Term.highlight(example, :emphasis))
 
-    sim = PHSolver.init_simulation(config_file; verbose=false)
-
-    # plt = PHSolver.plot_result(result, title=result.network.name)
-
-    # image_path = joinpath(output_dir, "$(example).png")
-    # savefig(plt, image_path)
-    # Term.tprintln("Saved plot to {cyan}$(image_path){/cyan}")
-    # Term.tprintln()
+    PHSolver.init_simulation(config_file; verbose=false)
 end
 
 run_example("testing")
