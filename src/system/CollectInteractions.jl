@@ -1,18 +1,18 @@
 
 function collect_interactions!(
     result::PhsSystem,
-    config::SystemConfig,
-    defs::Definitions;
+    config::SystemConfig;
     keep=Set{Symbol}()
 )
     init_size_dependent_fields!(result)
+    defs = result.definitions
 
-    function handler(config::AbstractSystemConfig, names::Vector{String})
+    function on_exit(config::AbstractSystemConfig, names::Vector{String})
         id = build_id(names...)
         # Parse component parameters
         if isa(config, Component)
             # Get sibling component IDs (same prefix)
-            prefix = build_id(names[1:end-1]...)
+            prefix = build_id(names[1:(end-1)]...)
             siblings = filter(k -> startswith(k, prefix), result.ids)
             siblings = map(k -> replace(k, r"^" * prefix * "." => ""), siblings)
             # println("$id has siblings: $siblings")
@@ -20,7 +20,7 @@ function collect_interactions!(
             for sym in [:dissipation, :mass, :input, :x0]
                 val = getfield(config, sym)
                 id_sym = build_id_sym(id, sym)
-                encoded = build_func_or_float(id_sym, val, defs; keep=keep)
+                encoded = build_func_or_float(id_sym, val, defs; scope=names, keep=keep)
 
                 container = getfield(result, sym)
                 if isa(encoded, RefFunction)
@@ -55,7 +55,7 @@ function collect_interactions!(
                 error("Duplicate connection from $from to $to")
             end
 
-            encoded = build_func_or_float(:weight, conn.weight, defs; keep=keep)
+            encoded = build_func_or_float(:weight, conn.weight, defs; scope=names, keep=keep)
             if isa(encoded, RefFunction)
                 push!(result.functions, encoded)
                 result.interaction[from, to] = SignedRef(encoded.result_ref, 1.0)
@@ -73,7 +73,7 @@ function collect_interactions!(
         for (signal_name, target) in config.signals
             signal_id = build_id(id, signal_name)
             target_idx = get_index(result, signal_id)
-            encoded = build_func_or_float(:signal, target, defs; keep=keep)
+            encoded = build_func_or_float(:signal, target, defs; scope=names, keep=keep)
 
             if isa(encoded, RefFunction)
                 push!(result.functions, encoded)
@@ -87,6 +87,6 @@ function collect_interactions!(
         end
     end
 
-    iter_config!(config, handler)
+    iter_config!(config; on_exit=on_exit)
     return nothing
 end

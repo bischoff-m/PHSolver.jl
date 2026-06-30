@@ -65,6 +65,12 @@ struct DefinitionGraph
     end
 end
 
+function Base.show(io::IO, defs::Definitions)
+    graph = DefinitionGraph()
+    add_defs!(graph, defs)
+    show(io, graph)
+end
+
 """
     traverse_order(graph::DefinitionGraph) -> Vector{Symbol}
 

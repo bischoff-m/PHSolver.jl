@@ -1,6 +1,5 @@
 include("../src/PHSolver.jl")
 
-using Plots
 import Term
 
 examples_dir = normpath(@__DIR__, "../examples")
@@ -15,8 +14,9 @@ function run_example(example::String)
 end
 
 run_example("testing")
-# run_example("dc_power_network")
-# run_example("dc_power_network_controlled")
-# run_example("dc_power_network_nonlinear_resistance")
-# run_example("DGU")
+run_example("dc_power_network")
+run_example("dc_power_network_controlled")
+run_example("dc_power_network_nonlinear_resistance")
+run_example("DGU")
+run_example("namespace_test")
 nothing

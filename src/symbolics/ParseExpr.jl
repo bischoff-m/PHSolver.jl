@@ -59,8 +59,7 @@ Set([:x, :y])
 ```
 """
 function parse_expr(expr)
-    # Remove `begin ... end`/`:block` wrappers and line-number metadata that
-    # `Meta.parse` may insert
+    # Preprocess abstract syntax tree
     expr = preprocess_expr(expr)
 
     # Normalization and constants (e.g. π)

@@ -15,7 +15,7 @@ function PhsSimulation(
     verbose=false
 )
     fixed_vars = Dict(:t => 0.0)
-    result = make_system(system_config; keep=Set(keys(fixed_vars)), verbose=verbose)
+    result = collect_system(system_config; keep=Set(keys(fixed_vars)), verbose=verbose)
 
     state = PhsState(result, sim_config, fixed_vars)
     problem = init_problem(state)

@@ -1,11 +1,14 @@
 import Symbolics as Sym
 import SymbolicUtils as SymUtils
 
-# Resolve dependencies in the RHS by substituting definitions for each
-# symbol
+# Resolve dependencies in the RHS by substituting definitions for each symbol.
+# scope: path of the definition being resolved; used for scope-chain lookup so
+# bare or relative names (e.g. "R", "source.voltage") resolve to the most-
+# specific fully-qualified key in context.
 function rewrite(
     expr,
     context::Definitions,
+    scope::Vector{String},
     keep::Set{Symbol}=Set{Symbol}(),
     verbose::Bool=false
 )
@@ -13,11 +16,18 @@ function rewrite(
     # Input is of the form, e.g. f, g(2t), h(2x, a)
     sym = Sym.tosymbol(Sym.iscall(expr) ? Sym.operation(expr) : expr)
 
+    # Only process named symbols (skip operators like +, /, etc.)
+    sym isa Symbol || return expr
+
     # Only rewrite symbols relevant to the current definition.
     sym in keep && return expr
 
-    haskey(context, sym) || return expr
-    u_def = context[sym]
+    # Scope-chain lookup: try most-specific prefix first, then exact match.
+    # build_scoped_ids("R", ["a","b"]) → ["a.b.R", "a.R", "R"]
+    candidates = Symbol.(build_scoped_ids(sym, scope))
+    found = findfirst(c -> haskey(context, c), candidates)
+    isnothing(found) && return expr
+    u_def = context[candidates[found]]
 
     # Skip free parameters
     isnothing(u_def) && return expr
@@ -45,6 +55,7 @@ end
 function resolve_definition(
     def::Definition,
     given::Definitions;
+    scope::Union{Nothing,Vector{String}}=nothing,
     keep=Set{Symbol}(),
     verbose=false
 )
@@ -54,11 +65,15 @@ function resolve_definition(
     # Return constants
     isempty(def.rhs_vars) && return def
 
+    # Derive scope from the fully-qualified symbol name, or use provided scope.
+    # e.g. Symbol("dc.load.f") → scope ["dc", "load"]
+    effective_scope = isnothing(scope) ?
+                      String.(split(String(sym), "."))[1:(end-1)] :
+                      scope
+
     # Walk the expression tree and resolve dependencies in the RHS by
     # substituting definitions for each symbol
-    function rewrite_wrapper(u)
-        rewrite(u, given, keep, verbose)
-    end
+    rewrite_wrapper(u) = rewrite(u, given, effective_scope, keep, verbose)
     rewriter = SymUtils.Postwalk(rewrite_wrapper)
     rhs = rewriter(def.eq.rhs)
 
@@ -130,4 +145,11 @@ function resolve_graph!(graph::DefinitionGraph; keep=Set{Symbol}(), verbose=fals
         graph.definitions[sym] = resolved_def
     end
     return nothing
+end
+
+function resolve_definitions(defs::Definitions; keep::Set{Symbol}=Set{Symbol}(), verbose=false)
+    graph = DefinitionGraph()
+    add_defs!(graph, defs)
+    resolve_graph!(graph; keep=keep, verbose=verbose)
+    return graph.definitions
 end

@@ -33,6 +33,7 @@ function build_func_or_float(
     sym::Symbol,
     val::Union{Float64,String},
     defs::Definitions;
+    scope::Vector{String}=String[],
     keep::Set{Symbol}=Set{Symbol}()
 )
     if isa(val, Number)
@@ -44,7 +45,7 @@ function build_func_or_float(
 
     # Parse string to symbolic expression
     def = Definition(sym, val)
-    def = resolve_definition(def, defs; keep=keep)
+    def = resolve_definition(def, defs; scope=scope, keep=keep)
 
     # Check if rhs is fully resolved to a constant
     if isempty(def.rhs_vars)

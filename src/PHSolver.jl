@@ -53,9 +53,7 @@ export add_defs!
 
 include("symbolics/Resolve.jl")
 export resolve_graph!
-
-include("symbolics/MakeDefinitions.jl")
-export process_definitions
+export resolve_definitions
 
 
 ################################################################################
@@ -100,8 +98,8 @@ export collect_components!
 include("system/CollectInteractions.jl")
 export collect_interactions!
 
-include("system/MakeSystem.jl")
-export make_system
+include("system/CollectSystem.jl")
+export collect_system
 
 
 ################################################################################

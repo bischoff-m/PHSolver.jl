@@ -26,10 +26,10 @@ definitions:
   - C_1 = 0.01
   - C_2 = 0.02
   - R_L = 0.1
-  - haa.aha.R_G = 6
+  - R_G = 6
   - R_R = 3
   - scale(P) = sqrt(P / R_R)
-  - u_star(P) = scale(P) * (R_R + R_L + haa.aha.R_G)
+  - u_star(P) = scale(P) * (R_R + R_L + R_G)
   - u(t) = u_star(P) * (atan(30 * (t - 0.5)) / pi + 0.5)
 signals:
   power_input: u(t)
@@ -55,7 +55,7 @@ systems:
           - O_1 = V1 - V2
           - O_2 = V2
           - m(P) = 1 / (C_1 * C_2 * P)
-          - la.la = 2 * O_1
+          - la_la = 2 * O_1 * P
     connections:
       - from: second.V1
         to: IL
@@ -63,7 +63,7 @@ systems:
     signals:
       second.V1: R_R * scale(P)
   - id: IG
-    dissipation: haa.aha.R_G
+    dissipation: R_G
     mass: 0
     x0: 0
     input: 3

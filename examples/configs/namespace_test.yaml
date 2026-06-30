@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schemas/system.schema.json
+#
+# Namespace resolution test
+# Exercises scope-chain lookup with nested branches so the namespace pass
+# visibly rewrites relative RHS names to fully-qualified names.
+#
+# Edge cases covered:
+#   1. Bare root name in a nested definition            (gain = R)
+#   2. Relative reference to a sibling branch           (scale = source.gain * R)
+#   3. Multi-level relative reference from deeper nesting (deep = source.gain * R)
+#   4. Qualified name from same branch in component param (dissipation: source.gain)
+#   5. Bare root name in component param                (mass: L)
+#   6. Bare root time-function in signal                (u(t))
+
+id: ns_test
+definitions:
+  - R = 2.0 # root constant (case 1, 2, 3, 5, 6)
+  - L = 1.0 # root constant (case 5)
+  - u(t) = sin(t) # root time function (case 6)
+
+systems:
+  - id: branch
+    systems:
+      - id: source
+        definitions:
+          - gain = R # case 1: bare root name
+
+      - id: load
+        definitions:
+          - scale = source.gain * R # case 2: relative sibling reference
+          - mix = source.gain + R # extra internal reference to the same branch
+
+        systems:
+          - id: inner
+            definitions:
+              # case 3: deep relative reference (should resolve to branch.source.gain)
+              - deep = source.gain * R
+
+      - id: IL
+        dissipation: source.gain # case 4: relative sibling ref in component param
+        mass: L # case 5: bare root ref in component param
+        x0: 0
+
+      - id: V1
+        dissipation: 0
+        mass: load.scale # own-branch qualified ref
+        x0: 0
+
+    connections:
+      - from: IL
+        to: V1
+
+    signals:
+      IL: u(t) # case 6: bare root time-function in signal

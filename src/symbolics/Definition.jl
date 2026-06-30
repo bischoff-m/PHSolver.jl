@@ -75,6 +75,11 @@ function Definition(expr::Expr)
         error("Expected an assignment expression of the form " *
               "`f(x) = ...` or `f = ...`. Got expression: $expr")
     end
+    lhs = expr.args[1]
+    if lhs isa Expr && lhs.head === :.
+        error("Dotted names on the LHS are not supported: $(Symbol(lhs)). " *
+              "Use a subsystem with `systems:` to group definitions instead.")
+    end
     return Definition(expr.args[1], expr.args[2])
 end
 
@@ -105,6 +110,10 @@ Dict(:a=>nothing, :f=>Definition(:f, Set([:x]), Set([:a]), Equation(f(x), a*x)))
 ```
 """
 function exprs_to_definitions(exprs::String...)
+    return exprs_to_definitions(collect(String, exprs))
+end
+
+function exprs_to_definitions(exprs::AbstractVector{<:AbstractString})
     definitions = Dict{Symbol,Union{Definition,Nothing}}()
 
     # Parse each expression into a Definition
@@ -160,9 +169,8 @@ function exprs_to_definitions(text::String)
     # Remove single-line comments
     lines = filter(line -> !startswith(line, "#"), lines)
     lines = filter(line -> !isempty(line), lines)
-    lines = String.(lines)
-
-    return exprs_to_definitions(lines...)
+    # Delegate to the Vector overload (avoids re-dispatching to this method)
+    return exprs_to_definitions(String.(lines))
 end
 
 
@@ -170,8 +178,10 @@ function prepend_namespace(def::Definition, namespace::String)
     # Add prefix to symbol and free variables of RHS
     new_symbol = build_id_sym(namespace, def.symbol)
     mapping = Dict(var => build_id_sym(namespace, var) for var in def.rhs_vars)
+    new_rhs_vars = Set(values(mapping))
+
     mapping[def.symbol] = new_symbol
 
     new_eq = Sym.substitute(def.eq, Dict(Sym.variable(k) => Sym.variable(v) for (k, v) in mapping))
-    return Definition(new_symbol, def.lhs_vars, Set(values(mapping)), new_eq)
+    return Definition(new_symbol, def.lhs_vars, new_rhs_vars, new_eq)
 end
