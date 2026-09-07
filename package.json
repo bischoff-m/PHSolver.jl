@@ -1,0 +1,18 @@
+{
+  "name": "phsolver.jl",
+  "version": "1.0.0",
+  "description": "Port-Hamiltonian Solver in Julia",
+  "homepage": "https://github.com/bischoff-m/PHSolver.jl#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bischoff-m/PHSolver.jl.git"
+  },
+  "license": "ISC",
+  "author": "Marco Bischoff <bischoff_m@aim.com>",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.17.0"
+  }
+}
