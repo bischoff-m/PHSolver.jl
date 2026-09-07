@@ -1,25 +1,5 @@
 import OrdinaryDiffEq as Eq
 
-"""
-    nonlinear_resistance!(x::AbstractVector, R::AbstractMatrix)
-
-Example nonlinear resistance update used inside the DAE residual.
-
-This function mutates `R` based on the current state `x` to demonstrate
-state-dependent dissipation. It is a placeholder and can be replaced with a
-model-specific law.
-"""
-function nonlinear_resistance!(x::AbstractVector{T}, R::AbstractMatrix{T}) where {T<:Real}
-    # Example nonlinear resistance function
-    current = abs(x[5])
-    # println(current)
-    return if current > 1.0 || current < 0.001
-        R[5, 5] = T(3.0)
-    else
-        R[5, 5] = T(10.0)
-    end
-end
-
 struct SimDynamics{T<:Real}
     system::PhsSystem
     x0::AbstractVector{T}
@@ -34,7 +14,7 @@ Construct a DAE problem for a port-Hamiltonian network.
 The residual is \$E \\dot{x} - (J - R) x - B u(t)\$, with initial derivatives
 computed only for differential variables.
 """
-
+# TODO: This is replaced by PhsSimulation
 function get_problem(
     dynamics::SimDynamics{T},
     sim_config::SimConfig
@@ -42,7 +22,7 @@ function get_problem(
     # Get matrices
     E = dynamics.system.mass
     J = dynamics.system.interaction
-    R = copy(dynamics.system.dissipation)
+    R = dynamics.system.dissipation
     B = dynamics.system.input
 
     # Compute initial derivatives

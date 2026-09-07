@@ -13,10 +13,11 @@ function run_example(example::String)
     PHSolver.init_simulation(config_file; verbose=false)
 end
 
-run_example("testing")
-run_example("dc_power_network")
-run_example("dc_power_network_controlled")
-run_example("dc_power_network_nonlinear_resistance")
-run_example("DGU")
-run_example("namespace_test")
+# run_example("testing")
+# run_example("dc_power_network")
+# run_example("dc_power_network_controlled")
+# run_example("dc_power_network_nonlinear_resistance")
+# run_example("DGU")
+# run_example("namespace_test")
+run_example("varistor_demo")
 nothing

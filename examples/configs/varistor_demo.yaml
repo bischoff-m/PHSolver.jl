@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../schemas/system.schema.json
+
+# Simple varistor demo.
+# The resistance is defined as a smooth function of a drive voltage, and the
+# drive itself is time-dependent so the effect is easy to visualize.
+
+id: varistor_demo
+definitions:
+  - C = 0.05
+  - R_load = 20.0
+  - V_on = 3.0
+  - R_min = 1.5
+  - R_max = 250.0
+  - slope = 4.0
+  - drive(t) = 10.0 * (atan(20.0 * (t - 0.4)) / pi + 0.5)
+  - varistor_R(v) = R_min + (R_max - R_min) / (1 + (abs(v) / V_on)^slope)
+
+signals:
+  SRC: drive(t)
+
+systems:
+  - id: SRC
+    dissipation: 0
+    mass: 0
+    input: 1
+    x0: 0
+
+  - id: VAR
+    dissipation: varistor_R(drive(t))
+    mass: 0
+    x0: 0
+
+  - id: CAP
+    dissipation: 0
+    mass: C
+    x0: 0
+
+  - id: LOAD
+    dissipation: R_load
+    mass: 0
+    x0: 0
+
+connections:
+  - from: SRC
+    to: VAR
+  - from: VAR
+    to: CAP
+  - from: CAP
+    to: LOAD

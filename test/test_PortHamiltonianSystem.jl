@@ -12,7 +12,7 @@ using PHSolver
     sys = PortHamSystem(J, R, E, B)
 
     @test sys isa PortHamSystem
-    @test sys.connections == J
+    @test sys.interaction == J
     @test sys.dissipation == R
     @test sys.mass == E
     @test sys.input == B
