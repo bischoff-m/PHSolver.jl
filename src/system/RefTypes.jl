@@ -65,6 +65,13 @@ function eval_refs!(
     v::SparseMatrixCSC{<:FloatOrRef}
 )
     size(out) != size(v) && error("Size mismatch: size(out) = $(size(out)), size(v) = $(size(v))")
+    if out isa SparseMatrixCSC && out.colptr == v.colptr && out.rowval == v.rowval
+        # A fixed sparse pattern means only numeric values change during simulation.
+        @inbounds @simd for k in eachindex(v.nzval)
+            out.nzval[k] = tofloat(v.nzval[k])
+        end
+        return out
+    end
     I, J, V = findnz(v)
     @inbounds @simd for k in eachindex(V)
         out[I[k], J[k]] = tofloat(V[k])

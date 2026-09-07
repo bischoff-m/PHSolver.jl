@@ -24,7 +24,7 @@ function init_simulation(
 
     # state = PhsState(result, SimConfig(), Dict(:t => 0.0))
     # pprint(state)
-    sim_config = SimConfig([0.0, 5.5])
+    sim_config = SimConfig([0.0, 35])
     sim = PhsSimulation(
         config,
         sim_config;

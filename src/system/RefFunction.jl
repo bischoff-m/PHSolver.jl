@@ -4,6 +4,8 @@ struct RefFunction
     func::Function
     dependencies::AbstractVector{Symbol}
     result_ref::Ref{Float64}
+    # Reuse argument storage because reference functions run on every serial DAE residual call.
+    args::Vector{Float64}
 end
 
 function RefFunction(def::Definition)
@@ -14,15 +16,16 @@ function RefFunction(def::Definition)
 
     # Build the function
     func = Sym.build_function(def.eq.rhs, sym_vars...; expression=false)
-    return RefFunction(func, vars, Ref{Float64}(0.0))
+    return RefFunction(func, vars, Ref{Float64}(0.0), zeros(Float64, length(vars)))
 end
 
 function evaluate(sf::RefFunction, values::Dict{Symbol,<:Real})
-    args = map(sf.dependencies) do sym
+    @inbounds for index in eachindex(sf.dependencies)
+        sym = sf.dependencies[index]
         haskey(values, sym) || error("Missing value for dependency: $sym")
-        Float64(values[sym])
+        sf.args[index] = Float64(values[sym])
     end
-    return sf.func(args...)
+    return sf.func(sf.args...)
 end
 
 function update_ref!(sf::RefFunction, values::Dict{Symbol,<:Real})

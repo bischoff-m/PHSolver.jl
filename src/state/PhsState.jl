@@ -8,6 +8,13 @@ struct PhsState
     y::AbstractVector{Float64}
     system::PhsSystem
     sim_config::SimConfig
+    values::Dict{Symbol,Float64}
+    state_keys::Vector{Symbol}
+    # Cache symbolic matrices so update only refreshes values, not sparse structure.
+    interaction_refs::AbstractMatrix
+    dissipation_refs::AbstractMatrix
+    mass_refs::AbstractMatrix
+    input_refs::AbstractMatrix
 
     function PhsState(system::PhsSystem, sim_config::SimConfig, free_vars::Dict{Symbol,Float64}=Dict())
         # Use sparse matrices and vectors for all
@@ -18,7 +25,16 @@ struct PhsState
         B = spzeros(Float64, size, size)
         u = spzeros(Float64, size)
         y = spzeros(Float64, size)
-        state = new(J, R, E, B, u, y, system, sim_config)
+        values = Dict{Symbol,Float64}()
+        state_keys = Symbol.(system.ids .* ".x")
+        interaction_refs = system.interaction
+        dissipation_refs = spdiagm(system.dissipation)
+        mass_refs = spdiagm(system.mass)
+        input_refs = spdiagm(system.input)
+        state = new(
+            J, R, E, B, u, y, system, sim_config, values, state_keys,
+            interaction_refs, dissipation_refs, mass_refs, input_refs
+        )
 
         x0 = zeros(Float64, size)
         update(state, free_vars, x0)
@@ -34,9 +50,13 @@ function update(
     params::Dict{Symbol,Float64},
     x::AbstractVector{<:Real}=zeros(Float64, length(state.system.ids))
 )
-    values = copy(params)
-    for (index, id) in enumerate(state.system.ids)
-        values[Symbol(id * ".x")] = Float64(x[index])
+    values = state.values
+    empty!(values)
+    for (key, value) in params
+        values[key] = value
+    end
+    for index in eachindex(state.state_keys)
+        values[state.state_keys[index]] = Float64(x[index])
     end
 
     # Evaluate all ref functions with current parameters
@@ -45,10 +65,10 @@ function update(
     end
 
     # Evaluate FloatOrRef fields
-    eval_refs!(state.J, state.system.interaction)
-    eval_refs!(state.R, spdiagm(state.system.dissipation))
-    eval_refs!(state.E, spdiagm(state.system.mass))
-    eval_refs!(state.B, spdiagm(state.system.input))
+    eval_refs!(state.J, state.interaction_refs)
+    eval_refs!(state.R, state.dissipation_refs)
+    eval_refs!(state.E, state.mass_refs)
+    eval_refs!(state.B, state.input_refs)
     eval_refs!(state.u, state.system.signal)
 end
 
@@ -66,6 +86,20 @@ end
 
 function residual(state::PhsState, x::AbstractVector{T}, dx::AbstractVector{T}) where {T<:Real}
     return dynamics_lhs(state, dx) - dynamics_rhs(state, x)
+end
+
+function residual!(
+    out::AbstractVector{T},
+    state::PhsState,
+    x::AbstractVector{T},
+    dx::AbstractVector{T}
+) where {T<:Real}
+    # Accumulate directly into out to avoid temporary products and extra vector passes.
+    mul!(out, state.E, dx)
+    mul!(out, state.J, x, -1.0, 1.0)
+    mul!(out, state.R, x, 1.0, 1.0)
+    mul!(out, state.B, state.u, -1.0, 1.0)
+    return out
 end
 
 function hamiltonian(state::PhsState, x::AbstractVector{T}) where {T<:Real}

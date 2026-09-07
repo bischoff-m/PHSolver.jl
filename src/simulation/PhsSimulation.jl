@@ -73,7 +73,7 @@ function init_problem(
         last_t[] = current_t
         time() > deadline[] && throw(SimulationTimeout())
         update(state, Dict(:t => current_t), x)
-        out .= residual(state, x, dx)
+        residual!(out, state, x, dx)
         if time() >= next_log_time[]
             max_x_index = argmax(abs.(x))
             max_dx_index = argmax(abs.(dx))
