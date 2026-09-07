@@ -20,17 +20,28 @@ struct PhsState
         y = spzeros(Float64, size)
         state = new(J, R, E, B, u, y, system, sim_config)
 
-        # Evaluate ref functions
-        update(state, free_vars)
+        x0 = zeros(Float64, size)
+        update(state, free_vars, x0)
+        eval_refs!(x0, system.x0)
+        update(state, free_vars, x0)
 
         return state
     end
 end
 
-function update(state::PhsState, params::Dict{Symbol,Float64})
+function update(
+    state::PhsState,
+    params::Dict{Symbol,Float64},
+    x::AbstractVector{<:Real}=zeros(Float64, length(state.system.ids))
+)
+    values = copy(params)
+    for (index, id) in enumerate(state.system.ids)
+        values[Symbol(id * ".x")] = Float64(x[index])
+    end
+
     # Evaluate all ref functions with current parameters
     for func in state.system.functions
-        update_ref!(func, params)
+        update_ref!(func, values)
     end
 
     # Evaluate FloatOrRef fields

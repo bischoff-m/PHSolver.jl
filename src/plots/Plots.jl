@@ -1,4 +1,5 @@
 using Plots
+using Measures
 
 struct SimulationResult
     network::PhsSystem
@@ -38,7 +39,7 @@ function plot_result(result::SimulationResult; tmax::Union{Nothing,Float64}=noth
         lw=2,
         xlabel="Time [s]",
         ylabel="State",
-        args...
+        ; args...
     )
 
     for i in 2:n
@@ -66,7 +67,7 @@ function plot_result(
         lw=2,
         xlabel="Time [s]",
         ylabel="State",
-        args...
+        ; args...
     )
 
     for i in 2:n
@@ -86,4 +87,52 @@ function plot_result(
 
     display(plt)
     return plt
+end
+
+function plot_figure54(
+    sol,
+    system::PhsSystem;
+    nominal_voltage::Real=20000.0,
+    setpoint_voltage::Real=21000.0,
+    controlled_nodes::AbstractVector{<:AbstractString}=["dgu1", "dgu2", "dgu4"],
+    title::String="Scenario A: node voltages"
+)
+    voltage_ids = filter(id -> endswith(id, ".V.d"), system.ids)
+    isempty(voltage_ids) && error("System contains no V.d node-voltage states")
+
+    voltage_index(id) = get_index(system, id)
+    q_id(id) = replace(id, ".V.d" => ".V.q")
+    label(id) = replace(id, ".V.d" => "")
+    controlled_colors = Dict(node => color for (node, color) in zip(
+        controlled_nodes,
+        (:dodgerblue, :darkorange, :seagreen),
+    ))
+    color_for(id) = get(controlled_colors, label(id), :grey)
+
+    d_plot = plot(title=title, xlabel="Time [s]", ylabel="V.d [kV]", margin=10mm)
+    q_plot = plot(title="q-axis node voltages", xlabel="Time [s]", ylabel="V.q [kV]", margin=10mm)
+    d_error_plot = plot(title="controlled d-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
+    q_error_plot = plot(title="controlled q-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
+
+    for id in voltage_ids
+        node = label(id)
+        color = color_for(id)
+        plot!(d_plot, sol.t, sol[voltage_index(id), :] ./ 1000;
+            label=node, color=color, lw=1.5)
+        plot!(q_plot, sol.t, sol[voltage_index(q_id(id)), :] ./ 1000;
+            label=node, color=color, lw=1.5)
+    end
+
+    for node in controlled_nodes
+        d_id = "$node.V.d"
+        q_id_value = "$node.V.q"
+        d_index = voltage_index(d_id)
+        q_index = voltage_index(q_id_value)
+        d_error = 100 .* (sol[d_index, :] .- setpoint_voltage) ./ nominal_voltage
+        q_error = 100 .* sol[q_index, :] ./ nominal_voltage
+        plot!(d_error_plot, sol.t, d_error; label=node, lw=1.5)
+        plot!(q_error_plot, sol.t, q_error; label=node, lw=1.5)
+    end
+
+    return plot(d_plot, q_plot, d_error_plot, q_error_plot; layout=(2, 2), size=(1400, 900), margin=10mm)
 end

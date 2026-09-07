@@ -44,14 +44,14 @@ function flush_output!(
         csv_path,
         df;
         append=header_written[],
-        writeheader=!header_written[]
+        writeheader=(!header_written[])
     )
     header_written[] = true
     empty!(df)
     return nothing
 end
 
-function snapshot_callback(sim::PhsSimulation; flush_every::Int=1)
+function snapshot_callback(sim::PhsSimulation; flush_every::Int=100)
     isdir(sim.snapshot_path) || mkpath(sim.snapshot_path)
     csv_path = joinpath(sim.snapshot_path, "snapshots.csv")
     isfile(csv_path) && rm(csv_path)
@@ -79,20 +79,37 @@ function snapshot_callback(sim::PhsSimulation; flush_every::Int=1)
     return callback, finalize!
 end
 
-function solve_timespan(sim::PhsSimulation; verbose=false)
+function solve_timespan(
+    sim::PhsSimulation;
+    verbose=false,
+    timeout_seconds::Real=Inf,
+    dt::Union{Nothing,Real}=nothing,
+    adaptive::Union{Nothing,Bool}=nothing,
+    dtmax::Union{Nothing,Real}=nothing,
+)
+    started = time()
     callback, finalize! = snapshot_callback(sim)
+    sim.problem.p[] = time() + Float64(timeout_seconds)
     try
-        sol = Eq.solve(
-            sim.problem,
-            sim.solver;
+        solve_kwargs = (
             initializealg=Eq.BrownFullBasicInit(),
+            abstol=1e-6,
+            reltol=1e-4,
+            save_everystep=false,
+            saveat=sim.state.sim_config.output_interval,
             progress=true,
             progress_name="Simulation",
             callback=callback
         )
-        println("Simulation complete: t_final=$(round(sol.t[end], digits=2))")
+        !isnothing(dt) && (solve_kwargs = merge(solve_kwargs, (; dt=Float64(dt))))
+        !isnothing(adaptive) && (solve_kwargs = merge(solve_kwargs, (; adaptive=adaptive)))
+        !isnothing(dtmax) && (solve_kwargs = merge(solve_kwargs, (; dtmax=Float64(dtmax))))
+
+        sol = Eq.solve(sim.problem, sim.solver; solve_kwargs...)
+        println("Simulation complete: t_final=$(round(sol.t[end], digits=6))")
         return sol
     finally
         finalize!()
+        verbose && println("[timing] simulation solve: $(round(time() - started, digits=3)) s")
     end
 end

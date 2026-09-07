@@ -13,17 +13,36 @@ Load, assemble, and solve a network configuration.
 Returns a `SimulationResult` containing the solution, assembled system, and
 network metadata.
 """
-function init_simulation(config::SystemConfig; verbose=false)
+function init_simulation(
+    config::SystemConfig;
+    verbose=false,
+    residual_log_interval::Real=Inf
+)
+    started = time()
     fixed_vars = Set([:t])
     # result = make_system(config; keep=fixed_vars, verbose=verbose)
 
     # state = PhsState(result, SimConfig(), Dict(:t => 0.0))
     # pprint(state)
-    sim_config = SimConfig([0.0, 3.0])
-    sim = PhsSimulation(config, sim_config; verbose=verbose)
-    sol = solve_timespan(sim; verbose=false)
-    plot_result(sol, sim.state.system, sim.state.sim_config; title="Simulation Result")
+    sim_config = SimConfig([0.0, 5.5])
+    sim = PhsSimulation(
+        config,
+        sim_config;
+        verbose=verbose,
+        residual_log_interval=residual_log_interval
+    )
+    verbose && println("[timing] configure simulation: $(round(time() - started, digits=3)) s")
 
+    sol = solve_timespan(sim; verbose=verbose)
+    plot_started = time()
+    plt = plot_figure54(sol, sim.state.system; title="Scenario A: node voltages")
+    output_path = joinpath("examples", "output.local", "DGU_figure5_4.png")
+    mkpath(dirname(output_path))
+    savefig(plt, output_path)
+    verbose && println("[timing] build and save Figure 5.4 plot: $(round(time() - plot_started, digits=3)) s")
+    verbose && println("[timing] init_simulation total: $(round(time() - started, digits=3)) s")
+
+    return sol
 
     # Load network
     # network = network_from_config(config.network, Float64)
@@ -56,11 +75,21 @@ Complete workflow: read config, assemble the network, and solve it.
 # Returns
 - `SimulationResult`: Struct containing system, solution, and network metadata
 """
-function init_simulation(config_path::String; verbose=false)
+function init_simulation(
+    config_path::String;
+    verbose=false,
+    residual_log_interval::Real=Inf
+)
+    started = time()
     config = read_config(config_path)
+    verbose && println("[timing] read configuration: $(round(time() - started, digits=3)) s")
     verbose && Term.tprintln(
         "Loaded configuration:",
         Term.highlight(config_path, :emphasis)
     )
-    return init_simulation(config, verbose=verbose)
+    return init_simulation(
+        config;
+        verbose=verbose,
+        residual_log_interval=residual_log_interval
+    )
 end

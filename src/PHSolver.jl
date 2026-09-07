@@ -151,6 +151,7 @@ export get_dae_solver
 
 # Export plots
 export plot_result
+export plot_figure54
 export graphviz_network
 
 end

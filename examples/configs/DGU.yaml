@@ -1,126 +1,668 @@
 # yaml-language-server: $schema=../../schemas/system.schema.json
 
-# omega0 = 1.0 (mass)
-# g = 9.81 (gravity)
-# l = 1.0 (length of the pendulum)
-
+# CIGRE medium-voltage Feeder 1 from Figure 5.1 and Scenario A in Section 5.4.2.
+# This is the scalar dq plant at the base operating point. The controller laws and
+# plug-and-play events are documented as representation gaps in the accompanying notes.
 id: DGU_example
+
+definitions:
+  - V0 = 20000
+  - omega0 = 314.1592653589793
+  - Vd_S = 21000
+  - Vq_S = 0
+  - I_d0 = 0
+  - I_q0 = 0
+  - connected = 1
+  - disconnected = 0
+  - event_slope = 20
+  - voltage_slope = 0.01
+  - sigmoid(x, slope) = 0.5 * (1 + tanh(slope * x / 2))
+  - event_enabled(t, start, stop) = connected + (disconnected - connected) * (sigmoid(t - start, event_slope) - sigmoid(t - stop, event_slope))
+  - smooth_select(value, threshold, above, below) = below + sigmoid(value - threshold, voltage_slope) * (above - below)
+  - dgu4_enabled(t) = event_enabled(t, 5, 15)
+  - dgu5_enabled(t) = event_enabled(t, 20, 30)
+  - line17_enabled(t) = event_enabled(t, 10, 25)
+  - line19_enabled(t) = event_enabled(t, 10, 25)
+  - R_dgu = 0.1
+  - L_dgu = 0.0018
+  - C_dgu = 25e-6
+  - R_zero = 0
+  - R_line_per_km = 0.343
+  - L_line_per_km = 0.000875
+  - C_line_per_km = 151.2e-9
+
+  # Line parameters from Table 5.1, multiplied by the Figure 5.1 lengths.
+  - line12_length = 2.8
+  - line13_length = 4.4
+  - line14_length = 0.6
+  - line15_length = 0.6
+  - line16_length = 1.3
+  - line17_length = 0.5
+  - line18_length = 0.3
+  - line19_length = 1.5
+  - line20_length = 0.8
+  - line21_length = 0.3
+  - line22_length = 1.7
+  - line23_length = 0.2
+  - R12 = R_line_per_km * line12_length
+  - L12 = L_line_per_km * line12_length
+  - R13 = R_line_per_km * line13_length
+  - L13 = L_line_per_km * line13_length
+  - R14 = R_line_per_km * line14_length
+  - L14 = L_line_per_km * line14_length
+  - R15 = R_line_per_km * line15_length
+  - L15 = L_line_per_km * line15_length
+  - R16 = R_line_per_km * line16_length
+  - L16 = L_line_per_km * line16_length
+  - R17 = R_line_per_km * line17_length
+  - L17 = L_line_per_km * line17_length
+  - R18 = R_line_per_km * line18_length
+  - L18 = L_line_per_km * line18_length
+  - R19 = R_line_per_km * line19_length
+  - L19 = L_line_per_km * line19_length
+  - R20 = R_line_per_km * line20_length
+  - L20 = L_line_per_km * line20_length
+  - R21 = R_line_per_km * line21_length
+  - L21 = L_line_per_km * line21_length
+  - R22 = R_line_per_km * line22_length
+  - L22 = L_line_per_km * line22_length
+  - R23 = R_line_per_km * line23_length
+  - L23 = L_line_per_km * line23_length
+
+  # Node capacitances include the DGU filter capacitor and half of every incident line capacitor.
+  - C1 = C_dgu + C_line_per_km * (line12_length + line13_length) * 0.5
+  - C2 = C_dgu + C_line_per_km * (line12_length + line14_length + line18_length) * 0.5
+  - C3 = C_dgu + C_line_per_km * (line15_length + line16_length + line20_length) * 0.5
+  - C4 = C_dgu + C_line_per_km * (line14_length + line15_length + line17_length + line19_length) * 0.5
+  - C5 = C_dgu + C_line_per_km * (line16_length + line19_length + line20_length + line21_length + line22_length + line23_length) * 0.5
+  - C6 = C_dgu + C_line_per_km * line23_length * 0.5
+  - C7 = C_line_per_km * line13_length * 0.5
+  - C8 = C_line_per_km * line17_length * 0.5
+  - C9 = C_line_per_km * line18_length * 0.5
+  - C10 = C_line_per_km * line21_length * 0.5
+  - C11 = C_line_per_km * line22_length * 0.5
+
+  # ZIP load values from Table 5.3, in SI units.
+  - YP1 = 75e-6
+  - IP1 = 0.3
+  - PP1 = 6000
+  - YP2 = 97.5e-6
+  - IP2 = 0.39
+  - PP2 = 7800
+  - YP_medium = 51.96e-6
+  - IP_medium = 0.208
+  - PP_medium = 4157
+  - YP8 = 58.48e-6
+  - IP8 = 0.234
+  - PP8 = 4679
+  - Vmag(vd, vq) = sqrt(vd^2 + vq^2)
+  - Vsafe(vd, vq) = max(Vmag(vd, vq), 1e-9)
+  - V_threshold_fraction = 0.7
+  - V_threshold = V_threshold_fraction * V0
+  - zip_g(vd, vq, yp, ip, pp) = smooth_select(Vmag(vd, vq), V_threshold, yp + ip / Vsafe(vd, vq) + pp / Vsafe(vd, vq)^2, yp + ip / V_threshold + pp / V_threshold^2)
+  - zip_b(vd, vq, yq, iq, pq) = smooth_select(Vmag(vd, vq), V_threshold, yq + iq / Vsafe(vd, vq) + pq / Vsafe(vd, vq)^2, yq + iq / V_threshold + pq / V_threshold^2)
+
+  # Exponential loads use nP = nQ = 1.5 from Table 5.4.
+  - exp_load_exponent = 1.5
+  - exp_g(vd, vq, p0) = smooth_select(Vmag(vd, vq), V_threshold, p0 / (V0^exp_load_exponent * Vsafe(vd, vq)^0.5), p0 * V_threshold_fraction^0.5 / V0^2)
+  - exp_b(vd, vq, p0) = smooth_select(Vmag(vd, vq), V_threshold, p0 / (V0^exp_load_exponent * Vsafe(vd, vq)^0.5), p0 * V_threshold_fraction^0.5 / V0^2)
+  - P_exp_dgu5 = 90500
+  - P_exp_dgu6 = 135750
+  - P_exp_load9 = 46800
+  - P_exp_load10 = 50900
+  - P_exp_load11 = 76350
+
+signals:
+  dgu1.I.d: Vd_S
+  dgu1.I.q: Vq_S
+  dgu2.I.d: Vd_S
+  dgu2.I.q: Vq_S
+  dgu3.I.d: Vd_S
+  dgu3.I.q: Vq_S
+  dgu4.I.d: Vd_S
+  dgu4.I.q: Vq_S
+  dgu5.I.d: Vd_S
+  dgu5.I.q: Vq_S
+  dgu6.I.d: Vd_S
+  dgu6.I.q: Vq_S
+
 systems:
-  # Combined system representing the full DC power network
-  # In this example, we define it as a single system
-  # (Could be split into multiple interconnected subsystems)
-  # R_i = 0.1
-  # L_i = 0.018
-  # C_i = 0.000025
-  - id: dgu
+  - id: dgu1
     systems:
-      - id: Id
-        dissipation: 0.1
-        mass: 55.5555555556
-        x0: 161.07
-      - id: Iq
-        dissipation: 0.1
-        mass: 55.5555555556
-        x0: 161.07
-      - id: Vd
-        dissipation: 0
-        mass: 40000
-        x0: 20000
-      - id: Vq
-        dissipation: 0
-        mass: 40000
-        x0: 20000
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 161.07
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: I_q0
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: zip_g(d.x, q.x, YP1, IP1, PP1)
+            mass: C1
+            x0: Vd_S
+          - id: q
+            dissipation: zip_g(d.x, q.x, YP1, IP1, PP1)
+            mass: C1
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C1 - zip_b(d.x, q.x, YP1, IP1, PP1)
     connections:
-      - from: Id
-        to: Iq
-        weight: 5.6548
-      - from: Id
-        to: Vd
+      - from: I
+        to: V
         weight: -1
-      - from: Iq
-        to: Vq
+
+  - id: dgu2
+    systems:
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 161.07
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: I_q0
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: zip_g(d.x, q.x, YP2, IP2, PP2)
+            mass: C2
+            x0: Vd_S
+          - id: q
+            dissipation: zip_g(d.x, q.x, YP2, IP2, PP2)
+            mass: C2
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C2 - zip_b(d.x, q.x, YP2, IP2, PP2)
+    connections:
+      - from: I
+        to: V
         weight: -1
-      - from: Vd
-        to: Vq
-        weight: 0.00785398163
 
-      # PI Controller subsystem
-  - id: controller_d
+  - id: dgu3
     systems:
-      - id: integral
-        dissipation: 0 # Check this value
-        mass: 0.0666667
-        x0: 0
-      - id: proportional
-        dissipation: 1 # Check this value
-        mass: 0.1
-        x0: 0
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 160
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: -3
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: R_zero
+            mass: C3
+            x0: Vd_S
+          - id: q
+            dissipation: R_zero
+            mass: C3
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C3
     connections:
-      - from: integral
-        to: proportional
-        weight: 1
+      - from: I
+        to: V
+        weight: -1
 
-  - id: controller_q
+  - id: dgu4
     systems:
-      - id: integral
-        dissipation: 0 # Check this value
-        mass: 0.0666667
-        x0: 0
-      - id: proportional
-        dissipation: 1 # Check this value
-        mass: 0.1
-        x0: 0
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 161.07
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: I_q0
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: zip_g(d.x, q.x, YP_medium, IP_medium, PP_medium)
+            mass: C4
+            x0: Vd_S
+          - id: q
+            dissipation: zip_g(d.x, q.x, YP_medium, IP_medium, PP_medium)
+            mass: C4
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C4 - zip_b(d.x, q.x, YP_medium, IP_medium, PP_medium)
     connections:
-      - from: integral
-        to: proportional
-        weight: 1
+      - from: I
+        to: V
+        weight: -1
 
-  - id: Line
+  - id: dgu5
     systems:
-      - id: Id
-        dissipation: 0.343
-        mass: 1142.85714286
-        x0: 161.07
-      - id: Iq
-        dissipation: 0.343
-        mass: 1142.85714286
-        x0: 161.07
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 161
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: -5
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: exp_g(d.x, q.x, P_exp_dgu5)
+            mass: C5
+            x0: Vd_S
+          - id: q
+            dissipation: exp_g(d.x, q.x, P_exp_dgu5)
+            mass: C5
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C5 - exp_b(d.x, q.x, P_exp_dgu5)
     connections:
-      - from: Id
-        to: Iq
-        weight: 0.274889357
+      - from: I
+        to: V
+        weight: -1
 
-  - id: Load
+  - id: dgu6
     systems:
-      - id: Id
-        dissipation: 2.9154
-        mass: 1.1428
-        x0: 161.07
-      - id: Iq
-        dissipation: 2.9154
-        mass: 1.1428
-        x0: 161.07
+      - id: I
+        systems:
+          - id: d
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: 162
+          - id: q
+            dissipation: R_dgu
+            mass: L_dgu
+            x0: -6
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * L_dgu
+      - id: V
+        systems:
+          - id: d
+            dissipation: exp_g(d.x, q.x, P_exp_dgu6)
+            mass: C6
+            x0: Vd_S
+          - id: q
+            dissipation: exp_g(d.x, q.x, P_exp_dgu6)
+            mass: C6
+            x0: Vq_S
+        connections:
+          - from: d
+            to: q
+            weight: omega0 * C6 - exp_b(d.x, q.x, P_exp_dgu6)
     connections:
-      - from: Id
-        to: Iq
-        weight: 274.8893
+      - from: I
+        to: V
+        weight: -1
+
+  - id: ZipLoad7
+    systems:
+      - id: d
+        dissipation: zip_g(d.x, q.x, YP_medium, IP_medium, PP_medium)
+        mass: C7
+        x0: Vd_S
+      - id: q
+        dissipation: zip_g(d.x, q.x, YP_medium, IP_medium, PP_medium)
+        mass: C7
+        x0: Vq_S
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * C7 - zip_b(d.x, q.x, YP_medium, IP_medium, PP_medium)
+
+  - id: ZipLoad8
+    systems:
+      - id: d
+        dissipation: zip_g(d.x, q.x, YP8, IP8, PP8)
+        mass: C8
+        x0: Vd_S
+      - id: q
+        dissipation: zip_g(d.x, q.x, YP8, IP8, PP8)
+        mass: C8
+        x0: Vq_S
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * C8 - zip_b(d.x, q.x, YP8, IP8, PP8)
+
+  - id: ExpLoad9
+    systems:
+      - id: d
+        dissipation: exp_g(d.x, q.x, P_exp_load9)
+        mass: C9
+        x0: Vd_S
+      - id: q
+        dissipation: exp_g(d.x, q.x, P_exp_load9)
+        mass: C9
+        x0: Vq_S
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * C9 - exp_b(d.x, q.x, P_exp_load9)
+
+  - id: ExpLoad10
+    systems:
+      - id: d
+        dissipation: exp_g(d.x, q.x, P_exp_load10)
+        mass: C10
+        x0: Vd_S
+      - id: q
+        dissipation: exp_g(d.x, q.x, P_exp_load10)
+        mass: C10
+        x0: Vq_S
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * C10 - exp_b(d.x, q.x, P_exp_load10)
+
+  - id: ExpLoad11
+    systems:
+      - id: d
+        dissipation: exp_g(d.x, q.x, P_exp_load11)
+        mass: C11
+        x0: Vd_S
+      - id: q
+        dissipation: exp_g(d.x, q.x, P_exp_load11)
+        mass: C11
+        x0: Vq_S
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * C11 - exp_b(d.x, q.x, P_exp_load11)
+
+  - id: Line12
+    systems:
+      - id: d
+        dissipation: R12
+        mass: L12
+        x0: I_d0
+      - id: q
+        dissipation: R12
+        mass: L12
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L12
+
+  - id: Line13
+    systems:
+      - id: d
+        dissipation: R13
+        mass: L13
+        x0: I_d0
+      - id: q
+        dissipation: R13
+        mass: L13
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L13
+
+  - id: Line14
+    systems:
+      - id: d
+        dissipation: R14
+        mass: L14
+        x0: I_d0
+      - id: q
+        dissipation: R14
+        mass: L14
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L14
+
+  - id: Line15
+    systems:
+      - id: d
+        dissipation: R15
+        mass: L15
+        x0: I_d0
+      - id: q
+        dissipation: R15
+        mass: L15
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L15
+
+  - id: Line16
+    systems:
+      - id: d
+        dissipation: R16
+        mass: L16
+        x0: I_d0
+      - id: q
+        dissipation: R16
+        mass: L16
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L16
+
+  - id: Line17
+    systems:
+      - id: d
+        dissipation: R17
+        mass: L17
+        x0: I_d0
+      - id: q
+        dissipation: R17
+        mass: L17
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L17
+
+  - id: Line18
+    systems:
+      - id: d
+        dissipation: R18
+        mass: L18
+        x0: I_d0
+      - id: q
+        dissipation: R18
+        mass: L18
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L18
+
+  - id: Line19
+    systems:
+      - id: d
+        dissipation: R19
+        mass: L19
+        x0: I_d0
+      - id: q
+        dissipation: R19
+        mass: L19
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L19
+
+  - id: Line20
+    systems:
+      - id: d
+        dissipation: R20
+        mass: L20
+        x0: I_d0
+      - id: q
+        dissipation: R20
+        mass: L20
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L20
+
+  - id: Line21
+    systems:
+      - id: d
+        dissipation: R21
+        mass: L21
+        x0: I_d0
+      - id: q
+        dissipation: R21
+        mass: L21
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L21
+
+  - id: Line22
+    systems:
+      - id: d
+        dissipation: R22
+        mass: L22
+        x0: I_d0
+      - id: q
+        dissipation: R22
+        mass: L22
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L22
+
+  - id: Line23
+    systems:
+      - id: d
+        dissipation: R23
+        mass: L23
+        x0: I_d0
+      - id: q
+        dissipation: R23
+        mass: L23
+        x0: I_q0
+    connections:
+      - from: d
+        to: q
+        weight: omega0 * L23
 
 connections:
-  - from: dgu.Id
-    to: controller_d.proportional
+  # Orientations follow the drawing: first endpoint -> second endpoint.
+  - from: dgu1.V
+    to: Line12
     weight: -1
-  - from: dgu.Iq
-    to: controller_q.proportional
-    weight: -1
-  - from: dgu.Vd
-    to: Line.Id
-    weight: -1
-  - from: dgu.Vq
-    to: Line.Iq
-    weight: -1
-  - from: Line.Id
-    to: Load.Id
+  - from: dgu2.V
+    to: Line12
     weight: 1
-  - from: Line.Iq
-    to: Load.Iq
+  - from: dgu1.V
+    to: Line13
+    weight: -1
+  - from: ZipLoad7
+    to: Line13
     weight: 1
+  - from: dgu2.V
+    to: Line14
+    weight: -1
+  - from: dgu4.V
+    to: Line14
+    weight: dgu4_enabled(t)
+  - from: dgu4.V
+    to: Line15
+    weight: -1 * dgu4_enabled(t)
+  - from: dgu3.V
+    to: Line15
+    weight: 1
+  - from: dgu3.V
+    to: Line16
+    weight: -1
+  - from: dgu5.V
+    to: Line16
+    weight: dgu5_enabled(t)
+  - from: dgu4.V
+    to: Line17
+    weight: -1 * dgu4_enabled(t) * line17_enabled(t)
+  - from: ZipLoad8
+    to: Line17
+    weight: line17_enabled(t)
+  - from: dgu2.V
+    to: Line18
+    weight: -1
+  - from: ExpLoad9
+    to: Line18
+    weight: 1
+  - from: dgu4.V
+    to: Line19
+    weight: -1 * dgu4_enabled(t) * line19_enabled(t)
+  - from: dgu5.V
+    to: Line19
+    weight: dgu5_enabled(t) * line19_enabled(t)
+  - from: dgu3.V
+    to: Line20
+    weight: -1
+  - from: dgu5.V
+    to: Line20
+    weight: dgu5_enabled(t)
+  - from: dgu5.V
+    to: Line21
+    weight: -1 * dgu5_enabled(t)
+  - from: ExpLoad10
+    to: Line21
+    weight: dgu5_enabled(t)
+  - from: dgu5.V
+    to: Line22
+    weight: -1 * dgu5_enabled(t)
+  - from: ExpLoad11
+    to: Line22
+    weight: dgu5_enabled(t)
+  - from: dgu5.V
+    to: Line23
+    weight: -1 * dgu5_enabled(t)
+  - from: dgu6.V
+    to: Line23
+    weight: dgu5_enabled(t)

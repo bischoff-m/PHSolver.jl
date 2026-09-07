@@ -29,12 +29,37 @@ function update_ref!(sf::RefFunction, values::Dict{Symbol,<:Real})
     sf.result_ref[] = evaluate(sf, values)
 end
 
+function qualify_state_refs(
+    def::Definition,
+    state_refs::Set{Symbol},
+    scope::Vector{String}
+)
+    mapping = Dict{Symbol,Symbol}()
+    for ref in def.rhs_vars
+        ref in def.lhs_vars && continue
+        endswith(String(ref), ".x") || continue
+        candidates = Symbol.(build_scoped_ids(ref, scope))
+        match = findfirst(candidate -> candidate in state_refs, candidates)
+        isnothing(match) || (mapping[ref] = candidates[match])
+    end
+    isempty(mapping) && return def
+
+    substitution = Dict(
+        Sym.variable(old) => Sym.variable(new)
+        for (old, new) in mapping
+    )
+    rhs = Sym.substitute(def.eq.rhs, substitution; fold=Val(false))
+    rhs_vars = Set(get(mapping, ref, ref) for ref in def.rhs_vars)
+    return Definition(def.symbol, def.lhs_vars, rhs_vars, Sym.Equation(def.eq.lhs, rhs))
+end
+
 function build_func_or_float(
     sym::Symbol,
     val::Union{Float64,String},
     defs::Definitions;
     scope::Vector{String}=String[],
-    keep::Set{Symbol}=Set{Symbol}()
+    keep::Set{Symbol}=Set{Symbol}(),
+    state_refs::Set{Symbol}=Set{Symbol}()
 )
     if isa(val, Number)
         return Float64(val)
@@ -45,6 +70,7 @@ function build_func_or_float(
 
     # Parse string to symbolic expression
     def = Definition(sym, val)
+    def = qualify_state_refs(def, state_refs, scope)
     def = resolve_definition(def, defs; scope=scope, keep=keep)
 
     # Check if rhs is fully resolved to a constant

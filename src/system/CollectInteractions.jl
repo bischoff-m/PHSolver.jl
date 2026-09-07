@@ -6,6 +6,32 @@ function collect_interactions!(
 )
     init_size_dependent_fields!(result)
     defs = result.definitions
+    state_refs = Set(Symbol(id * ".x") for id in result.ids)
+
+    function endpoint_indices(id::String)
+        if haskey(result.id_to_index, id)
+            return [result.id_to_index[id]]
+        end
+
+        grouped = [build_id(id, coordinate) for coordinate in ("d", "q")]
+        if all(haskey(result.id_to_index, child) for child in grouped)
+            return [result.id_to_index[child] for child in grouped]
+        end
+
+        error("Connection endpoint id not found: $id")
+    end
+
+    function endpoint_pairs(from::Vector{Int}, to::Vector{Int})
+        if length(from) == length(to)
+            return collect(zip(from, to))
+        elseif length(from) == 1
+            return [(from[1], target) for target in to]
+        elseif length(to) == 1
+            return [(source, to[1]) for source in from]
+        end
+
+        error("Connection endpoints must have matching d/q dimensions")
+    end
 
     function on_exit(config::AbstractSystemConfig, names::Vector{String})
         id = build_id(names...)
@@ -20,7 +46,14 @@ function collect_interactions!(
             for sym in [:dissipation, :mass, :input, :x0]
                 val = getfield(config, sym)
                 id_sym = build_id_sym(id, sym)
-                encoded = build_func_or_float(id_sym, val, defs; scope=names, keep=keep)
+                encoded = build_func_or_float(
+                    id_sym,
+                    val,
+                    defs;
+                    scope=names,
+                    keep=union(keep, state_refs),
+                    state_refs=state_refs
+                )
 
                 container = getfield(result, sym)
                 if isa(encoded, RefFunction)
@@ -41,28 +74,35 @@ function collect_interactions!(
 
         # Parse connections
         for conn in config.connections
-            ids = Dict("from" => conn.from, "to" => conn.to)
-            ids = Dict(k => build_id(id, v) for (k, v) in ids)
+            from_id = build_id(id, conn.from)
+            to_id = build_id(id, conn.to)
+            pairs = endpoint_pairs(endpoint_indices(from_id), endpoint_indices(to_id))
 
-            for (key, val) in ids
-                haskey(result.id_to_index, val) || error("Connection '$key' id not found: $val")
-            end
-            ids = Dict(k => result.id_to_index[v] for (k, v) in ids)
-            from = ids["from"]
-            to = ids["to"]
-
-            if result.interaction[to, from] != 0.0 || result.interaction[from, to] != 0.0
-                error("Duplicate connection from $from to $to")
+            for (from, to) in pairs
+                if result.interaction[to, from] != 0.0 || result.interaction[from, to] != 0.0
+                    error("Duplicate connection from $from to $to")
+                end
             end
 
-            encoded = build_func_or_float(:weight, conn.weight, defs; scope=names, keep=keep)
+            encoded = build_func_or_float(
+                :weight,
+                conn.weight,
+                defs;
+                scope=names,
+                keep=union(keep, state_refs),
+                state_refs=state_refs
+            )
             if isa(encoded, RefFunction)
                 push!(result.functions, encoded)
-                result.interaction[from, to] = SignedRef(encoded.result_ref, 1.0)
-                result.interaction[to, from] = SignedRef(encoded.result_ref, -1.0)
+                for (from, to) in pairs
+                    result.interaction[from, to] = SignedRef(encoded.result_ref, 1.0)
+                    result.interaction[to, from] = SignedRef(encoded.result_ref, -1.0)
+                end
             elseif isa(encoded, AbstractFloat)
-                result.interaction[from, to] = encoded
-                result.interaction[to, from] = -encoded
+                for (from, to) in pairs
+                    result.interaction[from, to] = encoded
+                    result.interaction[to, from] = -encoded
+                end
             else
                 error("Unexpected return type from build_func_or_float for " *
                       "connection weight: $(typeof(encoded))")
@@ -73,7 +113,14 @@ function collect_interactions!(
         for (signal_name, target) in config.signals
             signal_id = build_id(id, signal_name)
             target_idx = get_index(result, signal_id)
-            encoded = build_func_or_float(:signal, target, defs; scope=names, keep=keep)
+            encoded = build_func_or_float(
+                :signal,
+                target,
+                defs;
+                scope=names,
+                keep=union(keep, state_refs),
+                state_refs=state_refs
+            )
 
             if isa(encoded, RefFunction)
                 push!(result.functions, encoded)

@@ -1,5 +1,6 @@
 import OrdinaryDiffEq as Eq
 import Sundials
+import ADTypes
 
 """
 Dictionary of supported DAE solver names to solver instances.
@@ -7,9 +8,9 @@ Dictionary of supported DAE solver names to solver instances.
 supported_solvers = Dict(
     :default => Sundials.IDA(),
     :IDA => Sundials.IDA(),
-    :DFBDF => Eq.DFBDF(),
-    :DABDF2 => Eq.DABDF2(),
-    :DImplicitEuler => Eq.DImplicitEuler(),
+    :DFBDF => Eq.DFBDF(autodiff=ADTypes.AutoFiniteDiff()),
+    :DABDF2 => Eq.DABDF2(autodiff=ADTypes.AutoFiniteDiff()),
+    :DImplicitEuler => Eq.DImplicitEuler(autodiff=ADTypes.AutoFiniteDiff()),
 )
 
 """
