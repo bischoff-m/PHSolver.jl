@@ -93,7 +93,17 @@ function plot_figure54(
     sol,
     system::PhsSystem;
     nominal_voltage::Real=20000.0,
-    setpoint_voltage::Real=21000.0,
+    setpoint_voltage::Union{Nothing,Real}=nothing,
+    voltage_setpoints::AbstractDict=Dict(
+        "dgu1" => 21000.0,
+        "dgu2" => 20998.0,
+        "dgu4" => 20996.0,
+    ),
+    q_voltage_setpoints::AbstractDict=Dict(
+        "dgu1" => 1000.0,
+        "dgu2" => 998.0,
+        "dgu4" => 996.0,
+    ),
     controlled_nodes::AbstractVector{<:AbstractString}=["dgu1", "dgu2", "dgu4"],
     title::String="Scenario A: node voltages"
 )
@@ -103,16 +113,29 @@ function plot_figure54(
     voltage_index(id) = get_index(system, id)
     q_id(id) = replace(id, ".V.d" => ".V.q")
     label(id) = replace(id, ".V.d" => "")
-    controlled_colors = Dict(node => color for (node, color) in zip(
-        controlled_nodes,
-        (:dodgerblue, :darkorange, :seagreen),
-    ))
-    color_for(id) = get(controlled_colors, label(id), :grey)
+    node_colors = Dict(
+        "dgu1" => :dodgerblue,
+        "dgu2" => :red,
+        "dgu3" => :gold,
+        "dgu4" => :purple,
+        "dgu5" => :turquoise,
+        "dgu6" => :black,
+    )
+    color_for(id) = get(node_colors, label(id), :grey)
+    d_setpoints = Dict(string(node) => Float64(value) for (node, value) in voltage_setpoints)
+    q_setpoints = Dict(string(node) => Float64(value) for (node, value) in q_voltage_setpoints)
+    if !isnothing(setpoint_voltage)
+        for node in controlled_nodes
+            d_setpoints[string(node)] = Float64(setpoint_voltage)
+        end
+    end
 
     d_plot = plot(title=title, xlabel="Time [s]", ylabel="V.d [kV]", margin=10mm)
     q_plot = plot(title="q-axis node voltages", xlabel="Time [s]", ylabel="V.q [kV]", margin=10mm)
-    d_error_plot = plot(title="controlled d-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
-    q_error_plot = plot(title="controlled q-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
+    d_error_plot = plot(title="d-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
+    q_error_plot = plot(title="q-axis deviations", xlabel="Time [s]", ylabel="Deviation [%]", margin=10mm)
+    d_zoom_plot = plot(title="d-axis deviations (zoom)", xlabel="Time [s]", ylabel="Deviation [%]", ylims=(-0.5, 0.5), margin=10mm)
+    q_zoom_plot = plot(title="q-axis deviations (zoom)", xlabel="Time [s]", ylabel="Deviation [%]", ylims=(-0.5, 0.5), margin=10mm)
 
     for id in voltage_ids
         node = label(id)
@@ -124,15 +147,33 @@ function plot_figure54(
     end
 
     for node in controlled_nodes
+        node = string(node)
         d_id = "$node.V.d"
         q_id_value = "$node.V.q"
         d_index = voltage_index(d_id)
         q_index = voltage_index(q_id_value)
-        d_error = 100 .* (sol[d_index, :] .- setpoint_voltage) ./ nominal_voltage
-        q_error = 100 .* sol[q_index, :] ./ nominal_voltage
-        plot!(d_error_plot, sol.t, d_error; label=node, lw=1.5)
-        plot!(q_error_plot, sol.t, q_error; label=node, lw=1.5)
+        d_setpoint = get(d_setpoints, node, nominal_voltage)
+        q_setpoint = get(q_setpoints, node, 0.0)
+        color = get(node_colors, node, :grey)
+        d_error = 100 .* (sol[d_index, :] .- d_setpoint) ./ nominal_voltage
+        q_error = 100 .* (sol[q_index, :] .- q_setpoint) ./ nominal_voltage
+        plot!(d_plot, sol.t, fill(d_setpoint / 1000, length(sol.t)); label="$node ref", color=color, ls=:dash, lw=1)
+        plot!(q_plot, sol.t, fill(q_setpoint / 1000, length(sol.t)); label="$node ref", color=color, ls=:dash, lw=1)
+        plot!(d_error_plot, sol.t, d_error; label=node, color=color, lw=1.5)
+        plot!(q_error_plot, sol.t, q_error; label=node, color=color, lw=1.5)
+        plot!(d_zoom_plot, sol.t, d_error; label=node, color=color, lw=1.5)
+        plot!(q_zoom_plot, sol.t, q_error; label=node, color=color, lw=1.5)
     end
 
-    return plot(d_plot, q_plot, d_error_plot, q_error_plot; layout=(2, 2), size=(1400, 900), margin=10mm)
+    return plot(
+        d_plot,
+        q_plot,
+        d_error_plot,
+        q_error_plot,
+        d_zoom_plot,
+        q_zoom_plot;
+        layout=(3, 2),
+        size=(1400, 1200),
+        margin=10mm,
+    )
 end

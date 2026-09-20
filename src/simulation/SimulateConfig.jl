@@ -15,7 +15,8 @@ network metadata.
 """
 function init_simulation(
     config::SystemConfig;
-    verbose=false,
+    t_final::Real,
+    verbose=true,
     residual_log_interval::Real=Inf
 )
     started = time()
@@ -24,7 +25,7 @@ function init_simulation(
 
     # state = PhsState(result, SimConfig(), Dict(:t => 0.0))
     # pprint(state)
-    sim_config = SimConfig([0.0, 35])
+    sim_config = SimConfig([0.0, Float64(t_final)])
     sim = PhsSimulation(
         config,
         sim_config;
@@ -77,7 +78,8 @@ Complete workflow: read config, assemble the network, and solve it.
 """
 function init_simulation(
     config_path::String;
-    verbose=false,
+    t_final::Real,
+    verbose=true,
     residual_log_interval::Real=Inf
 )
     started = time()
@@ -89,6 +91,7 @@ function init_simulation(
     )
     return init_simulation(
         config;
+        t_final=t_final,
         verbose=verbose,
         residual_log_interval=residual_log_interval
     )

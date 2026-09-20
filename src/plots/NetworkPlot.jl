@@ -14,85 +14,94 @@ Connections are shown as directed edges labeled with the connection weight.
 # Returns
 - `String`: Graphviz DOT graph
 """
-function graphviz_network(config; rankdir::String="LR")
-    network = config.network
+function graphviz_network(config::SystemConfig; rankdir::String="LR")
     io = IOBuffer()
+    systems = Dict{String,SystemConfig}()
+    components = Dict{String,Component}()
 
-    systems_by_id = Dict{String,SystemConfig}()
-    component_ids_by_system = Dict{String,Set{String}}()
-    for sys in network.systems
-        systems_by_id[sys.id] = sys
-        component_ids_by_system[sys.id] = Set(comp.id for comp in sys.components)
-    end
-
-    extra_ports = Dict{String,Set{String}}()
-    for conn in network.connections
-        for (sys_id, port_name) in ((conn.from.system, conn.from.port), (conn.to.system, conn.to.port))
-            sys = get(systems_by_id, sys_id, nothing)
-            if sys === nothing
-                continue
-            end
-            comp_id = get(sys.ports, port_name, nothing)
-            if comp_id === nothing || !(comp_id in component_ids_by_system[sys_id])
-                if !haskey(extra_ports, sys_id)
-                    extra_ports[sys_id] = Set{String}()
-                end
-                push!(extra_ports[sys_id], port_name)
+    function collect_system(system::SystemConfig, path::Vector{String})
+        systems[join(path, ".")] = system
+        for child in system.systems
+            child_path = [path; child.id]
+            if child isa SystemConfig
+                collect_system(child, child_path)
+            else
+                components[join(child_path, ".")] = child
             end
         end
     end
 
-    println(io, "digraph ", gv_id(network.name), " {")
+    collect_system(config, [config.id])
+
+    function endpoint_path(system_path::Vector{String}, endpoint::String)
+        parts = split(endpoint, ".")
+        for start in length(system_path):-1:1
+            candidate = join([system_path[1:start]; parts], ".")
+            haskey(components, candidate) && return candidate
+            haskey(systems, candidate) && return candidate
+        end
+        return nothing
+    end
+
+    function resolve_endpoint(system_path::Vector{String}, endpoint::String)
+        path = endpoint_path(system_path, endpoint)
+        isnothing(path) && return nothing
+
+        parts = split(path, ".")
+        for count in length(parts):-1:1
+            system = get(systems, join(parts[1:count], "."), nothing)
+            isnothing(system) && continue
+            remainder = count == length(parts) ? "" : join(parts[(count+1):end], ".")
+            target = get(system.ports, remainder, nothing)
+            isnothing(target) || return resolve_endpoint(parts[1:count], target)
+        end
+
+        return path
+    end
+
+    node_id(path::AbstractString) = gv_id(replace(path, "." => "::"))
+    reverse_weight(value) = value isa Number ? -value : "-(" * string(value) * ")"
+
+    println(io, "digraph ", gv_id(config.id), " {")
     println(io, "  graph [compound=true, rankdir=", rankdir, "];")
 
-    for sys in network.systems
-        cluster_id = "cluster_" * sys.id
-        println(io, "  subgraph ", gv_id(cluster_id), " {")
-        println(io, "    label=", gv_label("System: " * sys.id), ";")
-        println(io, "    style=\"rounded\";")
+    function render_system(system::SystemConfig, path::Vector{String}, indent::String)
+        path_key = join(path, ".")
+        cluster_id = "cluster_" * replace(path_key, "." => "__")
+        println(io, indent, "subgraph ", gv_id(cluster_id), " {")
+        println(io, indent, "  label=", gv_label("System: " * path_key), ";")
+        println(io, indent, "  style=\"rounded\";")
 
-        for comp in sys.components
-            node_id = gv_id(component_node_key(sys.id, comp.id))
-            label = string(comp.id, "\nR=", comp.dissipation, "\nQ=", comp.mass, "\nx0=", comp.x0)
-            println(io, "    ", node_id, " [shape=box, label=", gv_label(label), "];")
-        end
-
-        if haskey(extra_ports, sys.id)
-            for port_name in sort(collect(extra_ports[sys.id]))
-                node_id = gv_id(port_node_key(sys.id, port_name))
-                label = "port: " * port_name
-                println(io, "    ", node_id, " [shape=ellipse, label=", gv_label(label), "];")
+        for child in system.systems
+            child_path = [path; child.id]
+            if child isa SystemConfig
+                render_system(child, child_path, indent * "  ")
+            else
+                component_path = join(child_path, ".")
+                label = string(child.id, "\nR=", child.dissipation, "\nQ=", child.mass, "\nx0=", child.x0)
+                println(io, indent, "  ", node_id(component_path), " [shape=box, label=", gv_label(label), "];")
             end
         end
 
-        println(io, "  }")
+        println(io, indent, "}")
     end
 
-    for sys in network.systems
-        for conn in sys.connections
-            from_id = gv_id(component_node_key(sys.id, conn.from))
-            to_id = gv_id(component_node_key(sys.id, conn.to))
-            println(io, "  ", from_id, " -> ", to_id, " [label=", gv_label(string(conn.weight)), "];")
-            println(io, "  ", to_id, " -> ", from_id, " [label=", gv_label(string(-conn.weight)), "];")
+    render_system(config, [config.id], "  ")
+
+    for (system_path, system) in systems
+        path = String.(split(system_path, "."))
+        for conn in system.connections
+            from_path = resolve_endpoint(path, conn.from)
+            to_path = resolve_endpoint(path, conn.to)
+            if isnothing(from_path) || isnothing(to_path)
+                continue
+            end
+
+            println(io, "  ", node_id(from_path), " -> ", node_id(to_path), " [label=", gv_label(string(conn.weight)), "];")
+            if system_path != config.id
+                println(io, "  ", node_id(to_path), " -> ", node_id(from_path), " [label=", gv_label(string(reverse_weight(conn.weight))), "];")
+            end
         end
-    end
-
-    for conn in network.connections
-        from_sys = get(systems_by_id, conn.from.system, nothing)
-        to_sys = get(systems_by_id, conn.to.system, nothing)
-        if from_sys === nothing || to_sys === nothing
-            continue
-        end
-
-        from_id = resolve_port_node_id(from_sys, conn.from.port, component_ids_by_system, extra_ports)
-        to_id = resolve_port_node_id(to_sys, conn.to.port, component_ids_by_system, extra_ports)
-
-        attrs = String[]
-        push!(attrs, "label=" * gv_label(string(conn.weight)))
-        push!(attrs, "ltail=" * gv_id("cluster_" * from_sys.id))
-        push!(attrs, "lhead=" * gv_id("cluster_" * to_sys.id))
-
-        println(io, "  ", from_id, " -> ", to_id, " [", join(attrs, ", "), "];")
     end
 
     println(io, "}")
@@ -109,30 +118,4 @@ end
 
 function gv_label(value::AbstractString)
     return gv_id(value)
-end
-
-function component_node_key(system_id::AbstractString, component_id::AbstractString)
-    return string(system_id, "::", component_id)
-end
-
-function port_node_key(system_id::AbstractString, port_name::AbstractString)
-    return string(system_id, "::port::", port_name)
-end
-
-function resolve_port_node_id(
-    system::SystemConfig,
-    port_name::AbstractString,
-    component_ids_by_system::Dict{String,Set{String}},
-    extra_ports::Dict{String,Set{String}}
-)
-    comp_id = get(system.ports, String(port_name), nothing)
-    if comp_id !== nothing && comp_id in component_ids_by_system[system.id]
-        return gv_id(component_node_key(system.id, comp_id))
-    end
-
-    if haskey(extra_ports, system.id) && (String(port_name) in extra_ports[system.id])
-        return gv_id(port_node_key(system.id, String(port_name)))
-    end
-
-    return gv_id(port_node_key(system.id, String(port_name)))
 end

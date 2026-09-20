@@ -81,7 +81,7 @@ end
 
 function solve_timespan(
     sim::PhsSimulation;
-    verbose=false,
+    verbose=true,
     timeout_seconds::Real=Inf,
     dt::Union{Nothing,Real}=nothing,
     adaptive::Union{Nothing,Bool}=nothing,

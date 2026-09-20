@@ -13,7 +13,8 @@ function run_example(example::String)
     PHSolver.init_simulation(
         config_file;
         verbose=true,
-        residual_log_interval=5.0
+        residual_log_interval=5.0,
+        t_final=35.0,
     )
 end
 

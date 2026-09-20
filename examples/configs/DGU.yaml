@@ -70,17 +70,17 @@ definitions:
   - L23 = L_line_per_km * line23_length
 
   # Node capacitances include the DGU filter capacitor and half of every incident line capacitor.
-  - C1 = C_dgu + C_line_per_km * (line12_length + line13_length) * 0.5
-  - C2 = C_dgu + C_line_per_km * (line12_length + line14_length + line18_length) * 0.5
-  - C3 = C_dgu + C_line_per_km * (line15_length + line16_length + line20_length) * 0.5
-  - C4 = C_dgu + C_line_per_km * (line14_length + line15_length + line17_length + line19_length) * 0.5
-  - C5 = C_dgu + C_line_per_km * (line16_length + line19_length + line20_length + line21_length + line22_length + line23_length) * 0.5
-  - C6 = C_dgu + C_line_per_km * line23_length * 0.5
-  - C7 = C_line_per_km * line13_length * 0.5
-  - C8 = C_line_per_km * line17_length * 0.5
-  - C9 = C_line_per_km * line18_length * 0.5
-  - C10 = C_line_per_km * line21_length * 0.5
-  - C11 = C_line_per_km * line22_length * 0.5
+  - C1 = C_dgu + C_line_per_km * line12_length * 0.5
+  - C2 = C_dgu + C_line_per_km * (line13_length + line14_length + line16_length) * 0.5
+  - C3 = C_dgu + C_line_per_km * (line15_length + line19_length) * 0.5
+  - C4 = C_dgu + C_line_per_km * (line18_length + line20_length) * 0.5
+  - C5 = C_dgu + C_line_per_km * (line16_length + line21_length + line22_length) * 0.5
+  - C6 = C_dgu + C_line_per_km * (line19_length + line23_length) * 0.5
+  - C7 = C_line_per_km * (line12_length + line13_length) * 0.5
+  - C8 = C_line_per_km * (line14_length + line15_length + line17_length) * 0.5
+  - C9 = C_line_per_km * (line17_length + line18_length) * 0.5
+  - C10 = C_line_per_km * (line20_length + line21_length) * 0.5
+  - C11 = C_line_per_km * (line22_length + line23_length) * 0.5
 
   # ZIP load values from Table 5.3, in SI units.
   - YP1 = 75e-6
@@ -158,8 +158,8 @@ systems:
             to: q
             weight: omega0 * C1 - zip_b(d.x, q.x, YP1, IP1, PP1)
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: dgu2
@@ -193,8 +193,8 @@ systems:
             to: q
             weight: omega0 * C2 - zip_b(d.x, q.x, YP2, IP2, PP2)
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: dgu3
@@ -228,8 +228,8 @@ systems:
             to: q
             weight: omega0 * C3
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: dgu4
@@ -263,8 +263,8 @@ systems:
             to: q
             weight: omega0 * C4 - zip_b(d.x, q.x, YP_medium, IP_medium, PP_medium)
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: dgu5
@@ -298,8 +298,8 @@ systems:
             to: q
             weight: omega0 * C5 - exp_b(d.x, q.x, P_exp_dgu5)
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: dgu6
@@ -333,8 +333,8 @@ systems:
             to: q
             weight: omega0 * C6 - exp_b(d.x, q.x, P_exp_dgu6)
     connections:
-      - from: I
-        to: V
+      - from: V
+        to: I
         weight: -1
 
   - id: ZipLoad7
@@ -593,76 +593,75 @@ systems:
         weight: omega0 * L23
 
 connections:
-  # Orientations follow the drawing: first endpoint -> second endpoint.
-  - from: dgu1.V
-    to: Line12
-    weight: -1
-  - from: dgu2.V
-    to: Line12
-    weight: 1
-  - from: dgu1.V
-    to: Line13
+  - from: Line12
+    to: dgu1.V
     weight: -1
   - from: ZipLoad7
+    to: Line12
+    weight: 1
+  - from: Line13
+    to: ZipLoad7
+    weight: -1
+  - from: dgu2.V
     to: Line13
     weight: 1
-  - from: dgu2.V
-    to: Line14
+  - from: Line14
+    to: dgu2.V
     weight: -1
-  - from: dgu4.V
+  - from: ZipLoad8
     to: Line14
-    weight: dgu4_enabled(t)
-  - from: dgu4.V
-    to: Line15
-    weight: -1 * dgu4_enabled(t)
+    weight: 1
+  - from: Line15
+    to: ZipLoad8
+    weight: -1
   - from: dgu3.V
     to: Line15
     weight: 1
-  - from: dgu3.V
-    to: Line16
+  - from: Line16
+    to: dgu2.V
     weight: -1
   - from: dgu5.V
     to: Line16
     weight: dgu5_enabled(t)
-  - from: dgu4.V
-    to: Line17
-    weight: -1 * dgu4_enabled(t) * line17_enabled(t)
-  - from: ZipLoad8
+  - from: Line17
+    to: ZipLoad8
+    weight: -1 * line17_enabled(t)
+  - from: ExpLoad9
     to: Line17
     weight: line17_enabled(t)
-  - from: dgu2.V
-    to: Line18
+  - from: Line18
+    to: ExpLoad9
     weight: -1
-  - from: ExpLoad9
-    to: Line18
-    weight: 1
   - from: dgu4.V
+    to: Line18
+    weight: dgu4_enabled(t)
+  - from: Line19
+    to: dgu3.V
+    weight: -1 * line19_enabled(t)
+  - from: dgu6.V
     to: Line19
-    weight: -1 * dgu4_enabled(t) * line19_enabled(t)
-  - from: dgu5.V
-    to: Line19
-    weight: dgu5_enabled(t) * line19_enabled(t)
-  - from: dgu3.V
+    weight: line19_enabled(t)
+  - from: Line20
+    to: dgu4.V
+    weight: -1 * dgu4_enabled(t)
+  - from: ExpLoad10
     to: Line20
+    weight: 1
+  - from: Line21
+    to: ExpLoad10
     weight: -1
   - from: dgu5.V
-    to: Line20
-    weight: dgu5_enabled(t)
-  - from: dgu5.V
-    to: Line21
-    weight: -1 * dgu5_enabled(t)
-  - from: ExpLoad10
     to: Line21
     weight: dgu5_enabled(t)
-  - from: dgu5.V
-    to: Line22
+  - from: Line22
+    to: dgu5.V
     weight: -1 * dgu5_enabled(t)
   - from: ExpLoad11
     to: Line22
-    weight: dgu5_enabled(t)
-  - from: dgu5.V
-    to: Line23
-    weight: -1 * dgu5_enabled(t)
+    weight: 1
+  - from: Line23
+    to: ExpLoad11
+    weight: -1
   - from: dgu6.V
     to: Line23
-    weight: dgu5_enabled(t)
+    weight: 1
